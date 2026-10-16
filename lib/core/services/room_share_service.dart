@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
@@ -14,19 +14,19 @@ class RoomShareService {
   RoomShareService._();
 
   static String generateRoomLink(String roomId) {
-    return 'https://zeparty.app/room/$roomId';
+    return 'https://HEMI TON.app/room/$roomId';
   }
 
   static String generateShortLink(String shortId) {
-    return 'https://zeparty.app/short/$shortId';
+    return 'https://HEMI TON.app/short/$shortId';
   }
 
   static String generatePostLink(String postId) {
-    return 'https://zeparty.app/post/$postId';
+    return 'https://HEMI TON.app/post/$postId';
   }
 
   static String generateCoHostLink(String roomId) {
-    return 'https://zeparty.app/live/cohost/$roomId';
+    return 'https://HEMI TON.app/live/cohost/$roomId';
   }
 
   /// Share Co-Host Invitation Link to split screen and co-host live stream

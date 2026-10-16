@@ -1,4 +1,4 @@
-# zeparty
+# HEMI TON - Live Streaming & Entertainment App
 
 A new Flutter project.
 

@@ -1,4 +1,4 @@
-import '../../models/user_model.dart';
+﻿import '../../models/user_model.dart';
 import '../../models/live_room_model.dart';
 import '../../models/pk_battle_model.dart';
 import '../../models/party_room_model.dart';
@@ -355,7 +355,7 @@ class DummyData {
     ),
     MedalModel(
       id: 'm4',
-      name: 'ZeParty Legend',
+      name: 'HEMI TON Legend',
       description: 'Won 10 consecutive PK battles.',
       iconUrl: 'zep_legend',
       isEarned: false,

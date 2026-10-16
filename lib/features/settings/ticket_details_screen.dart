@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
@@ -210,7 +210,7 @@ class _TicketDetailsScreenState extends State<TicketDetailsScreen> {
                                                 const Icon(Icons.verified_user_rounded, size: 13, color: Colors.blueAccent),
                                                 const SizedBox(width: 4),
                                                 const Text(
-                                                  'ZeParty Support Agent',
+                                                  'HEMI TON Support Agent',
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,

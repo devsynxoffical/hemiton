@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// ---------------------------------------------------------------------------
 /// Design System — HEMI TON
@@ -58,7 +58,7 @@ class AppColors {
 
   // =====================================================================
   // Primary Accents (Pink / Purple / Blue / Neon Pink)
-  // ZeParty old gold/bronze mapped directly to HEMI TON palette
+  // HEMI TON old gold/bronze mapped directly to HEMI TON palette
   // =====================================================================
   static const Color warmGold = pink; // Primary Pink (#FF1493)
   static const Color metallicGold = purple; // Purple (#8A2BE2)

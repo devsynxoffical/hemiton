@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +28,7 @@ class SocialFeedScreen extends StatefulWidget {
 }
 
 class _SocialFeedScreenState extends State<SocialFeedScreen> with SingleTickerProviderStateMixin {
-  static const String _viewedStoriesPrefsKey = 'zeparty_viewed_story_keys';
+  static const String _viewedStoriesPrefsKey = 'HEMI TON_viewed_story_keys';
   late TabController _tabController;
   final Set<String> _viewedStoryKeys = {};
 
@@ -107,7 +107,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> with SingleTickerPr
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'ZeParty',
+                    'HEMI TON',
                     style: TextStyle(
                       color: AppColors.onPrimary(isDark: isDark),
                       fontWeight: FontWeight.w900,
@@ -789,7 +789,7 @@ class _FullStoryViewerDialogState extends State<_FullStoryViewerDialog>
       padding: const EdgeInsets.all(24),
       child: Center(
         child: Text(
-          currentStory.content.isNotEmpty ? currentStory.content : '✨ ZeParty Story',
+          currentStory.content.isNotEmpty ? currentStory.content : '✨ HEMI TON Story',
           style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),

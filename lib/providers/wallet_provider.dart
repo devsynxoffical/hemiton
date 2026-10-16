@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,7 +56,7 @@ class WalletProvider extends ChangeNotifier {
       // 1. Try restoring isolated local cache for this specific user
       try {
         final prefs = await SharedPreferences.getInstance();
-        final cachedJson = prefs.getString('zeparty_wallet_cache_${user.id}');
+        final cachedJson = prefs.getString('HEMI TON_wallet_cache_${user.id}');
         if (cachedJson != null && cachedJson.isNotEmpty) {
           final map = jsonDecode(cachedJson) as Map<String, dynamic>;
           _wallet = WalletModel.fromJson(map);
@@ -111,7 +111,7 @@ class WalletProvider extends ChangeNotifier {
       // Persist isolated cache per user account
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('zeparty_wallet_cache_${w.userId}', jsonEncode(w.toJson()));
+        await prefs.setString('HEMI TON_wallet_cache_${w.userId}', jsonEncode(w.toJson()));
       } catch (_) {}
 
       notifyListeners();
@@ -277,10 +277,10 @@ class WalletProvider extends ChangeNotifier {
     return true;
   }
 
-  /// Prohibited per Item 21: Diamonds are for display within ZeParty only.
+  /// Prohibited per Item 21: Diamonds are for display within HEMI TON only.
   /// Conversion between Diamonds and Coins in either direction is strictly prohibited.
   bool exchangeDiamondsToCoins(int diamondsAmount, int coinsAmount) {
-    debugPrint('[WalletProvider] Coin/Diamond exchange is prohibited on ZeParty.');
+    debugPrint('[WalletProvider] Coin/Diamond exchange is prohibited on HEMI TON.');
     return false;
   }
 

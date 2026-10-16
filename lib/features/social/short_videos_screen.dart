@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -115,7 +115,7 @@ class _ShortVideosScreenState extends State<ShortVideosScreen> with SingleTicker
         id: p.id,
         creator: p.author,
         videoUrl: videoUrl,
-        caption: p.content.isNotEmpty ? p.content : '✨ ZeParty Short Video',
+        caption: p.content.isNotEmpty ? p.content : '✨ HEMI TON Short Video',
         musicTitle: 'Original Sound • ${p.author.displayName}',
         likes: p.likes,
         comments: p.comments,

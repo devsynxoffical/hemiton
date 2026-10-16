@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/live_room_model.dart';
@@ -39,31 +39,31 @@ class RoomConfigManager extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       for (final key in prefs.getKeys()) {
-        if (key.startsWith('zeparty_room_title_')) {
-          final id = key.replaceFirst('zeparty_room_title_', '');
+        if (key.startsWith('HEMI TON_room_title_')) {
+          final id = key.replaceFirst('HEMI TON_room_title_', '');
           final val = prefs.getString(key);
           if (val != null && val.isNotEmpty) _customTitles[id] = val;
-        } else if (key.startsWith('zeparty_room_cover_')) {
-          final id = key.replaceFirst('zeparty_room_cover_', '');
+        } else if (key.startsWith('HEMI TON_room_cover_')) {
+          final id = key.replaceFirst('HEMI TON_room_cover_', '');
           final val = prefs.getString(key);
           if (val != null && val.isNotEmpty) _customCovers[id] = val;
-        } else if (key.startsWith('zeparty_room_capacity_')) {
-          final id = key.replaceFirst('zeparty_room_capacity_', '');
+        } else if (key.startsWith('HEMI TON_room_capacity_')) {
+          final id = key.replaceFirst('HEMI TON_room_capacity_', '');
           final val = prefs.getInt(key);
           if (val != null && val > 0) _customCapacities[id] = val;
-        } else if (key.startsWith('zeparty_room_type_')) {
-          final id = key.replaceFirst('zeparty_room_type_', '');
+        } else if (key.startsWith('HEMI TON_room_type_')) {
+          final id = key.replaceFirst('HEMI TON_room_type_', '');
           final val = prefs.getString(key);
           if (val != null && val.isNotEmpty) _customRoomTypes[id] = val;
-        } else if (key.startsWith('zeparty_room_locked_seats_')) {
-          final id = key.replaceFirst('zeparty_room_locked_seats_', '');
+        } else if (key.startsWith('HEMI TON_room_locked_seats_')) {
+          final id = key.replaceFirst('HEMI TON_room_locked_seats_', '');
           final val = prefs.getString(key);
           if (val != null && val.isNotEmpty) {
             final list = (jsonDecode(val) as List).cast<int>();
             _lockedSeats[id] = list.toSet();
           }
-        } else if (key.startsWith('zeparty_room_sending_total_')) {
-          final id = key.replaceFirst('zeparty_room_sending_total_', '');
+        } else if (key.startsWith('HEMI TON_room_sending_total_')) {
+          final id = key.replaceFirst('HEMI TON_room_sending_total_', '');
           final val = prefs.getDouble(key);
           if (val != null) _roomSendingTotals[id] = val;
         }
@@ -83,11 +83,11 @@ class RoomConfigManager extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     if (title != null && title.trim().isNotEmpty) {
       _customTitles[roomId] = title.trim();
-      await prefs.setString('zeparty_room_title_$roomId', title.trim());
+      await prefs.setString('HEMI TON_room_title_$roomId', title.trim());
     }
     if (coverUrl != null && coverUrl.trim().isNotEmpty) {
       _customCovers[roomId] = coverUrl.trim();
-      await prefs.setString('zeparty_room_cover_$roomId', coverUrl.trim());
+      await prefs.setString('HEMI TON_room_cover_$roomId', coverUrl.trim());
     }
     notifyListeners();
   }
@@ -100,8 +100,8 @@ class RoomConfigManager extends ChangeNotifier {
     _customCapacities[roomId] = capacity;
     _customRoomTypes[roomId] = roomType;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('zeparty_room_capacity_$roomId', capacity);
-    await prefs.setString('zeparty_room_type_$roomId', roomType);
+    await prefs.setInt('HEMI TON_room_capacity_$roomId', capacity);
+    await prefs.setString('HEMI TON_room_type_$roomId', roomType);
     notifyListeners();
   }
 
@@ -116,7 +116,7 @@ class RoomConfigManager extends ChangeNotifier {
       set.remove(seatIndex);
     }
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('zeparty_room_locked_seats_$roomId', jsonEncode(set.toList()));
+    await prefs.setString('HEMI TON_room_locked_seats_$roomId', jsonEncode(set.toList()));
     notifyListeners();
   }
 
@@ -130,7 +130,7 @@ class RoomConfigManager extends ChangeNotifier {
     }
     _roomSendingTotals[roomId] = total;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('zeparty_room_sending_total_$roomId', total.toDouble());
+    await prefs.setDouble('HEMI TON_room_sending_total_$roomId', total.toDouble());
     notifyListeners();
   }
 

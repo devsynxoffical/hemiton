@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -2272,7 +2272,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
         const Text('Bio', style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
         Text(
-          _user!.bio.isNotEmpty ? _user!.bio : 'Welcome to my official ZeParty profile! âœ¨',
+          _user!.bio.isNotEmpty ? _user!.bio : 'Welcome to my official HEMI TON profile! âœ¨',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primaryText),
         ),
 
@@ -2510,7 +2510,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
       ),
       child: Center(
         child: Text(
-          post.content.isNotEmpty ? post.content : 'ZeParty Moment âœ¨',
+          post.content.isNotEmpty ? post.content : 'HEMI TON Moment âœ¨',
           maxLines: 4,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
@@ -2765,7 +2765,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
           Icon(Icons.favorite_border_rounded, size: 40, color: secondaryText),
           const SizedBox(height: 10),
           Text(
-            'ZeParty CP & Friends',
+            'HEMI TON CP & Friends',
             style: TextStyle(color: primaryText, fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 4),
@@ -2784,7 +2784,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
           const Icon(Icons.workspace_premium_rounded, size: 44, color: Colors.amber),
           const SizedBox(height: 10),
           Text(
-            'ZeParty Honor Hall of Fame',
+            'HEMI TON Honor Hall of Fame',
             style: TextStyle(color: AppColors.getTextPrimary(isDark), fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 4),
@@ -2803,7 +2803,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
           const Icon(Icons.stars_rounded, color: Colors.cyanAccent, size: 44),
           const SizedBox(height: 10),
           Text(
-            'ZeParty Seasonal Glory Titles',
+            'HEMI TON Seasonal Glory Titles',
             style: TextStyle(color: AppColors.getTextPrimary(isDark), fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 4),

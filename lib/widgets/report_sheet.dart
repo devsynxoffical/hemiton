@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/repositories/report_repository.dart';
 import '../core/services/api_client.dart';
@@ -183,7 +183,7 @@ class _ReportSheetState extends State<ReportSheet> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const Text(
-                        'Help keep ZeParty safe and welcoming for everyone.',
+                        'Help keep HEMI TON safe and welcoming for everyone.',
                         style: TextStyle(color: Colors.grey, fontSize: 11),
                       ),
                     ],

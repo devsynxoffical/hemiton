@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/categorized_transaction_model.dart';
 import '../models/user_model.dart';
 import '../core/repositories/wallet_repository.dart';
@@ -81,7 +81,7 @@ class WalletDetailsProvider extends ChangeNotifier {
               amount: item.amount,
               currency: item.currency,
               direction: item.amount >= 0 ? TransactionDirection.credit : TransactionDirection.debit,
-              senderName: 'ZeParty Network',
+              senderName: 'HEMI TON Network',
               senderId: 'SYSTEM',
               receiverName: 'Self',
               receiverId: 'user_me',

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -27,7 +27,7 @@ class CreateLiveRoomScreen extends StatefulWidget {
 }
 
 class _CreateLiveRoomScreenState extends State<CreateLiveRoomScreen> {
-  final _titleController = TextEditingController(text: '🔥 ZeParty Official Live Stream! Join In!');
+  final _titleController = TextEditingController(text: '🔥 HEMI TON Official Live Stream! Join In!');
   String _selectedCategory = 'Music';
   bool _isPrivate = false;
   final List<String> _categories = ['Music', 'Gaming', 'Chat', 'PK', 'Live'];
@@ -136,7 +136,7 @@ class _CreateLiveRoomScreenState extends State<CreateLiveRoomScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.getBackground(isDark),
         title: Text(
-          'Start ZeParty Live Stream',
+          'Start HEMI TON Live Stream',
           style: TextStyle(
             color: AppColors.getTextPrimary(isDark),
             fontWeight: FontWeight.bold,
@@ -402,7 +402,7 @@ class _CreateLiveRoomScreenState extends State<CreateLiveRoomScreen> {
             const SizedBox(height: 28),
 
             GoldButton(
-              text: 'Go Live on ZeParty',
+              text: 'Go Live on HEMI TON',
               icon: Icons.cell_tower_rounded,
               isLoading: _isCreating,
               onPressed: _isCreating

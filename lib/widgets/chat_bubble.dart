@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -456,7 +456,7 @@ class _ChatBubbleState extends State<ChatBubble> {
                   ),
                 ],
               ),
-            ] else if (widget.message.text.contains('zeparty.app/short/')) ...[
+            ] else if (widget.message.text.contains('HEMI TON.app/short/')) ...[
               // ─── Clickable Short Video Link Preview Card ───
               GestureDetector(
                 onTap: () {

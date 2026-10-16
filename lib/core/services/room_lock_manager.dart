@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/live_room_model.dart';
@@ -52,11 +52,11 @@ class RoomLockManager extends ChangeNotifier {
   Future<void> _loadFromPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys().where((k) => k.startsWith('zeparty_room_lock_'));
+      final keys = prefs.getKeys().where((k) => k.startsWith('HEMI TON_room_lock_'));
       for (final key in keys) {
         final raw = prefs.getString(key);
         if (raw != null && raw.isNotEmpty) {
-          final roomId = key.replaceFirst('zeparty_room_lock_', '');
+          final roomId = key.replaceFirst('HEMI TON_room_lock_', '');
           final map = jsonDecode(raw) as Map<String, dynamic>;
           _states[roomId] = RoomLockState.fromJson(map);
         }
@@ -124,7 +124,7 @@ class RoomLockManager extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
-        'zeparty_room_lock_$roomId',
+        'HEMI TON_room_lock_$roomId',
         jsonEncode(state.toJson()),
       );
     } catch (_) {}

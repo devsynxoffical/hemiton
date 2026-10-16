@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -318,7 +318,7 @@ class AuthProvider extends ChangeNotifier {
       username: 'guest_user',
       name: 'Guest Explorer',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-      bio: 'Exploring ZeParty as a guest ✨',
+      bio: 'Exploring HEMI TON as a guest ✨',
       role: UserRole.user,
       coins: 0,
       diamonds: 0,
@@ -409,7 +409,7 @@ class AuthProvider extends ChangeNotifier {
       final firebaseUser = userCredential.user;
       final cleanEmail = usernameOrEmail.trim();
 
-      // Synchronize with ZeParty backend database & save JWT tokens
+      // Synchronize with HEMI TON backend database & save JWT tokens
       try {
         final authRes = await _authRepository.syncUser(
           uid: firebaseUser?.uid,
@@ -616,7 +616,7 @@ class AuthProvider extends ChangeNotifier {
       if (!isTechId) {
         cleanName = rawGoogleName;
       } else {
-        cleanName = 'ZeParty Member';
+        cleanName = 'HEMI TON Member';
       }
 
       if (cleanName.length > 25) {
@@ -793,7 +793,7 @@ class AuthProvider extends ChangeNotifier {
   /// Check username uniqueness against backend
   Future<bool> checkUsernameAvailable(String username) async {
     final lower = username.trim().toLowerCase();
-    if (lower == 'admin' || lower == 'zeparty' || lower == 'official') {
+    if (lower == 'admin' || lower == 'HEMI TON' || lower == 'official') {
       return false;
     }
     return true;

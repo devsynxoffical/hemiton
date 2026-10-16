@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/bd_center_model.dart';
 
 class BDCenterProvider extends ChangeNotifier {
@@ -6,7 +6,7 @@ class BDCenterProvider extends ChangeNotifier {
   
   // BD Operator Profile Metadata
   final String _bdUserId = 'BD-88091';
-  final String _nickname = 'ZeParty Regional Director';
+  final String _nickname = 'HEMI TON Regional Director';
   final String _avatarUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
   final String _country = 'United Arab Emirates';
   final String _region = 'MENA Region';
@@ -39,7 +39,7 @@ class BDCenterProvider extends ChangeNotifier {
       nickname: 'Luna Star',
       avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
       agencyId: 'ag_1',
-      agencyName: 'ZeParty Royal Agency',
+      agencyName: 'HEMI TON Royal Agency',
       currentMonthDiamonds: 1450000,
       previousMonthDiamonds: 1100000,
       activeHostsCount: 12,
@@ -51,7 +51,7 @@ class BDCenterProvider extends ChangeNotifier {
       nickname: 'Alex Thunder',
       avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
       agencyId: 'ag_1',
-      agencyName: 'ZeParty Royal Agency',
+      agencyName: 'HEMI TON Royal Agency',
       currentMonthDiamonds: 2100000,
       previousMonthDiamonds: 1800000,
       activeHostsCount: 18,
@@ -87,7 +87,7 @@ class BDCenterProvider extends ChangeNotifier {
   final List<BDAgencyItem> _agencies = [
     BDAgencyItem(
       id: 'ag_1',
-      name: 'ZeParty Royal Agency',
+      name: 'HEMI TON Royal Agency',
       ownerUserId: '339102',
       ownerName: 'Vikram Mehta',
       ownerAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80',
@@ -137,7 +137,7 @@ class BDCenterProvider extends ChangeNotifier {
       targetNickname: 'Golden Streamer VIP',
       targetAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
       agencyId: 'ag_1',
-      agencyName: 'ZeParty Royal Agency',
+      agencyName: 'HEMI TON Royal Agency',
       status: BDInvitationStatus.pending,
       sentAt: DateTime.now().subtract(const Duration(hours: 6)),
       note: 'Invited to join Agency Top Tier',
@@ -201,7 +201,7 @@ class BDCenterProvider extends ChangeNotifier {
       category: 'agent',
       action: 'Agent Assignment',
       oldValue: 'Unassigned',
-      newValue: 'ZeParty Royal Agency',
+      newValue: 'HEMI TON Royal Agency',
       reason: 'Standard onboarding transfer',
       timestamp: DateTime.now().subtract(const Duration(hours: 4)),
     ),

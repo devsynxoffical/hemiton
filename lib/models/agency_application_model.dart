@@ -1,7 +1,7 @@
 class AgencyApplicationModel {
   final String id;
   final String applicantUserId;
-  final String applicantZePartyId;
+  final String applicantHemitonId;
   final String applicantName;
   final String applicantAvatar;
   final String agencyName;
@@ -17,7 +17,7 @@ class AgencyApplicationModel {
   const AgencyApplicationModel({
     required this.id,
     required this.applicantUserId,
-    required this.applicantZePartyId,
+    required this.applicantHemitonId,
     required this.applicantName,
     required this.applicantAvatar,
     required this.agencyName,
@@ -38,7 +38,7 @@ class AgencyApplicationModel {
   AgencyApplicationModel copyWith({
     String? id,
     String? applicantUserId,
-    String? applicantZePartyId,
+    String? applicantHemitonId,
     String? applicantName,
     String? applicantAvatar,
     String? agencyName,
@@ -54,7 +54,7 @@ class AgencyApplicationModel {
     return AgencyApplicationModel(
       id: id ?? this.id,
       applicantUserId: applicantUserId ?? this.applicantUserId,
-      applicantZePartyId: applicantZePartyId ?? this.applicantZePartyId,
+      applicantHemitonId: applicantHemitonId ?? this.applicantHemitonId,
       applicantName: applicantName ?? this.applicantName,
       applicantAvatar: applicantAvatar ?? this.applicantAvatar,
       agencyName: agencyName ?? this.agencyName,
@@ -73,7 +73,7 @@ class AgencyApplicationModel {
     return {
       'id': id,
       'applicantUserId': applicantUserId,
-      'applicantZePartyId': applicantZePartyId,
+      'applicantHemitonId': applicantHemitonId,
       'applicantName': applicantName,
       'applicantAvatar': applicantAvatar,
       'agencyName': agencyName,
@@ -92,7 +92,7 @@ class AgencyApplicationModel {
     return AgencyApplicationModel(
       id: json['id']?.toString() ?? '',
       applicantUserId: json['applicantUserId']?.toString() ?? '',
-      applicantZePartyId: json['applicantZePartyId']?.toString() ?? '',
+      applicantHemitonId: json['applicantHemitonId']?.toString() ?? '',
       applicantName: json['applicantName']?.toString() ?? '',
       applicantAvatar: json['applicantAvatar']?.toString() ?? '',
       agencyName: json['agencyName']?.toString() ?? '',

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,7 +27,7 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin {
-  static const String _recentSearchesKey = 'zeparty_recent_searches_history';
+  static const String _recentSearchesKey = 'HEMI TON_recent_searches_history';
   late TabController _tabController;
   final List<String> _tabs = ['Users', 'Hosts', 'Live Rooms', 'Videos', 'Sounds', 'Hashtags'];
   final _searchController = TextEditingController();
@@ -48,7 +48,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   bool _isLoadingSuggestedCreators = false;
 
   final List<String> _allTrendingTags = [
-    '#ZePartyFest',
+    '#HEMI TONFest',
     '#MusicLive',
     '#PKBattle2026',
     '#GamingZone',
@@ -59,7 +59,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   ];
 
   final List<Map<String, String>> _allSounds = [
-    {'title': 'ZeParty Official Beat', 'artist': 'ZeParty Audio Studio', 'uses': '14.2K'},
+    {'title': 'HEMI TON Official Beat', 'artist': 'HEMI TON Audio Studio', 'uses': '14.2K'},
     {'title': 'Cyber Night Wave', 'artist': 'DJ Pulse', 'uses': '8.9K'},
     {'title': 'Golden Party Anthem', 'artist': 'Star Records', 'uses': '22.1K'},
     {'title': 'Acoustic Chill Vibes', 'artist': 'Velvet Sound', 'uses': '5.4K'},

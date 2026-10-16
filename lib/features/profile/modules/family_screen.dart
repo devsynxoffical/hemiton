@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class FamilyScreen extends StatelessWidget {
@@ -29,7 +29,7 @@ class FamilyScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'The Family feature is no longer supported on ZeParty. Please use the Relationship module for your personal bonds and team-ups.',
+                'The Family feature is no longer supported on HEMI TON. Please use the Relationship module for your personal bonds and team-ups.',
                 style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 14),
                 textAlign: TextAlign.center,
               ),

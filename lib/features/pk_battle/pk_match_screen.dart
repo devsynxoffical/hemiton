@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -538,7 +538,7 @@ class _PkMatchScreenState extends State<PkMatchScreen> with SingleTickerProvider
 
   Widget _buildHostInviteUserTab(PKBattleModel? pk) {
     final inviteCode = pk?.inviteCode ?? 'PK-${pk?.id.substring(0, 6).toUpperCase()}';
-    final shareUrl = 'zeparty://pk/invite/$inviteCode';
+    final shareUrl = 'HEMI TON://pk/invite/$inviteCode';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

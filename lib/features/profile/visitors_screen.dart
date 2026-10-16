@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/repositories/social_repository.dart';
 import '../../models/user_model.dart';
@@ -27,7 +27,7 @@ class VisitRecord {
       u = UserModel(
         id: json['visitorId']?.toString() ?? json['id']?.toString() ?? '',
         username: json['username']?.toString() ?? 'user',
-        name: json['name']?.toString() ?? json['displayName']?.toString() ?? 'ZeParty User',
+        name: json['name']?.toString() ?? json['displayName']?.toString() ?? 'HEMI TON User',
         avatarUrl: json['avatarUrl']?.toString() ?? '',
       );
     }

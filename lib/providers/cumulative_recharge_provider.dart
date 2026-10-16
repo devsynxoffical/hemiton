@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/cumulative_recharge_model.dart';
@@ -84,7 +84,7 @@ class CumulativeRechargeProvider extends ChangeNotifier {
 
     _currentEvent = CumulativeRechargeEvent(
       id: 'evt_grand_fiesta_${now.year}_${now.month}',
-      title: 'ZeParty Grand Recharge Fiesta',
+      title: 'HEMI TON Grand Recharge Fiesta',
       description: 'Recharge cumulative dollar amounts during the event window to unlock limited luxury animated assets and coin rebates!',
       startDate: startDate,
       endDate: endDate,
@@ -135,7 +135,7 @@ class CumulativeRechargeProvider extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final key = 'zeparty_recharge_rewards_${userId}_${_currentEvent.id}';
+      final key = 'HEMI TON_recharge_rewards_${userId}_${_currentEvent.id}';
       final raw = prefs.getString(key);
 
       if (raw != null && raw.isNotEmpty) {
@@ -163,7 +163,7 @@ class CumulativeRechargeProvider extends ChangeNotifier {
     if (_activeUserId == null || _activeUserId!.isEmpty) return;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final key = 'zeparty_recharge_rewards_${_activeUserId}_${_currentEvent.id}';
+      final key = 'HEMI TON_recharge_rewards_${_activeUserId}_${_currentEvent.id}';
       final payload = {
         'cumulativeUsd': _cumulativeRechargeUsd,
         'claimedLevels': _claimedMilestoneLevels.toList(),

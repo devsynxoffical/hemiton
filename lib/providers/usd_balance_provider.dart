@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class UsdTransactionModel {
   final String id;
@@ -93,12 +93,12 @@ class UsdBalanceProvider extends ChangeNotifier {
     UsdTransactionModel(
       id: 'w_bd_201',
       senderId: 'BD-88091',
-      senderName: 'ZeParty Regional Director',
+      senderName: 'HEMI TON Regional Director',
       senderRole: 'BD Operator',
       agencyId: 'bd_corp',
       agencyName: 'MENA BD Division',
       recipientId: 'MRC-201',
-      recipientName: 'ZeParty Premier Merchant',
+      recipientName: 'HEMI TON Premier Merchant',
       recipientType: 'Merchant',
       usdAmount: 1200.00,
       payoutPeriod: 'August 2026',
@@ -121,7 +121,7 @@ class UsdBalanceProvider extends ChangeNotifier {
       senderName: 'Sophia Rose',
       senderRole: 'Audio Host',
       agencyId: 'ag_royal',
-      agencyName: 'ZeParty Royal Agency',
+      agencyName: 'HEMI TON Royal Agency',
       recipientId: 'SEL-101',
       recipientName: 'Global Reseller Alpha',
       recipientType: 'Coin Seller',
@@ -143,12 +143,12 @@ class UsdBalanceProvider extends ChangeNotifier {
     UsdTransactionModel(
       id: 'tx_mrc_usd_1',
       senderId: 'BD-88091',
-      senderName: 'ZeParty Regional Director',
+      senderName: 'HEMI TON Regional Director',
       senderRole: 'BD Operator',
       agencyId: 'bd_corp',
       agencyName: 'MENA BD Division',
       recipientId: 'MRC-201',
-      recipientName: 'ZeParty Premier Merchant',
+      recipientName: 'HEMI TON Premier Merchant',
       recipientType: 'Merchant',
       usdAmount: 1200.00,
       payoutPeriod: 'August 2026',
@@ -165,7 +165,7 @@ class UsdBalanceProvider extends ChangeNotifier {
       id: 'SEL-101',
       name: 'Global Reseller Alpha',
       type: 'Coin Seller',
-      agencyName: 'ZeParty Resellers Network',
+      agencyName: 'HEMI TON Resellers Network',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
     ),
     const SellerMerchantRecipient(
@@ -180,7 +180,7 @@ class UsdBalanceProvider extends ChangeNotifier {
   final List<SellerMerchantRecipient> _merchants = [
     const SellerMerchantRecipient(
       id: 'MRC-201',
-      name: 'ZeParty Premier Merchant',
+      name: 'HEMI TON Premier Merchant',
       type: 'Merchant',
       agencyName: 'Official Merchant Network',
       avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
@@ -348,7 +348,7 @@ class UsdBalanceProvider extends ChangeNotifier {
       final tx = UsdTransactionModel(
         id: 'ex_mrc_${DateTime.now().millisecondsSinceEpoch}',
         senderId: 'MRC-201',
-        senderName: 'ZeParty Premier Merchant',
+        senderName: 'HEMI TON Premier Merchant',
         senderRole: 'Merchant',
         recipientId: 'MRC-201',
         recipientName: 'Gold Coins Conversion',
@@ -388,7 +388,7 @@ class UsdBalanceProvider extends ChangeNotifier {
     final outgoingTx = UsdTransactionModel(
       id: 'tx_out_${DateTime.now().millisecondsSinceEpoch}',
       senderId: senderType == 'Coin Seller' ? 'SEL-101' : 'MRC-201',
-      senderName: senderType == 'Coin Seller' ? 'Global Reseller Alpha' : 'ZeParty Premier Merchant',
+      senderName: senderType == 'Coin Seller' ? 'Global Reseller Alpha' : 'HEMI TON Premier Merchant',
       senderRole: senderType,
       recipientId: recipient.id,
       recipientName: recipient.name,

@@ -1,4 +1,4 @@
-package com.zeparty.app
+package com.hemiton.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -150,15 +150,15 @@ class AdminBroadcastItem {
 }
 
 class MessagingProvider extends ChangeNotifier {
-  static const String _prefsSystemMessages = 'zeparty_persisted_system_messages';
-  static const String _prefsReadSystemIds = 'zeparty_read_system_ids';
-  static const String _prefsReadRewardIds = 'zeparty_read_reward_ids';
-  static const String _prefsClaimedRewardIds = 'zeparty_claimed_reward_ids';
-  static const String _prefsReadHelperIds = 'zeparty_read_helper_ids';
-  static const String _prefsPinnedUserIds = 'zeparty_pinned_chat_users';
-  static const String _prefsMutedUserIds = 'zeparty_muted_chat_users';
-  static const String _prefsArchivedUserIds = 'zeparty_archived_chat_users';
-  static const String _prefsBlockedUserIds = 'zeparty_blocked_chat_users';
+  static const String _prefsSystemMessages = 'HEMI TON_persisted_system_messages';
+  static const String _prefsReadSystemIds = 'HEMI TON_read_system_ids';
+  static const String _prefsReadRewardIds = 'HEMI TON_read_reward_ids';
+  static const String _prefsClaimedRewardIds = 'HEMI TON_claimed_reward_ids';
+  static const String _prefsReadHelperIds = 'HEMI TON_read_helper_ids';
+  static const String _prefsPinnedUserIds = 'HEMI TON_pinned_chat_users';
+  static const String _prefsMutedUserIds = 'HEMI TON_muted_chat_users';
+  static const String _prefsArchivedUserIds = 'HEMI TON_archived_chat_users';
+  static const String _prefsBlockedUserIds = 'HEMI TON_blocked_chat_users';
 
   final SocialRepository _socialRepo = SocialRepository.instance;
   StreamSubscription<Map<String, dynamic>>? _socketSub;
@@ -183,7 +183,7 @@ class MessagingProvider extends ChangeNotifier {
   final List<SystemMessageItem> _systemMessages = [
     SystemMessageItem(
       id: 'sys_1',
-      title: 'ZeParty Security Notice',
+      title: 'HEMI TON Security Notice',
       content: 'Your account login from a new device was verified successfully.',
       category: 'Security',
       timestamp: DateTime.now().subtract(const Duration(hours: 1)),
@@ -423,7 +423,7 @@ class MessagingProvider extends ChangeNotifier {
           UserModel(
             id: otherUserId,
             username: senderMap['username']?.toString() ?? 'user_$otherUserId',
-            name: senderMap['displayName']?.toString() ?? senderMap['name']?.toString() ?? 'ZeParty User',
+            name: senderMap['displayName']?.toString() ?? senderMap['name']?.toString() ?? 'HEMI TON User',
             avatarUrl: senderMap['avatarUrl']?.toString() ?? '',
             isOnline: isSenderOnline,
           ),
@@ -500,7 +500,7 @@ class MessagingProvider extends ChangeNotifier {
         final userModel = UserModel(
           id: otherUserId,
           username: otherUserMap?['username']?.toString() ?? 'user_$otherUserId',
-          name: otherUserMap?['displayName']?.toString() ?? otherUserMap?['name']?.toString() ?? 'ZeParty User',
+          name: otherUserMap?['displayName']?.toString() ?? otherUserMap?['name']?.toString() ?? 'HEMI TON User',
           avatarUrl: otherUserMap?['avatarUrl']?.toString() ?? '',
           bio: otherUserMap?['bio']?.toString() ?? '',
           gender: otherUserMap?['gender']?.toString() ?? 'Not Specified',
@@ -600,7 +600,7 @@ class MessagingProvider extends ChangeNotifier {
         UserModel(
           id: receiverId,
           username: 'user_$receiverId',
-          name: 'ZeParty User',
+          name: 'HEMI TON User',
           avatarUrl: '',
           isOnline: false,
         ),

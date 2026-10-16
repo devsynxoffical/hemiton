@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,7 +24,7 @@ class UploadVideoScreen extends StatefulWidget {
 }
 
 class _UploadVideoScreenState extends State<UploadVideoScreen> {
-  final _captionController = TextEditingController(text: 'Check out my new video! 🔥 #ZeParty #trending');
+  final _captionController = TextEditingController(text: 'Check out my new video! 🔥 #HEMI TON #trending');
   String _privacySetting = 'Public';
   final List<Map<String, dynamic>> _privacyOptions = [
     {'title': 'Public', 'icon': Icons.public_rounded, 'desc': 'Everyone can view this video'},
@@ -315,7 +315,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children: ['#ZeParty', '#Trending', '#LiveStream', '#Viral', '#Dance'].map((tag) {
+                      children: ['#HEMI TON', '#Trending', '#LiveStream', '#Viral', '#Dance'].map((tag) {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: ActionChip(

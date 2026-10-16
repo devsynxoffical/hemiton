@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../providers/game_provider.dart';
@@ -88,8 +88,8 @@ class _RoomEntryAnnouncementBannerState extends State<RoomEntryAnnouncementBanne
 
     final announcement = gameProvider.getResolvedAnnouncement(widget.roomId, userCountry);
     final title = announcement['title'] ?? '📢 Room Announcement';
-    final text = announcement['text'] ?? 'Welcome to ZeParty!';
-    final source = announcement['source'] ?? 'ZeParty Notice';
+    final text = announcement['text'] ?? 'Welcome to HEMI TON!';
+    final source = announcement['source'] ?? 'HEMI TON Notice';
     final isMandatory = announcement['isMandatory'] == true;
 
     return Container(

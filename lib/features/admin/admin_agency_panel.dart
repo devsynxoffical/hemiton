@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/coin_agency_provider.dart';
@@ -30,7 +30,7 @@ class _AdminAgencyPanelState extends State<AdminAgencyPanel> {
     _initControllers(gameProvider.rocketLevelTargets);
     _themePriceController = TextEditingController(text: gameProvider.customRoomThemeUploadPrice.toString());
     _annTitleController = TextEditingController(text: '📢 Platform Mandatory Notice');
-    _annTextController = TextEditingController(text: 'Welcome to ZeParty! Please follow platform guidelines.');
+    _annTextController = TextEditingController(text: 'Welcome to HEMI TON! Please follow platform guidelines.');
     _dpUrlController = TextEditingController(text: gameProvider.globalDefaultRoomDp);
     _modRoomIdController = TextEditingController();
     _paidThemeEnabled = gameProvider.paidRoomThemeUploadsEnabled;
@@ -453,7 +453,7 @@ class _AdminAgencyPanelState extends State<AdminAgencyPanel> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Seller Display Name')),
-              TextField(controller: userIdCtrl, decoration: const InputDecoration(labelText: 'ZeParty Numeric User ID')),
+              TextField(controller: userIdCtrl, decoration: const InputDecoration(labelText: 'HEMI TON Numeric User ID')),
               TextField(controller: countryCtrl, decoration: const InputDecoration(labelText: 'Assigned Country (e.g. Pakistan)')),
               TextField(controller: stockCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Stock Coins')),
             ],

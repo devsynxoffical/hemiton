@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -69,7 +69,7 @@ class _CoinRecordsScreenState extends State<CoinRecordsScreen> with SingleTicker
           amount: amt,
           timestamp: tx.date,
           status: tx.status,
-          senderOrReceiver: tx.targetUserId ?? 'ZeParty System',
+          senderOrReceiver: tx.targetUserId ?? 'HEMI TON System',
           balanceBefore: (tx.balanceAfter ?? 0) - amt,
           balanceAfter: tx.balanceAfter ?? 0,
         );

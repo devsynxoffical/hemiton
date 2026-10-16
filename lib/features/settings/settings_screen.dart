@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
@@ -165,7 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             AppLogo(size: 32, borderRadius: 8),
             SizedBox(width: 10),
-            Text('About ZeParty'),
+            Text('About HEMI TON'),
           ],
         ),
         content: const Column(
@@ -174,17 +174,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             AppLogo(size: 80, showGlow: true, showBorder: true, borderRadius: 20),
             SizedBox(height: 16),
-            Text('ZeParty', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, letterSpacing: 0.5)),
+            Text('HEMI TON', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, letterSpacing: 0.5)),
             SizedBox(height: 4),
             Text('Version 1.0.0 (Build 2026)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
             SizedBox(height: 12),
             Text(
-              'ZeParty is a next-generation Social Live Streaming, Party Rooms & PK Entertainment mobile platform.',
+              'HEMI TON is a next-generation Social Live Streaming, Party Rooms & PK Entertainment mobile platform.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13),
             ),
             SizedBox(height: 12),
-            Text('© 2026 ZeParty Team. All rights reserved.', style: TextStyle(fontSize: 11, color: Colors.grey)),
+            Text('© 2026 HEMI TON Team. All rights reserved.', style: TextStyle(fontSize: 11, color: Colors.grey)),
           ],
         ),
         actions: [

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/agency_provider.dart';
@@ -313,8 +313,8 @@ class _HostCenterScreenState extends State<HostCenterScreen> {
                   Builder(builder: (_) {
                     final hasRealAgency = audioHost.agencyName.isNotEmpty &&
                         !audioHost.agencyName.toLowerCase().contains('dummy') &&
-                        audioHost.agencyName != 'ZeParty Agency' &&
-                        audioHost.agencyName != 'ZeParty Royal Agency';
+                        audioHost.agencyName != 'HEMI TON Agency' &&
+                        audioHost.agencyName != 'HEMI TON Royal Agency';
                     final agencyLabel = hasRealAgency
                         ? 'Agency: ${audioHost.agencyName}${audioHost.agencyId.isNotEmpty ? ' (ID: ${audioHost.agencyId})' : ''}'
                         : 'Independent Audio Host';

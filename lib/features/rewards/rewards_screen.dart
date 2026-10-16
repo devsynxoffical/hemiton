@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -75,7 +75,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
     final onPrimary = AppColors.onPrimary(isDark: isDark);
 
     final user = authProvider.currentUser;
-    final rawName = user.username.isNotEmpty ? user.username : (user.name.isNotEmpty ? user.name : 'ZEPARTY');
+    final rawName = user.username.isNotEmpty ? user.username : (user.name.isNotEmpty ? user.name : 'HEMI TON');
     final cleanName = rawName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
     final userPart = cleanName.substring(0, min(6, cleanName.length)).padRight(4, 'X');
     final cleanId = user.id.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
@@ -114,7 +114,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ZeParty Rewards Balance',
+                          'HEMI TON Rewards Balance',
                           style: TextStyle(
                             color: onPrimary.withValues(alpha: 0.85),
                             fontSize: 12,
@@ -537,7 +537,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
                     text: 'Share Referral Link',
                     icon: Icons.share_rounded,
                     onPressed: () {
-                      Clipboard.setData(ClipboardData(text: 'https://zeparty.app/invite/$referralCode'));
+                      Clipboard.setData(ClipboardData(text: 'https://HEMI TON.app/invite/$referralCode'));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('📤 Referral link copied! Share with friends to earn 500 diamonds.'),

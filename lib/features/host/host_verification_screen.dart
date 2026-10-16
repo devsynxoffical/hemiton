@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -56,8 +56,8 @@ class _HostVerificationScreenState extends State<HostVerificationScreen> {
         '/v1/hosts/apply',
         data: {
           'hostType': 'LIVE_HOST',
-          'idCardFrontUrl': 'https://storage.zeparty.com/kyc/id_front_sample.jpg',
-          'idCardBackUrl': 'https://storage.zeparty.com/kyc/id_back_sample.jpg',
+          'idCardFrontUrl': 'https://storage.HEMI TON.com/kyc/id_front_sample.jpg',
+          'idCardBackUrl': 'https://storage.HEMI TON.com/kyc/id_back_sample.jpg',
         },
       );
       if (!mounted) return;

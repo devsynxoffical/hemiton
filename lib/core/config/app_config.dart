@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import '../services/api_client.dart';
 
 enum AppEnvironment {
@@ -7,7 +7,7 @@ enum AppEnvironment {
   production,
 }
 
-/// Authoritative Centralized Environment Configuration for ZeParty Mobile Client
+/// Authoritative Centralized Environment Configuration for HEMI TON Mobile Client
 class AppConfig {
   static AppEnvironment _environment = AppEnvironment.production;
   static String _apiBaseUrl = railwayApiUrl;
@@ -16,7 +16,7 @@ class AppConfig {
   static String get apiBaseUrl => _apiBaseUrl;
 
   /// Live Railway Backend URL (production)
-  static const String railwayApiUrl = 'https://zeparty-backend-production.up.railway.app/api';
+  static const String railwayApiUrl = 'https://HEMI TON-backend-production.up.railway.app/api';
 
   /// Staging API Base URL
   static const String stagingApiUrl = railwayApiUrl;

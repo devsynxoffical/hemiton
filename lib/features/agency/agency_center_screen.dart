@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/audio_host_model.dart';
@@ -870,7 +870,7 @@ class _AgencyCenterScreenState extends State<AgencyCenterScreen> with SingleTick
             onPressed: () {
               final id = _addHostIdController.text.trim();
               if (id.isNotEmpty) {
-                final agencyName = prov.userAgency?.name ?? 'ZeParty Agency';
+                final agencyName = prov.userAgency?.name ?? 'HEMI TON Agency';
                 prov.inviteMember(targetUserId: id, targetName: 'Host $id', inviterUserId: currentUserId, inviterName: agencyName);
 
                 // Dispatch Official Inbox Notification (Change Request 14)
@@ -887,7 +887,7 @@ class _AgencyCenterScreenState extends State<AgencyCenterScreen> with SingleTick
                 _addHostIdController.clear();
                 Navigator.pop(dlgCtx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('✉️ Host invitation sent to $id via ZeParty Official Inbox!'), backgroundColor: Colors.green),
+                  SnackBar(content: Text('✉️ Host invitation sent to $id via HEMI TON Official Inbox!'), backgroundColor: Colors.green),
                 );
               }
             },

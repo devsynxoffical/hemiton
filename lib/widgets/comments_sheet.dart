@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/utils/auth_guard.dart';
 import '../providers/auth_provider.dart';
@@ -6,7 +6,7 @@ import '../providers/social_provider.dart';
 import '../features/profile/user_profile_details_screen.dart';
 import 'user_avatar.dart';
 
-/// Reusable TikTok/ZeParty Slide-up Comments Sheet.
+/// Reusable TikTok/HEMI TON Slide-up Comments Sheet.
 /// Works across Short Videos, Social Posts, Live Rooms, and PK Battles.
 class CommentsSheet extends StatefulWidget {
   final String targetId; // Post ID or Video ID

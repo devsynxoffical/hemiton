@@ -1,4 +1,4 @@
-import 'user_model.dart';
+﻿import 'user_model.dart';
 
 class LiveRoomModel {
   final String id;
@@ -81,7 +81,7 @@ class LiveRoomModel {
     final id = (json['id']?.toString().isNotEmpty == true)
         ? json['id'].toString()
         : (json['roomId']?.toString() ?? '');
-    final title = json['title']?.toString() ?? 'ZeParty Live';
+    final title = json['title']?.toString() ?? 'HEMI TON Live';
     final coverUrl = json['coverImageUrl']?.toString() ??
         json['coverUrl']?.toString() ??
         'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80';

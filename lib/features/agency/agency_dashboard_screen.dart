@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/host_agency_provider.dart';
@@ -56,7 +56,7 @@ class AgencyDashboardScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'ZeParty Star Network Agency',
+                              'HEMI TON Star Network Agency',
                               style: TextStyle(color: onPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             Text(
@@ -333,7 +333,7 @@ class AgencyDashboardScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Enter the ZeParty user ID or username to invite them as a host to your agency.', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            const Text('Enter the HEMI TON user ID or username to invite them as a host to your agency.', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
             const SizedBox(height: 16),
             TextField(
               controller: controller,

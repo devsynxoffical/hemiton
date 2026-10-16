@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -838,7 +838,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (isBdAuthorized)
         {
           'title': 'BD Center',
-          'imagePath': 'assets/images/zeparty_logo.jpg',
+          'imagePath': 'assets/images/HEMI TON_logo.jpg',
           'badge': 'BD',
           'onTap': () => Navigator.push(context, MaterialPageRoute(builder: (c) => const BDCenterDashboardScreen())),
         },
@@ -881,7 +881,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (isAdminAuthorized)
         {
           'title': 'Admin',
-          'imagePath': 'assets/images/zeparty_logo.jpg',
+          'imagePath': 'assets/images/HEMI TON_logo.jpg',
           'onTap': () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AdminAgencyPanel())),
         },
     ];

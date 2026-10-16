@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_provider.dart';
@@ -315,7 +315,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             ),
                             SizedBox(height: keyboardOpen ? 4 : 8),
                             Text(
-                              'ZEPARTY',
+                              'HEMI TON',
                               style: TextStyle(
                                 fontSize: keyboardOpen ? 18 : 22,
                                 fontWeight: FontWeight.w900,
@@ -612,7 +612,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             if (!keyboardOpen) ...[
                               const SizedBox(height: 4),
                               Text(
-                                'By continuing, you agree to ZeParty Terms & Privacy Policy',
+                                'By continuing, you agree to HEMI TON Terms & Privacy Policy',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: AppColors.getTextSecondary(isDark).withValues(alpha: 0.7),

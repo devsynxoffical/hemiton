@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/support_ticket_model.dart';
@@ -105,7 +105,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'ZeParty Help Desk',
+                          'HEMI TON Help Desk',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         Text(

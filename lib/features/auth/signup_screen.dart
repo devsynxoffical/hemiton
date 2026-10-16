@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/design/gold_button.dart';
@@ -133,7 +133,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
     final navigator = Navigator.of(context);
     final success = await auth.signup(
       name: '$provider User',
-      email: '${provider.toLowerCase()}@zeparty.app',
+      email: '${provider.toLowerCase()}@HEMI TON.app',
       password: 'social_oauth_token',
     );
     if (mounted && success) {
@@ -190,7 +190,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Create ZeParty Account',
+                        'Create HEMI TON Account',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,

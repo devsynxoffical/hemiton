@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -55,7 +55,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     'official',
     'support',
     'system',
-    'zeparty',
+    'HEMI TON',
   ];
 
   @override
@@ -73,7 +73,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (user.username.isNotEmpty && !user.username.startsWith('user_') && user.username.length < 20) {
         rawName = user.username[0].toUpperCase() + user.username.substring(1);
       } else {
-        rawName = 'ZeParty Member';
+        rawName = 'HEMI TON Member';
       }
     }
     _initialName = rawName.length > 25 ? rawName.substring(0, 25).trim() : rawName;

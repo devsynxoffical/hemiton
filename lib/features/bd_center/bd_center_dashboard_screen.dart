@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -653,7 +653,7 @@ class BDCenterDashboardScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Enter an existing ZeParty User ID to send an official Agency Owner invitation.',
+                  'Enter an existing HEMI TON User ID to send an official Agency Owner invitation.',
                   style: TextStyle(fontSize: 12, color: Colors.white70),
                 ),
                 const SizedBox(height: 14),
@@ -719,7 +719,7 @@ class BDCenterDashboardScreen extends StatelessWidget {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('✉️ Agency Owner invitation sent to $targetId ($verifiedName) via ZeParty Official Inbox!'),
+                      content: Text('✉️ Agency Owner invitation sent to $targetId ($verifiedName) via HEMI TON Official Inbox!'),
                       backgroundColor: Colors.green,
                     ),
                   );

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -239,7 +239,7 @@ class _OfflineRechargeScreenState extends State<OfflineRechargeScreen> {
                       final success = await wallet.submitOfflineRecharge(
                         amountUSD: amountUsd,
                         bankName: _selectedMethod,
-                        receiptPhotoUrl: _selectedImageFile?.path ?? 'https://storage.zeparty.com/receipts/placeholder.jpg',
+                        receiptPhotoUrl: _selectedImageFile?.path ?? 'https://storage.HEMI TON.com/receipts/placeholder.jpg',
                         transactionRef: _txIdController.text.trim(),
                       );
 

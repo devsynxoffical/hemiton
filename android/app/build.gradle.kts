@@ -17,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.zeparty.app"
+    namespace = "com.hemiton.app"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -36,15 +36,15 @@ android {
         if (keystoreFile.exists()) {
             create("release") {
                 keyAlias = keystoreProperties.getProperty("keyAlias") ?: "upload"
-                keyPassword = keystoreProperties.getProperty("keyPassword") ?: "zeparty123"
+                keyPassword = keystoreProperties.getProperty("keyPassword") ?: "hemiton123"
                 storeFile = keystoreFile
-                storePassword = keystoreProperties.getProperty("storePassword") ?: "zeparty123"
+                storePassword = keystoreProperties.getProperty("storePassword") ?: "hemiton123"
             }
         }
     }
 
     defaultConfig {
-        applicationId = "com.zeparty.app"
+        applicationId = "com.hemiton.app"
         minSdk = 24
         targetSdk = 36
         versionCode = flutter.versionCode

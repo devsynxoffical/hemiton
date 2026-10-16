@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../features/store/store_screen.dart';
 import '../../features/vip/vip_store_screen.dart';
@@ -10,7 +10,7 @@ import '../../models/live_room_model.dart';
 import '../../models/user_model.dart';
 
 class BannerRouter {
-  /// Route deep links (`zeparty://...` or `https://...`) from banner taps
+  /// Route deep links (`HEMI TON://...` or `https://...`) from banner taps
   static void handleBannerTap(
     BuildContext context,
     String? destinationUrl, {
@@ -23,7 +23,7 @@ class BannerRouter {
     final uri = Uri.tryParse(cleanUrl);
     if (uri == null) return;
 
-    if (uri.scheme == 'zeparty') {
+    if (uri.scheme == 'HEMI TON') {
       final host = uri.host.toLowerCase();
       final pathSegments = uri.pathSegments;
 

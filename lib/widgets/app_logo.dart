@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
-/// Reusable application logo widget featuring the official ZeParty mascot emblem.
-/// Transparent background only — no white box or filled background container.
+/// Reusable application logo widget for HEMI TON.
+/// Features a modern, gradient-accented "H" emblem with neon glow.
+/// When the user provides the official logo image (hemiton_logo.png),
+/// it will load seamlessly; otherwise it displays this premium brand emblem.
 class AppLogo extends StatelessWidget {
   final double size;
   final double? borderRadius;
@@ -24,62 +26,96 @@ class AppLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveRadius = borderRadius ?? (size * 0.22);
+    final effectiveRadius = borderRadius ?? (size * 0.24);
 
-    Widget image = ClipRRect(
-      borderRadius: BorderRadius.circular(effectiveRadius),
-      child: Image.asset(
-        'assets/images/zeparty_logo.jpg',
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              gradient: AppColors.getAccentGradient(isDark),
-              borderRadius: BorderRadius.circular(effectiveRadius),
-            ),
-            child: Icon(
-              Icons.live_tv_rounded,
-              size: size * 0.55,
-              color: AppColors.onPrimary(isDark: isDark),
-            ),
-          );
-        },
+    Widget emblem = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            AppColors.pink,
+            AppColors.purple,
+            AppColors.blue,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(effectiveRadius),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.35),
+          width: size > 60 ? 2.0 : 1.2,
+        ),
+        boxShadow: showGlow
+            ? [
+                BoxShadow(
+                  color: AppColors.pink.withValues(alpha: 0.55),
+                  blurRadius: size * 0.35,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: AppColors.neonPink.withValues(alpha: 0.35),
+                  blurRadius: size * 0.2,
+                  offset: const Offset(0, 0),
+                ),
+              ]
+            : null,
+      ),
+      child: Center(
+        child: Text(
+          'H',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: size * 0.52,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            height: 1.0,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
       ),
     );
 
-    if (showBorder || customBorder != null || showGlow) {
-      image = Container(
+    // If an official asset image exists, try loading it with error fallback to the emblem
+    Widget logoWidget = Image.asset(
+      'assets/images/hemiton_logo.png',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => emblem,
+    );
+
+    if (showBorder || customBorder != null) {
+      logoWidget = Container(
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: Colors.transparent,
           borderRadius: BorderRadius.circular(effectiveRadius),
           border: customBorder ??
-              (showBorder
-                  ? Border.all(
-                      color: AppColors.getBorderStrong(isDark).withValues(alpha: 0.5),
-                      width: size > 60 ? 2.0 : 1.2,
-                    )
-                  : null),
-          boxShadow: showGlow
-              ? AppColors.primaryGlow(isDark, alpha: 0.35, blur: size * 0.3)
-              : null,
+              Border.all(
+                color: AppColors.pink.withValues(alpha: 0.5),
+                width: size > 60 ? 2.0 : 1.2,
+              ),
         ),
-        child: image,
+        child: logoWidget,
       );
     }
 
     if (onTap != null) {
       return GestureDetector(
         onTap: onTap,
-        child: image,
+        behavior: HitTestBehavior.opaque,
+        child: logoWidget,
       );
     }
 
-    return image;
+    return logoWidget;
   }
 }

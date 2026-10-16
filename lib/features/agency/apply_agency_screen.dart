@@ -80,7 +80,7 @@ class _ApplyAgencyScreenState extends State<ApplyAgencyScreen> {
 
     final success = await agencyProv.submitAgencyApplication(
       applicantUserId: authUser.id,
-      applicantZePartyId: authUser.id.length > 8 ? authUser.id.substring(0, 8) : authUser.id,
+      applicantHemitonId: authUser.id.length > 8 ? authUser.id.substring(0, 8) : authUser.id,
       applicantName: authUser.name,
       applicantAvatar: authUser.avatarUrl,
       agencyName: _nameController.text.trim(),
@@ -190,7 +190,7 @@ class _ApplyAgencyScreenState extends State<ApplyAgencyScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                Text('Applicant: ${app.applicantName} (ZeParty ID: ${app.applicantZePartyId})', style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 12)),
+                                Text('Applicant: ${app.applicantName} (HEMI TON ID: ${app.applicantHemitonId})', style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 12)),
                                 Text('Phone: ${app.phoneNumber}', style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 12)),
                                 Text('Description: ${app.description}', style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 12)),
                                 const SizedBox(height: 8),
@@ -617,7 +617,7 @@ class _ApplyAgencyScreenState extends State<ApplyAgencyScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Enter the five host IDs you plan to bring from another app. These are external app references for administrative evaluation and do not link to existing ZeParty accounts.',
+                            'Enter the five host IDs you plan to bring from another app. These are external app references for administrative evaluation and do not link to existing HEMI TON accounts.',
                             style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 12, height: 1.4),
                           ),
                           const SizedBox(height: 16),

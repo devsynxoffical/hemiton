@@ -1,4 +1,4 @@
-enum UserRole { user, host, seller, agency, bd, admin }
+﻿enum UserRole { user, host, seller, agency, bd, admin }
 
 class UserModel {
   final String id;
@@ -234,7 +234,7 @@ class UserModel {
     if (name.isNotEmpty && name != 'null' && name != 'undefined' && !name.contains('@') && !name.startsWith('user_') && !name.startsWith('google_')) {
       return name;
     }
-    return id.isNotEmpty ? 'User $id' : 'ZeParty Member';
+    return id.isNotEmpty ? 'User $id' : 'HEMI TON Member';
   }
 
   /// Effective cover image URL fallback
@@ -263,7 +263,7 @@ class UserModel {
             ? rawDisplayNameFallback
             : (rawName.isNotEmpty && !rawName.contains('@')
                 ? rawName
-                : (id.isNotEmpty ? 'User $id' : 'ZeParty Member')));
+                : (id.isNotEmpty ? 'User $id' : 'HEMI TON Member')));
 
     final phone = json['phone']?.toString();
     final avatarUrl = profile['avatarUrl']?.toString() ?? json['avatarUrl']?.toString() ?? profile['avatar']?.toString() ?? json['avatar']?.toString() ?? '';

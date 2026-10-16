@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -35,7 +35,7 @@ class ShortShareSheet extends StatefulWidget {
 class _ShortShareSheetState extends State<ShortShareSheet> {
   final Set<String> _sentUserIds = {};
 
-  String get _shortLink => 'https://zeparty.app/short/${widget.shortId}';
+  String get _shortLink => 'https://HEMI TON.app/short/${widget.shortId}';
 
   void _copyLink(BuildContext context, String message) {
     Clipboard.setData(ClipboardData(text: _shortLink));
@@ -119,7 +119,7 @@ class _ShortShareSheetState extends State<ShortShareSheet> {
         contactsMap[followedId] = UserModel(
           id: followedId,
           username: 'user_$followedId',
-          name: 'ZeParty Friend',
+          name: 'HEMI TON Friend',
           avatarUrl: '',
         );
       }

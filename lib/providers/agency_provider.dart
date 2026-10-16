@@ -34,7 +34,7 @@ class AgencyHostRequest {
 class AgencyProvider extends ChangeNotifier {
   final ApiClient _apiClient = ApiClient.instance;
 
-  static const String _agencyApplicationKey = 'zeparty_user_agency_application_v1';
+  static const String _agencyApplicationKey = 'HEMI TON_user_agency_application_v1';
 
   AgencyModel? _userAgency;
   final List<AgencyMemberModel> _members = [];
@@ -120,7 +120,7 @@ class AgencyProvider extends ChangeNotifier {
   /// Does NOT activate agency or open Agency Center immediately
   Future<bool> submitAgencyApplication({
     required String applicantUserId,
-    required String applicantZePartyId,
+    required String applicantHemitonId,
     required String applicantName,
     required String applicantAvatar,
     required String agencyName,
@@ -142,7 +142,7 @@ class AgencyProvider extends ChangeNotifier {
     final newApp = AgencyApplicationModel(
       id: 'app_${DateTime.now().millisecondsSinceEpoch}',
       applicantUserId: applicantUserId,
-      applicantZePartyId: applicantZePartyId,
+      applicantHemitonId: applicantHemitonId,
       applicantName: applicantName,
       applicantAvatar: applicantAvatar,
       agencyName: agencyName.trim(),

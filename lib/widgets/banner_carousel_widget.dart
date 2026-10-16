@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/services/api_client.dart';
 import '../core/services/socket_service.dart';
@@ -31,31 +31,31 @@ class _BannerCarouselWidgetState extends State<BannerCarouselWidget> {
   static final List<BannerItemModel> _defaultTemplates = [
     BannerItemModel(
       id: 'template_welcome',
-      title: '🎉 Welcome to ZeParty!',
+      title: '🎉 Welcome to HEMI TON!',
       subtitle: 'HD 8-Seat Voice Rooms, Live Streams & Global Chat',
       imageUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1000&q=80',
-      destinationUrl: 'zeparty://party',
+      destinationUrl: 'HEMI TON://party',
     ),
     BannerItemModel(
       id: 'template_updates',
       title: '🚀 Big Updates Coming Soon!',
       subtitle: '3D Soundstages, AI Avatars & Season 4 Tournaments',
       imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80',
-      destinationUrl: 'zeparty://updates',
+      destinationUrl: 'HEMI TON://updates',
     ),
     BannerItemModel(
       id: 'template_pk_live',
       title: '⚔️ Epic PK Battles & Live Stream',
       subtitle: 'Challenge Top Creators & Vote in High-Stakes Matches',
       imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1000&q=80',
-      destinationUrl: 'zeparty://live',
+      destinationUrl: 'HEMI TON://live',
     ),
     BannerItemModel(
       id: 'template_giftings',
       title: '🎁 Send Luxury Gifts & Win Big',
       subtitle: 'Super Cars, Dragon Ships & SVIP Wealth Badges',
       imageUrl: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1000&q=80',
-      destinationUrl: 'zeparty://store',
+      destinationUrl: 'HEMI TON://store',
     ),
   ];
 
@@ -134,7 +134,7 @@ class _BannerCarouselWidgetState extends State<BannerCarouselWidget> {
 
     return GestureDetector(
       onTap: () {
-        if (banner.destinationUrl == 'zeparty://updates') {
+        if (banner.destinationUrl == 'HEMI TON://updates') {
           _showUpcomingUpdatesDialog();
         } else {
           BannerRouter.handleBannerTap(

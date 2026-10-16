@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
@@ -41,7 +41,7 @@ class ProfileStatusStrip extends StatelessWidget {
     final accountLevel = currentUser?.accountLevel ?? 0;
     final accountXp = currentUser?.accountXp ?? 0;
 
-    // Palette configurations matching ZeParty theme & level strip specification
+    // Palette configurations matching HEMI TON theme & level strip specification
     final svipPalette = [const Color(0xFFFFD700), const Color(0xFFFFA000), const Color(0xFFFF6F00), const Color(0xFFFFE082)];
     final wealthPalette = [const Color(0xFF00E5FF), const Color(0xFF00B0FF), const Color(0xFF00838F), const Color(0xFFFFD700)];
     final charmPalette = [const Color(0xFFFF6D00), const Color(0xFFFF4081), const Color(0xFFE91E63), const Color(0xFFFFD700)];

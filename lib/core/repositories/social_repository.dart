@@ -1,7 +1,7 @@
-import '../services/api_client.dart';
+﻿import '../services/api_client.dart';
 
 /// Social & Post Repository
-/// All calls are against the real ZeParty backend.
+/// All calls are against the real HEMI TON backend.
 /// Never falls back to local/mock data on network errors — errors propagate.
 class SocialRepository {
   static final SocialRepository instance = SocialRepository._internal();

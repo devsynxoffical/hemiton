@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/svip_model.dart';
 import 'wallet_provider.dart';
 
@@ -57,7 +57,7 @@ class SVIPProvider extends ChangeNotifier {
     SVIPPrivilegeItem(id: 'p_31', name: 'Unban Account', icon: Icons.lock_open_rounded, description: 'Direct emergency appeal priority pathway', requiredLevel: 15),
     SVIPPrivilegeItem(id: 'p_32', name: 'Open Screen', icon: Icons.screenshot_monitor_rounded, description: 'Display personal banner on app launch', requiredLevel: 16),
     SVIPPrivilegeItem(id: 'p_33', name: 'Customized Broadcasts', icon: Icons.volume_up_rounded, description: 'Global push alert customized banner', requiredLevel: 16),
-    SVIPPrivilegeItem(id: 'p_34', name: 'Official Party', icon: Icons.celebration_rounded, description: 'Official ZeParty staff co-hosted party event', requiredLevel: 16),
+    SVIPPrivilegeItem(id: 'p_34', name: 'Official Party', icon: Icons.celebration_rounded, description: 'Official HEMI TON staff co-hosted party event', requiredLevel: 16),
     SVIPPrivilegeItem(id: 'p_35', name: 'Customized Frame', icon: Icons.crop_square_rounded, description: 'Designer hand-crafted exclusive avatar border', requiredLevel: 16),
     SVIPPrivilegeItem(id: 'p_36', name: 'Customized Banner', icon: Icons.flag_rounded, description: 'Official in-app marketing hero carousel slot', requiredLevel: 16),
     SVIPPrivilegeItem(id: 'p_37', name: 'Coming Soon', icon: Icons.stars_rounded, description: 'Next generation future SVIP privileges', requiredLevel: 16),

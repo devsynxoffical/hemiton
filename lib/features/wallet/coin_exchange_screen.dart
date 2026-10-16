@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
 class CoinExchangeScreen extends StatelessWidget {
@@ -57,7 +57,7 @@ class CoinExchangeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Converting between Diamonds and Coins is strictly prohibited. In accordance with ZeParty product rules, Diamonds are for display within the platform only.',
+                'Converting between Diamonds and Coins is strictly prohibited. In accordance with HEMI TON product rules, Diamonds are for display within the platform only.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.getTextSecondary(isDark),

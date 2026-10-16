@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +8,7 @@ import 'animated_reaction_ring.dart';
 import 'reaction_particles.dart';
 import 'user_avatar.dart';
 
-/// Reusable ZeParty Live Emoji Reaction Avatar component.
+/// Reusable HEMI TON Live Emoji Reaction Avatar component.
 /// Displays an animated neon glowing ring, bouncing/floating emoji reaction, and sparkles
 /// on any avatar in Live Rooms, Party Rooms, Audio Rooms, and PK Rooms.
 class AnimatedReactionAvatar extends StatefulWidget {

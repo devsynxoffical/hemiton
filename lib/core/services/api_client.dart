@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -29,11 +29,11 @@ class ApiClient {
   late final Dio dio;
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
-  static const String _tokenKey = 'zeparty_access_token';
-  static const String _refreshTokenKey = 'zeparty_refresh_token';
+  static const String _tokenKey = 'HEMI TON_access_token';
+  static const String _refreshTokenKey = 'HEMI TON_refresh_token';
 
   // Default Base URL points to live Railway backend
-  String _baseUrl = 'https://zeparty-backend-production.up.railway.app/api';
+  String _baseUrl = 'https://HEMI TON-backend-production.up.railway.app/api';
 
   Completer<String?>? _refreshCompleter;
 

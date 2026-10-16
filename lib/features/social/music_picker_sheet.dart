@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
 class MusicTrack {
@@ -65,7 +65,7 @@ class _MusicPickerSheetState extends State<MusicPickerSheet> with SingleTickerPr
     ),
     MusicTrack(
       id: 'm1',
-      title: 'ZeParty Anthem (Club Edit)',
+      title: 'HEMI TON Anthem (Club Edit)',
       artist: 'DJ Gold Beats',
       duration: '0:30',
       category: '🎉 Party EDM',

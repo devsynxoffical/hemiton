@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -633,8 +633,8 @@ class GameProvider extends ChangeNotifier {
     return {
       'source': 'Default',
       'isMandatory': false,
-      'title': '📢 Welcome to ZeParty',
-      'text': 'Welcome to ZeParty. Please respect each other and communicate in a friendly and appropriate manner.',
+      'title': '📢 Welcome to HEMI TON',
+      'text': 'Welcome to HEMI TON. Please respect each other and communicate in a friendly and appropriate manner.',
       'status': 'Active',
     };
   }

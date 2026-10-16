@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -95,7 +95,7 @@ class _DiamondTransferScreenState extends State<DiamondTransferScreen> {
     ReceiverAccount(
       id: 'merch_9901',
       linkedUserId: 'user_5001',
-      name: 'ZeParty Global Merchant Desk',
+      name: 'HEMI TON Global Merchant Desk',
       avatarUrl: 'https://i.pravatar.cc/150?img=60',
       type: 'Merchant',
       country: 'Global',

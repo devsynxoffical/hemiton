@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/live_host_application_model.dart';
@@ -250,7 +250,7 @@ class _ApplyLiveHostScreenState extends State<ApplyLiveHostScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Congratulations! You are officially an active ZeParty Host. You have full access to broadcast Live streams, host Audio Party rooms, and compete in PK battles without any further verification required.',
+                        'Congratulations! You are officially an active HEMI TON Host. You have full access to broadcast Live streams, host Audio Party rooms, and compete in PK battles without any further verification required.',
                         style: TextStyle(color: AppColors.getTextPrimary(isDark), fontSize: 13, height: 1.4),
                       ),
                       const SizedBox(height: 14),
@@ -302,7 +302,7 @@ class _ApplyLiveHostScreenState extends State<ApplyLiveHostScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Live Hosts register directly with ZeParty. No agency fees, no agency commission, and 100% direct salary payouts to your wallet.',
+                      'Live Hosts register directly with HEMI TON. No agency fees, no agency commission, and 100% direct salary payouts to your wallet.',
                       style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 12),
                     ),
                     const SizedBox(height: 12),
@@ -360,7 +360,7 @@ class _ApplyLiveHostScreenState extends State<ApplyLiveHostScreen> {
               Text('1. Choose Host Application Type', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.getTextPrimary(isDark))),
               const SizedBox(height: 8),
               Text(
-                'Select the live features you wish to broadcast on ZeParty:',
+                'Select the live features you wish to broadcast on HEMI TON:',
                 style: TextStyle(fontSize: 12, color: AppColors.getTextSecondary(isDark)),
               ),
               const SizedBox(height: 12),
@@ -519,7 +519,7 @@ class _ApplyLiveHostScreenState extends State<ApplyLiveHostScreen> {
               // ─── 5. Terms & Submission ───
               CheckboxListTile(
                 value: _agreeRules,
-                title: const Text('I agree to ZeParty Live Host Rules and 1 Hour Daily Streaming Requirement.', style: TextStyle(fontSize: 12)),
+                title: const Text('I agree to HEMI TON Live Host Rules and 1 Hour Daily Streaming Requirement.', style: TextStyle(fontSize: 12)),
                 onChanged: isLocked ? null : (v) => setState(() => _agreeRules = v!),
               ),
               CheckboxListTile(

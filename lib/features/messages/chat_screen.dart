@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -86,7 +86,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<String> _quickReplies = [
     'Hey! 👋',
     'Love your stream! ❤️',
-    'See you on ZeParty tonight! 🚀',
+    'See you on HEMI TON tonight! 🚀',
     'Let\'s go! 🔥',
   ];
 
@@ -312,7 +312,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         children: [
                           Icon(Icons.circle, color: AppColors.success, size: 8),
                           SizedBox(width: 4),
-                          Text('Online • ZeParty', style: TextStyle(fontSize: 10, color: AppColors.success)),
+                          Text('Online • HEMI TON', style: TextStyle(fontSize: 10, color: AppColors.success)),
                         ],
                       ),
                   ],
@@ -424,7 +424,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Say hello and start connecting on ZeParty! 👋',
+                                  'Say hello and start connecting on HEMI TON! 👋',
                                   style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 12),
                                 ),
                               ],
