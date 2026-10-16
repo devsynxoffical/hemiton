@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/user_model.dart';
 import '../../providers/privacy_settings_provider.dart';
+import '../theme/app_colors.dart';
 
 enum NobleTier {
   none,
@@ -249,22 +250,22 @@ class NobleBadgeHelper {
     return null;
   }
 
-  static Color getColoredNicknameColor(NobleTier tier) {
+  static Color getColoredNicknameColor(NobleTier tier, {bool isDark = true}) {
     switch (tier) {
       case NobleTier.emperor:
       case NobleTier.king:
       case NobleTier.duke:
-        return const Color(0xFFFFD700); // Gold / Shiny Amber
+        return isDark ? const Color(0xFFFFD700) : const Color(0xFFB8860B);
       case NobleTier.prince:
       case NobleTier.marquis:
-        return const Color(0xFFFF4500); // Crimson Red
+        return isDark ? const Color(0xFFFF4500) : const Color(0xFFD84315);
       case NobleTier.earl:
       case NobleTier.viscount:
-        return const Color(0xFFD500F9); // Luxury Purple / Magenta
+        return isDark ? const Color(0xFFD500F9) : const Color(0xFF8E24AA);
       case NobleTier.knight:
-        return const Color(0xFF00E5FF); // Cyan / Teal
+        return isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F);
       case NobleTier.none:
-        return Colors.white;
+        return isDark ? Colors.white : AppColors.darkNavy;
     }
   }
 
@@ -346,7 +347,8 @@ class NobleBadgeChip extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final color = NobleBadgeHelper.getColoredNicknameColor(tier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = NobleBadgeHelper.getColoredNicknameColor(tier, isDark: isDark);
     final badgeText = NobleBadgeHelper.getNobleIcon(tier).isNotEmpty
         ? NobleBadgeHelper.getNobleIcon(tier)
         : (title ?? 'Noble');

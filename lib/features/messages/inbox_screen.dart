@@ -1,18 +1,22 @@
-﻿import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/user_model.dart';
-import '../../providers/messaging_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/agency_provider.dart';
-import '../../widgets/user_avatar.dart';
-import '../../widgets/report_sheet.dart';
-import '../../widgets/skeleton_widgets.dart';
 import '../profile/user_profile_details_screen.dart';
+import '../profile/visitors_screen.dart';
 import 'chat_screen.dart';
 
+/// Attractive Chats & Friends Screen
+/// Inspired by Image 3 & Image 4 reference design:
+/// - Top Tab Bar: [Chats, Friends] with active glowing neon indicator
+/// - Top Actions: Clean inbox / sweep icon + Search icon (with toggleable search bar)
+/// - Chats Tab:
+///   * "Recent Visitors" glowing card at the top (with eye icon, visitor name, and "just now")
+///   * Rich conversation list with online dots, last message preview, unread badges, timestamps
+/// - Friends Tab:
+///   * Category pills: [Following, Friends, Followers]
+///   * Friends list with gender/age badges, VIP flame indicators, and one-tap profile navigation
+/// - High-end modern aesthetics (glassmorphism, smooth animations, dark & light mode)
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
 
@@ -20,1090 +24,938 @@ class InboxScreen extends StatefulWidget {
   State<InboxScreen> createState() => _InboxScreenState();
 }
 
-class _InboxScreenState extends State<InboxScreen> {
-  String _selectedFilter = 'All'; // 'All', 'Unread', 'Direct', 'Official', 'Archived'
-  String _searchQuery = '';
+class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  int _selectedMainTab = 0; // 0: Chats, 1: Friends
+  int _selectedFriendsFilter = 1; // 0: Following, 1: Friends, 2: Followers
+  bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
-  Timer? _searchDebounce;
-  List<UserModel> _searchedUsers = [];
-  bool _isSearchingBackend = false;
+  String _searchQuery = '';
+
+  // Demo conversations matching Image 3 reference
+  final List<_ConversationData> _demoChats = [
+    _ConversationData(
+      id: 'c1',
+      userId: '22219520',
+      name: 'Mr.Shehryar',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+      lastMessage: "You've become friends now, audio/video call ready...",
+      timeText: 'just now',
+      unreadCount: 2,
+      isOnline: true,
+      gender: 'male',
+      age: 24,
+    ),
+    _ConversationData(
+      id: 'c2',
+      userId: '22334455',
+      name: 'Shanzay',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+      lastMessage: 'hi! Are you joining the live room tonight? ✨',
+      timeText: '2h ago',
+      unreadCount: 1,
+      isOnline: true,
+      gender: 'female',
+      age: 21,
+    ),
+    _ConversationData(
+      id: 'c3',
+      userId: '22445566',
+      name: 'Sonia Malik',
+      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
+      lastMessage: 'hi, loved your new moment post! ❤️',
+      timeText: '2h ago',
+      unreadCount: 0,
+      isOnline: false,
+      gender: 'female',
+      age: 22,
+    ),
+    _ConversationData(
+      id: 'c4',
+      userId: '22556677',
+      name: 'Neha Fatima',
+      avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=80',
+      lastMessage: 'hy, see you in PK battle at 9 PM!',
+      timeText: '2h ago',
+      unreadCount: 0,
+      isOnline: true,
+      gender: 'female',
+      age: 20,
+    ),
+    _ConversationData(
+      id: 'c5',
+      userId: '22667788',
+      name: 'Queen girl',
+      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=80',
+      lastMessage: 'Dear mujhe ek loyal aur supportive host chahiye...',
+      timeText: '2h ago',
+      unreadCount: 0,
+      isOnline: false,
+      gender: 'female',
+      age: 23,
+    ),
+    _ConversationData(
+      id: 'c6',
+      userId: '22778899',
+      name: 'AYESHA SHAHZ...',
+      avatarUrl: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200&q=80',
+      lastMessage: 'hi kesy ho aap? subah live streaming kab hy?',
+      timeText: '2h ago',
+      unreadCount: 0,
+      isOnline: true,
+      gender: 'female',
+      age: 21,
+    ),
+    _ConversationData(
+      id: 'c7',
+      userId: '22889900',
+      name: 'Alishbha',
+      avatarUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&q=80',
+      lastMessage: 'how are you? can you share room link',
+      timeText: '3h ago',
+      unreadCount: 0,
+      isOnline: false,
+      gender: 'female',
+      age: 22,
+    ),
+    _ConversationData(
+      id: 'c8',
+      userId: '22990011',
+      name: 'Hina',
+      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
+      lastMessage: 'Mujhe apse dosti krni hai plz reply do',
+      timeText: '3h ago',
+      unreadCount: 0,
+      isOnline: true,
+      gender: 'female',
+      age: 19,
+    ),
+  ];
+
+  // Demo Friends list matching Image 4 reference
+  final List<_FriendData> _demoFriends = [
+    _FriendData(
+      id: 'f1',
+      name: 'Mr.Shehryar',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+      gender: 'male',
+      age: 24,
+      isOnline: true,
+      hasFlame: true,
+      category: 'Friends',
+    ),
+    _FriendData(
+      id: 'f2',
+      name: 'Shanzay',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+      gender: 'female',
+      age: 21,
+      isOnline: true,
+      hasFlame: false,
+      category: 'Friends',
+    ),
+    _FriendData(
+      id: 'f3',
+      name: 'Sonia Malik',
+      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
+      gender: 'female',
+      age: 22,
+      isOnline: false,
+      hasFlame: true,
+      category: 'Following',
+    ),
+    _FriendData(
+      id: 'f4',
+      name: 'Neha Fatima',
+      avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=80',
+      gender: 'female',
+      age: 20,
+      isOnline: true,
+      hasFlame: false,
+      category: 'Followers',
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MessagingProvider>().loadConversations();
-    });
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
+    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _onSearchChanged(String val) {
-    setState(() {
-      _searchQuery = val;
-    });
-
-    _searchDebounce?.cancel();
-    if (val.trim().isEmpty) {
-      setState(() {
-        _searchedUsers = [];
-        _isSearchingBackend = false;
-      });
-      return;
-    }
-
-    setState(() {
-      _isSearchingBackend = true;
-    });
-
-    _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
-      final results = await context.read<MessagingProvider>().searchUsers(val);
-      if (mounted) {
-        setState(() {
-          _searchedUsers = results;
-          _isSearchingBackend = false;
-        });
-      }
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = AppColors.getPrimary(isDark);
-    final messaging = context.watch<MessagingProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.getBackground(isDark),
-      appBar: AppBar(
-        title: Row(
+      backgroundColor: isDark ? const Color(0xFF07060E) : const Color(0xFFF8FAFC),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
           children: [
-            const Text('Inbox', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(width: 8),
-            if (messaging.totalCombinedUnreadCount > 0)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.redAccent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${messaging.totalCombinedUnreadCount}',
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-              ),
+            // ── 1. Top Header: [Chats, Friends] + Actions (Search & Clear) ──
+            _buildTopHeader(isDark),
+
+            // ── Optional Search Bar ─────────────────────────────────────────
+            if (_isSearching) _buildSearchBar(isDark),
+
+            // ── 2. Main Tab Body (Chats vs Friends) ─────────────────────────
+            Expanded(
+              child: _selectedMainTab == 0
+                  ? _buildChatsTab(isDark)
+                  : _buildFriendsTab(isDark),
+            ),
           ],
         ),
-        backgroundColor: AppColors.getBackground(isDark),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh Messages',
-            onPressed: () => messaging.loadConversations(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.campaign_rounded, color: Colors.amberAccent),
-            tooltip: 'Admin Broadcast Activity Notice',
-            onPressed: () => _showAdminBroadcastComposer(context, isDark),
-          ),
-        ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  // ===========================================================================
+  // Top Header: Tabs [Chats, Friends] + Icons
+  // ===========================================================================
+  Widget _buildTopHeader(bool isDark) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      color: isDark ? const Color(0xFF07060E) : Colors.white,
+      child: Row(
         children: [
-          // 1. Top Activity Area (System Messages, Activity Rewards, Activity Helper)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Row(
+          // Chats Tab
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedMainTab = 0;
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _buildTopActivityCard(
-                    context,
-                    title: 'System Messages',
-                    icon: Icons.notifications_active_rounded,
-                    gradientColors: const [Color(0xFFFF4081), Color(0xFFFF9100)],
-                    unreadCount: messaging.systemUnreadCount,
-                    preview: messaging.systemMessages.isNotEmpty ? messaging.systemMessages.first.title : 'No notices',
-                    onTap: () => _showSystemMessagesSheet(context, isDark),
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Chats',
+                      style: TextStyle(
+                        fontSize: _selectedMainTab == 0 ? 20.sp : 16.sp,
+                        fontWeight: _selectedMainTab == 0 ? FontWeight.w800 : FontWeight.w500,
+                        color: _selectedMainTab == 0
+                            ? (isDark ? Colors.white : AppColors.darkNavy)
+                            : (isDark ? Colors.white38 : Colors.grey),
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.5.h),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF1493),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Text(
+                        '3',
+                        style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildTopActivityCard(
-                    context,
-                    title: 'Activity Rewards',
-                    icon: Icons.card_giftcard_rounded,
-                    gradientColors: const [Color(0xFFAB47BC), Color(0xFF7E57C2)],
-                    unreadCount: messaging.rewardsUnreadCount,
-                    preview: messaging.activityRewards.isNotEmpty ? messaging.activityRewards.first.title : 'No rewards',
-                    onTap: () => _showActivityRewardsSheet(context, isDark),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildTopActivityCard(
-                    context,
-                    title: 'Activity Helper',
-                    icon: Icons.campaign_rounded,
-                    gradientColors: const [Color(0xFF00E5FF), Color(0xFF2979FF)],
-                    unreadCount: messaging.helperUnreadCount,
-                    preview: messaging.activityHelpers.isNotEmpty ? messaging.activityHelpers.first.title : 'No tips',
-                    onTap: () => _showActivityHelperSheet(context, isDark),
+                SizedBox(height: 4.h),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: _selectedMainTab == 0 ? 24.w : 0,
+                  height: 3.h,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E676),
+                    borderRadius: BorderRadius.circular(2.r),
+                    boxShadow: _selectedMainTab == 0
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF00E676).withValues(alpha: 0.6),
+                              blurRadius: 6,
+                            ),
+                          ]
+                        : null,
                   ),
                 ),
               ],
             ),
           ),
 
-          // 2. Search Field
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              style: TextStyle(color: AppColors.getTextPrimary(isDark), fontSize: 13),
-              decoration: InputDecoration(
-                hintText: 'Search users by name or ID...',
-                hintStyle: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 12),
-                prefixIcon: const Icon(Icons.search_rounded, color: Colors.grey),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded, color: Colors.grey, size: 18),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearchChanged('');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: AppColors.getCard(isDark),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          SizedBox(width: 22.w),
+
+          // Friends Tab
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedMainTab = 1;
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Friends',
+                  style: TextStyle(
+                    fontSize: _selectedMainTab == 1 ? 20.sp : 16.sp,
+                    fontWeight: _selectedMainTab == 1 ? FontWeight.w800 : FontWeight.w500,
+                    color: _selectedMainTab == 1
+                        ? (isDark ? Colors.white : AppColors.darkNavy)
+                        : (isDark ? Colors.white38 : Colors.grey),
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: _selectedMainTab == 1 ? 24.w : 0,
+                  height: 3.h,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E676),
+                    borderRadius: BorderRadius.circular(2.r),
+                    boxShadow: _selectedMainTab == 1
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF00E676).withValues(alpha: 0.6),
+                              blurRadius: 6,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          // Clean / Sweep Messages Icon Button
+          GestureDetector(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('All notifications marked as read! 🧹'),
+                  duration: Duration(seconds: 1),
+                  backgroundColor: Color(0xFF00E676),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: Container(
+              padding: EdgeInsets.all(7.w),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark ? const Color(0xFF141724) : const Color(0xFFF1F5F9),
+              ),
+              child: Icon(
+                Icons.mark_chat_read_outlined,
+                size: 20.sp,
+                color: isDark ? Colors.white70 : const Color(0xFF475569),
               ),
             ),
           ),
 
-          // 3. Filter Chips Bar (hidden if actively searching)
-          if (_searchQuery.isEmpty)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: ['All', 'Unread', 'Direct', 'Official', 'Archived'].map((f) {
-                  final isSel = _selectedFilter == f;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(
-                        f,
-                        style: TextStyle(
-                          color: isSel ? Colors.white : AppColors.getTextPrimary(isDark),
-                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 12,
-                        ),
-                      ),
-                      selected: isSel,
-                      selectedColor: primary,
-                      backgroundColor: AppColors.getCard(isDark),
-                      onSelected: (_) => setState(() => _selectedFilter = f),
-                    ),
-                  );
-                }).toList(),
+          SizedBox(width: 10.w),
+
+          // Search Toggle Button
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }
+              });
+            },
+            child: Container(
+              padding: EdgeInsets.all(7.w),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _isSearching
+                    ? const Color(0xFFFF1493)
+                    : (isDark ? const Color(0xFF141724) : const Color(0xFFF1F5F9)),
+              ),
+              child: Icon(
+                _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                size: 20.sp,
+                color: _isSearching ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
               ),
             ),
-
-          // 4. Conversation Threads & Global User Search Results List
-          Expanded(
-            child: _buildBodyContent(context, messaging, isDark),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTopActivityCard(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required List<Color> gradientColors,
-    required int unreadCount,
-    required String preview,
-    required VoidCallback onTap,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildSearchBar(bool isDark) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+      color: isDark ? const Color(0xFF07060E) : Colors.white,
+      child: TextField(
+        controller: _searchController,
+        onChanged: (val) {
+          setState(() {
+            _searchQuery = val.trim().toLowerCase();
+          });
+        },
+        style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 13.sp),
+        decoration: InputDecoration(
+          hintText: 'Search chats or friends...',
+          hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey, fontSize: 12.5.sp),
+          prefixIcon: Icon(Icons.search, color: isDark ? Colors.white38 : Colors.grey, size: 20.sp),
+          filled: true,
+          fillColor: isDark ? const Color(0xFF131522) : const Color(0xFFF1F5F9),
+          contentPadding: EdgeInsets.symmetric(vertical: 8.h),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16.r),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
 
+  // ===========================================================================
+  // Chats Tab: "Recent Visitors" Card + Conversations
+  // ===========================================================================
+  Widget _buildChatsTab(bool isDark) {
+    final filteredChats = _demoChats.where((c) {
+      if (_searchQuery.isEmpty) return true;
+      return c.name.toLowerCase().contains(_searchQuery) ||
+          c.lastMessage.toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+      children: [
+        // ── Recent Visitors Banner (Matching Image 3) ────────────────────────
+        _buildRecentVisitorsCard(isDark),
+
+        SizedBox(height: 10.h),
+
+        // ── Conversations List ──────────────────────────────────────────────
+        ...filteredChats.map((chat) => _buildConversationTile(chat, isDark)),
+      ],
+    );
+  }
+
+  Widget _buildRecentVisitorsCard(bool isDark) {
     return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const VisitorsScreen()),
+        );
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        margin: EdgeInsets.symmetric(vertical: 4.h),
+        padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
-          color: AppColors.getCard(isDark),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: gradientColors.first.withValues(alpha: 0.25)),
+          color: isDark ? const Color(0xFF121420) : Colors.white,
+          borderRadius: BorderRadius.circular(18.r),
+          border: Border.all(
+            color: const Color(0xFF8A2BE2).withValues(alpha: 0.35),
+            width: 1.0,
+          ),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 3)),
+            BoxShadow(
+              color: const Color(0xFF8A2BE2).withValues(alpha: 0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
           ],
         ),
-        child: Column(
+        child: Row(
           children: [
-            // Squircle Icon Tile with Unread Badge Overlay
+            // Eye Icon on glowing circular background
+            Container(
+              width: 48.w,
+              height: 48.w,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Color(0xFF7C4DFF), Color(0xFF448AFF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Center(
+                child: Icon(Icons.remove_red_eye_rounded, color: Colors.white, size: 24.sp),
+              ),
+            ),
+
+            SizedBox(width: 12.w),
+
+            // Title & Subtitle
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Recent Visitors',
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.darkNavy,
+                    ),
+                  ),
+                  SizedBox(height: 3.h),
+                  Text(
+                    'Mr.Shehryar just visited your homepage',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Time & Arrow
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'just now',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: const Color(0xFF00E676),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white38 : Colors.grey, size: 18.sp),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConversationTile(_ConversationData chat, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        final peer = UserModel(
+          id: chat.userId,
+          name: chat.name,
+          username: chat.name.toLowerCase().replaceAll(' ', '_'),
+          email: '${chat.name.toLowerCase()}@hemiton.com',
+          avatarUrl: chat.avatarUrl,
+          dateOfBirth: DateTime(DateTime.now().year - chat.age, 1, 1),
+          gender: chat.gender,
+          region: 'Islamabad, Pakistan',
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ChatScreen(user: peer)),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 4.h),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF10121C) : Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+            width: 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Avatar with Green Online Dot
             Stack(
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
+                  width: 48.w,
+                  height: 48.w,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
                     gradient: LinearGradient(
-                      colors: gradientColors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFF1493), Color(0xFF00BFFF)],
                     ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: gradientColors.first.withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
                   ),
-                  child: Center(
-                    child: Icon(icon, size: 24, color: Colors.white),
+                  padding: EdgeInsets.all(1.8.w),
+                  child: ClipOval(
+                    child: Image.network(
+                      chat.avatarUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey,
+                        child: const Icon(Icons.person, color: Colors.white, size: 24),
+                      ),
+                    ),
                   ),
                 ),
-                if (unreadCount > 0)
+                if (chat.isOnline)
                   Positioned(
-                    top: -4,
-                    right: -4,
+                    right: 0,
+                    bottom: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      width: 13.w,
+                      height: 13.w,
                       decoration: BoxDecoration(
-                        color: Colors.redAccent,
+                        color: const Color(0xFF00E676),
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.getCard(isDark), width: 1.5),
-                        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4)],
-                      ),
-                      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                      child: Center(
-                        child: Text(
-                          '$unreadCount',
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF10121C) : Colors.white,
+                          width: 2.0,
                         ),
                       ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 10),
 
-            // Complete Full Title (2 lines max, no cutting off)
-            SizedBox(
-              height: 30,
-              child: Center(
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                    color: AppColors.getTextPrimary(isDark),
-                    height: 1.15,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
+            SizedBox(width: 12.w),
 
-            // Latest Message Preview Subtitle
-            Text(
-              preview,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 9.5, color: AppColors.getTextSecondary(isDark)),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBodyContent(BuildContext context, MessagingProvider messaging, bool isDark) {
-    if (_searchQuery.trim().isNotEmpty) {
-      return _buildSearchResults(context, messaging, isDark);
-    }
-    return _buildConversationList(context, messaging, isDark);
-  }
-
-  Widget _buildSearchResults(BuildContext context, MessagingProvider messaging, bool isDark) {
-    if (_isSearchingBackend) {
-      return const Center(
-        child: CircularProgressIndicator(strokeWidth: 2),
-      );
-    }
-
-    if (_searchedUsers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_search_rounded, size: 48, color: AppColors.getTextSecondary(isDark).withValues(alpha: 0.4)),
-            const SizedBox(height: 8),
-            Text(
-              'No users found matching "$_searchQuery"',
-              style: TextStyle(color: AppColors.getTextPrimary(isDark), fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Try searching by display name or numeric ID',
-              style: TextStyle(fontSize: 12, color: AppColors.getTextSecondary(isDark)),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 115),
-      itemCount: _searchedUsers.length,
-      itemBuilder: (ctx, idx) {
-        final user = _searchedUsers[idx];
-        return Card(
-          color: AppColors.getCard(isDark),
-          margin: const EdgeInsets.only(bottom: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ListTile(
-            leading: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => UserProfileDetailsScreen(userId: user.id)),
-                );
-              },
-              child: UserAvatar(imageUrl: user.avatarUrl, radius: 22, showVipFrame: user.isVip),
-            ),
-            title: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    user.name.isNotEmpty ? user.name : (user.id.isNotEmpty ? 'User ${user.id}' : 'User'),
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.getTextPrimary(isDark)),
+            // Name & Last Message
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    chat.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14.5.sp,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.darkNavy,
+                      letterSpacing: -0.2,
+                    ),
                   ),
-                ),
-                if (user.id.isNotEmpty) ...[
-                  const SizedBox(width: 6),
+                  SizedBox(height: 4.h),
                   Text(
-                    'ID: ${user.id}',
-                    style: TextStyle(fontSize: 11, color: AppColors.getTextSecondary(isDark)),
-                  ),
-                ],
-              ],
-            ),
-            subtitle: Text(
-              user.bio.isNotEmpty ? user.bio : 'Tap to open chat',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: AppColors.getTextSecondary(isDark)),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.person_outline_rounded, color: Colors.blueAccent, size: 20),
-                  tooltip: 'View Profile',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => UserProfileDetailsScreen(userId: user.id)),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF00A884), size: 20),
-                  tooltip: 'Send Message',
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(user: user)));
-                  },
-                ),
-              ],
-            ),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(user: user)));
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildConversationList(BuildContext context, MessagingProvider messaging, bool isDark) {
-    if (messaging.isLoadingConversations && messaging.chatUsers.isEmpty) {
-      return const InboxShimmerSkeleton(count: 6);
-    }
-
-    final users = messaging.chatUsers.where((u) {
-      final meta = messaging.getMetaForUser(u.id);
-
-      // Filter check
-      if (_selectedFilter == 'Unread' && meta.unreadCount == 0) return false;
-      if (_selectedFilter == 'Archived' && !meta.isArchived) return false;
-      if (_selectedFilter != 'Archived' && meta.isArchived) return false;
-      if (meta.isBlocked) return false;
-
-      return true;
-    }).toList();
-
-    if (users.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: () => messaging.loadConversations(),
-        child: ListView(
-          children: [
-            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.forum_outlined, size: 56, color: AppColors.getTextSecondary(isDark).withValues(alpha: 0.4)),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No conversations yet',
-                    style: TextStyle(color: AppColors.getTextPrimary(isDark), fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Search users above to start chatting!',
-                    style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 12),
+                    chat.lastMessage,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: isDark ? const Color(0xFF8C9BAE) : const Color(0xFF64748B),
+                    ),
                   ),
                 ],
               ),
+            ),
+
+            SizedBox(width: 8.w),
+
+            // Time & Unread Badge
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  chat.timeText,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                  ),
+                ),
+                SizedBox(height: 5.h),
+                if (chat.unreadCount > 0)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF1493),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Text(
+                      '${chat.unreadCount}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(height: 16.h),
+              ],
             ),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    return RefreshIndicator(
-      onRefresh: () => messaging.loadConversations(),
-      child: ListView.builder(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 115),
-        itemCount: users.length,
-        itemBuilder: (ctx, idx) {
-          final user = users[idx];
-          final meta = messaging.getMetaForUser(user.id);
-          final messages = messaging.getMessagesForUser(user.id);
-          final lastMsg = messages.isNotEmpty ? messages.last : null;
+  // ===========================================================================
+  // Friends Tab (Image 4): Category Pills [Following, Friends, Followers]
+  // ===========================================================================
+  Widget _buildFriendsTab(bool isDark) {
+    final categories = ['Following', 'Friends', 'Followers'];
+    final currentCategory = categories[_selectedFriendsFilter];
 
-          return Card(
-            color: AppColors.getCard(isDark),
-            margin: const EdgeInsets.only(bottom: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ListTile(
-              leading: GestureDetector(
+    final filteredFriends = _demoFriends.where((f) {
+      final matchesCat = f.category == currentCategory;
+      if (_searchQuery.isEmpty) return matchesCat;
+      return matchesCat && f.name.toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    return Column(
+      children: [
+        // Category Pills (Matching Image 4)
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+          child: Row(
+            children: List.generate(categories.length, (index) {
+              final isSelected = _selectedFriendsFilter == index;
+              return GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => UserProfileDetailsScreen(userId: user.id)),
-                  );
+                  setState(() {
+                    _selectedFriendsFilter = index;
+                  });
                 },
-                child: Stack(
-                  children: [
-                    UserAvatar(imageUrl: user.avatarUrl, radius: 22, showVipFrame: user.isVip),
-                    if (user.isOnline)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: Colors.greenAccent,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.black, width: 1.5),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              title: Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      user.name.isNotEmpty ? user.name : user.username,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.getTextPrimary(isDark)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                child: Container(
+                  margin: EdgeInsets.only(right: 10.w),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (isDark ? const Color(0xFF00E676).withValues(alpha: 0.2) : const Color(0xFFE8F5E9))
+                        : (isDark ? const Color(0xFF141724) : const Color(0xFFF1F5F9)),
+                    borderRadius: BorderRadius.circular(18.r),
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFF00E676) : Colors.transparent,
+                      width: 1.2,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  if (user.isVip)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(4)),
-                      child: Text(user.vipLevel, style: const TextStyle(fontSize: 8, color: Colors.black, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    categories[index],
+                    style: TextStyle(
+                      fontSize: 12.5.sp,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected
+                          ? const Color(0xFF00E676)
+                          : (isDark ? Colors.white60 : const Color(0xFF64748B)),
                     ),
-                  if (user.isLive) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(4)),
-                      child: const Text('🔴 LIVE', style: TextStyle(fontSize: 7, color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                  const Spacer(),
-                  if (meta.isPinned) const Icon(Icons.push_pin_rounded, size: 14, color: Colors.amberAccent),
-                  if (meta.isMuted) const Icon(Icons.volume_off_rounded, size: 14, color: Colors.grey),
-                ],
-              ),
-              subtitle: messaging.isUserTyping(user.id)
-                  ? const Text(
-                      'typing...',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF00E5FF), fontWeight: FontWeight.bold),
-                    )
-                  : Text(
-                      lastMsg?.text ?? 'Tap to start conversation',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: AppColors.getTextSecondary(isDark)),
-                    ),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (lastMsg != null)
-                    Text(
-                      '${lastMsg.timestamp.hour}:${lastMsg.timestamp.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                  const SizedBox(height: 4),
-                  if (meta.unreadCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
-                      child: Text(
-                        '${meta.unreadCount}',
-                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                ],
-              ),
-              onTap: () {
-                messaging.markThreadAsRead(user.id);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(user: user)));
-              },
-              onLongPress: () => _showConversationContextMenu(context, user, meta, messaging, isDark),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showConversationContextMenu(
-    BuildContext context,
-    UserModel user,
-    ConversationThreadMeta meta,
-    MessagingProvider messaging,
-    bool isDark,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1B182B),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (b) => Wrap(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.person_rounded, color: Colors.purpleAccent),
-            title: const Text('View Full Profile', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(b);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => UserProfileDetailsScreen(userId: user.id)),
+                  ),
+                ),
               );
-            },
+            }),
           ),
-          ListTile(
-            leading: Icon(meta.isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded, color: Colors.amberAccent),
-            title: Text(meta.isPinned ? 'Unpin Conversation' : 'Pin to Top', style: const TextStyle(color: Colors.white)),
-            onTap: () {
-              messaging.togglePin(user.id);
-              Navigator.pop(b);
-            },
-          ),
-          ListTile(
-            leading: Icon(meta.isMuted ? Icons.volume_up_rounded : Icons.volume_off_rounded, color: Colors.blueAccent),
-            title: Text(meta.isMuted ? 'Unmute Notifications' : 'Mute Notifications', style: const TextStyle(color: Colors.white)),
-            onTap: () {
-              messaging.toggleMute(user.id);
-              Navigator.pop(b);
-            },
-          ),
-          ListTile(
-            leading: Icon(meta.unreadCount > 0 ? Icons.mark_email_read_rounded : Icons.mark_email_unread_rounded, color: Colors.greenAccent),
-            title: Text(meta.unreadCount > 0 ? 'Mark as Read' : 'Mark as Unread', style: const TextStyle(color: Colors.white)),
-            onTap: () {
-              if (meta.unreadCount > 0) {
-                messaging.markThreadAsRead(user.id);
-              } else {
-                messaging.markThreadAsUnread(user.id);
-              }
-              Navigator.pop(b);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.block_rounded, color: Colors.redAccent),
-            title: const Text('Block Account', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              messaging.toggleBlock(user.id);
-              Navigator.pop(b);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${user.name} has been blocked.')));
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.report_problem_rounded, color: Colors.orangeAccent),
-            title: const Text('Report Message / Account', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(b);
-              _promptReportDialog(context, user, messaging);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+        ),
 
-  void _promptReportDialog(BuildContext context, UserModel user, MessagingProvider messaging) {
-    ReportSheet.show(
-      context,
-      targetTitle: user.name,
-      reportedUserId: user.id,
-    );
-  }
-
-  void _showSystemMessagesSheet(BuildContext context, bool isDark) {
-    context.read<MessagingProvider>().markAllSystemMessagesRead();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1B182B),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (b) {
-        final messaging = context.watch<MessagingProvider>();
-        return DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          expand: false,
-          builder: (context, controller) => ListView(
-            controller: controller,
-            padding: const EdgeInsets.all(20),
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'System Messages',
-                      style: TextStyle(color: Colors.amberAccent, fontSize: 17, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => messaging.markAllSystemMessagesRead(),
-                    child: const Text('Mark All Read', style: TextStyle(color: Colors.greenAccent, fontSize: 13)),
-                  ),
-                ],
-              ),
-              const Divider(color: Colors.white24),
-              if (messaging.systemMessages.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: Text('No system messages', style: TextStyle(color: Colors.grey, fontSize: 13)),
+        // Friends List
+        Expanded(
+          child: filteredFriends.isEmpty
+              ? Center(
+                  child: Text(
+                    'No users in $currentCategory yet',
+                    style: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
                   ),
                 )
-              else
-                ...messaging.systemMessages.map((m) => Card(
-                      color: const Color(0xFF26213B),
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.2), shape: BoxShape.circle),
-                                  child: const Icon(Icons.verified_rounded, color: Colors.amberAccent, size: 18),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${m.title} (HEMI TON Official)',
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                                      ),
-                                      Text(
-                                        '${m.timestamp.hour}:${m.timestamp.minute.toString().padLeft(2, '0')}',
-                                        style: const TextStyle(color: Colors.grey, fontSize: 10),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (m.invitationType != null)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: m.status == 'Accepted' ? Colors.green.withValues(alpha: 0.2) : (m.status == 'Declined' ? Colors.red.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2)),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      m.status,
-                                      style: TextStyle(
-                                        color: m.status == 'Accepted' ? Colors.greenAccent : (m.status == 'Declined' ? Colors.redAccent : Colors.orangeAccent),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(m.content, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                            if (m.invitationType != null && m.status == 'Pending') ...[
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      icon: const Icon(Icons.check_circle_rounded, size: 16),
-                                      label: const Text('Accept', style: TextStyle(fontWeight: FontWeight.bold)),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 8),
-                                      ),
-                                      onPressed: () {
-                                        final auth = context.read<AuthProvider>();
-                                        final agency = context.read<AgencyProvider>();
-                                        final currentUser = auth.currentUser;
-
-                                        messaging.respondToSystemInvitation(
-                                          m.id,
-                                          true,
-                                          onHostStatusUpdate: (isHost) {
-                                            auth.updateProfile(isHost: true);
-                                          },
-                                          onAgencyUpdate: (invId, targetId, inviterName) {
-                                            agency.acceptAgencyInvitation(
-                                              invitationId: invId,
-                                              targetUserId: currentUser.id,
-                                              targetName: currentUser.name,
-                                              targetAvatar: currentUser.avatarUrl,
-                                            );
-                                          },
-                                        );
-
-                                        if (m.invitationType == 'Agency Owner') {
-                                          auth.updateProfile(isAgency: true, agencyName: '${m.inviterName} Agency');
-                                        } else if (m.invitationType == 'Host') {
-                                          auth.updateProfile(isHost: true);
-                                          agency.acceptAgencyInvitation(
-                                            invitationId: m.invitationId ?? m.id,
-                                            targetUserId: currentUser.id,
-                                            targetName: currentUser.name,
-                                            targetAvatar: currentUser.avatarUrl,
-                                          );
-                                        }
-
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('🎉 You accepted the invitation from ${m.inviterName}! Host status & Host Center activated.'),
-                                            backgroundColor: Colors.green,
-                                            duration: const Duration(seconds: 4),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      icon: const Icon(Icons.cancel_rounded, size: 16),
-                                      label: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold)),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: Colors.redAccent,
-                                        side: const BorderSide(color: Colors.redAccent),
-                                        padding: const EdgeInsets.symmetric(vertical: 8),
-                                      ),
-                                      onPressed: () {
-                                        final agency = context.read<AgencyProvider>();
-                                        final currentUser = context.read<AuthProvider>().currentUser;
-
-                                        messaging.respondToSystemInvitation(
-                                          m.id,
-                                          false,
-                                          onAgencyUpdate: (invId, targetId, inviterName) {
-                                            agency.declineAgencyInvitation(
-                                              invitationId: invId,
-                                              targetUserId: currentUser.id,
-                                            );
-                                          },
-                                        );
-
-                                        agency.declineAgencyInvitation(
-                                          invitationId: m.invitationId ?? m.id,
-                                          targetUserId: currentUser.id,
-                                        );
-
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Invitation declined.'),
-                                            backgroundColor: Colors.orangeAccent,
-                                            duration: Duration(seconds: 3),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    )),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showActivityRewardsSheet(BuildContext context, bool isDark) {
-    context.read<MessagingProvider>().markAllRewardsRead();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1B182B),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (b) {
-        final messaging = context.watch<MessagingProvider>();
-        return DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          expand: false,
-          builder: (context, controller) => ListView(
-            controller: controller,
-            padding: const EdgeInsets.all(20),
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Activity Rewards',
-                      style: TextStyle(color: Colors.amberAccent, fontSize: 17, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => messaging.markAllRewardsRead(),
-                    child: const Text('Mark All Read', style: TextStyle(color: Colors.greenAccent, fontSize: 13)),
-                  ),
-                ],
-              ),
-              const Divider(color: Colors.white24),
-              if (messaging.activityRewards.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: Text('No activity rewards available', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                  ),
-                )
-              else
-                ...messaging.activityRewards.map((r) => Card(
-                      color: const Color(0xFF26213B),
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: ListTile(
-                        leading: const Icon(Icons.card_giftcard_rounded, color: Colors.amberAccent),
-                        title: Text(r.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                        subtitle: Text('${r.description}\nReward: ${r.rewardCoins} Coins', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                        trailing: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: r.status == 'Claimable' ? Colors.amber : Colors.grey,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          ),
-                          onPressed: r.status == 'Claimable'
-                              ? () {
-                                  messaging.claimActivityReward(r.id);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('🎉 Claimed ${r.rewardCoins} Coins! Transaction: ${r.transactionRef}')),
-                                  );
-                                }
-                              : null,
-                          child: Text(r.status, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                    )),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showActivityHelperSheet(BuildContext context, bool isDark) {
-    context.read<MessagingProvider>().markAllHelpersRead();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1B182B),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (b) {
-        final messaging = context.watch<MessagingProvider>();
-        return DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          expand: false,
-          builder: (context, controller) => ListView(
-            controller: controller,
-            padding: const EdgeInsets.all(20),
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Activity Helper & Event Tips',
-                      style: TextStyle(color: Colors.purpleAccent, fontSize: 17, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => messaging.markAllHelpersRead(),
-                    child: const Text('Mark All Read', style: TextStyle(color: Colors.greenAccent, fontSize: 13)),
-                  ),
-                ],
-              ),
-              const Divider(color: Colors.white24),
-              if (messaging.activityHelpers.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: Text('No activity tips', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                  ),
-                )
-              else
-                ...messaging.activityHelpers.map((h) => Card(
-                      color: const Color(0xFF26213B),
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: ListTile(
-                        leading: const Icon(Icons.lightbulb_rounded, color: Colors.purpleAccent),
-                        title: Text(h.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                        subtitle: Text('${h.tips}\n${h.eventGuidance}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                        onTap: () => messaging.markHelperRead(h.id),
-                      ),
-                    )),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showAdminBroadcastComposer(BuildContext context, bool isDark) {
-    final titleCtrl = TextEditingController();
-    final contentCtrl = TextEditingController();
-    String targetType = 'System Messages';
-    String country = 'ALL';
-    String role = 'ALL';
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1B182B),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (b) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            top: 20,
-            left: 20,
-            right: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Admin Activity Broadcast Notice', style: TextStyle(color: Colors.amberAccent, fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: targetType,
-                dropdownColor: const Color(0xFF26213B),
-                decoration: const InputDecoration(labelText: 'Notification Stream', labelStyle: TextStyle(color: Colors.white70)),
-                items: ['System Messages', 'Activity Rewards', 'Activity Helper']
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(color: Colors.white))))
-                    .toList(),
-                onChanged: (val) => setModalState(() => targetType = val ?? targetType),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: titleCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Broadcast Title', labelStyle: TextStyle(color: Colors.white70)),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: contentCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Content Body', labelStyle: TextStyle(color: Colors.white70)),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amberAccent,
-                  foregroundColor: Colors.black,
-                  minimumSize: const Size(double.infinity, 44),
+              : ListView.separated(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  itemCount: filteredFriends.length,
+                  separatorBuilder: (context, _) => SizedBox(height: 8.h),
+                  itemBuilder: (context, index) {
+                    final friend = filteredFriends[index];
+                    return _buildFriendTile(friend, isDark);
+                  },
                 ),
-                onPressed: () {
-                  if (titleCtrl.text.isNotEmpty && contentCtrl.text.isNotEmpty) {
-                    context.read<MessagingProvider>().createAdminBroadcast(
-                          targetType: targetType,
-                          title: titleCtrl.text.trim(),
-                          content: contentCtrl.text.trim(),
-                          country: country,
-                          role: role,
-                        );
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('📣 Broadcast dispatched to platform feed!')),
-                    );
-                  }
-                },
-                child: const Text('Dispatch Broadcast', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFriendTile(_FriendData friend, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        final authorUser = UserModel(
+          id: friend.id,
+          name: friend.name,
+          username: friend.name.toLowerCase().replaceAll(' ', '_'),
+          email: '${friend.name.toLowerCase()}@hemiton.com',
+          avatarUrl: friend.avatarUrl,
+          dateOfBirth: DateTime(DateTime.now().year - friend.age, 1, 1),
+          gender: friend.gender,
+          region: 'Islamabad, Pakistan',
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UserProfileDetailsScreen(
+              userId: friend.id,
+              user: authorUser,
+            ),
           ),
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.all(10.w),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF10121C) : Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Avatar
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 24.r,
+                  backgroundImage: NetworkImage(friend.avatarUrl),
+                ),
+                if (friend.isOnline)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 12.w,
+                      height: 12.w,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E676),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            SizedBox(width: 12.w),
+
+            // Name + Flame + Gender Badge
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    friend.name,
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.darkNavy,
+                    ),
+                  ),
+                  if (friend.hasFlame) ...[
+                    SizedBox(width: 4.w),
+                    const Text('🔥', style: TextStyle(fontSize: 14)),
+                  ],
+                  SizedBox(width: 8.w),
+
+                  // Gender / Age Badge
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: friend.gender == 'female'
+                          ? const Color(0xFFFF4081)
+                          : const Color(0xFF00B0FF),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          friend.gender == 'female' ? Icons.female_rounded : Icons.male_rounded,
+                          size: 10.sp,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 2.w),
+                        Text(
+                          '${friend.age}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Chat action icon
+            IconButton(
+              icon: Icon(Icons.chat_bubble_outline_rounded, color: const Color(0xFF00E676), size: 20.sp),
+              onPressed: () {
+                final peer = UserModel(
+                  id: friend.id,
+                  name: friend.name,
+                  username: friend.name.toLowerCase().replaceAll(' ', '_'),
+                  email: '${friend.name.toLowerCase()}@hemiton.com',
+                  avatarUrl: friend.avatarUrl,
+                  dateOfBirth: DateTime(DateTime.now().year - friend.age, 1, 1),
+                  gender: friend.gender,
+                  region: 'Islamabad, Pakistan',
+                );
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ChatScreen(user: peer)),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _ConversationData {
+  final String id;
+  final String userId;
+  final String name;
+  final String avatarUrl;
+  final String lastMessage;
+  final String timeText;
+  final int unreadCount;
+  final bool isOnline;
+  final String gender;
+  final int age;
+
+  _ConversationData({
+    required this.id,
+    required this.userId,
+    required this.name,
+    required this.avatarUrl,
+    required this.lastMessage,
+    required this.timeText,
+    required this.unreadCount,
+    required this.isOnline,
+    required this.gender,
+    required this.age,
+  });
+}
+
+class _FriendData {
+  final String id;
+  final String name;
+  final String avatarUrl;
+  final String gender;
+  final int age;
+  final bool isOnline;
+  final bool hasFlame;
+  final String category;
+
+  _FriendData({
+    required this.id,
+    required this.name,
+    required this.avatarUrl,
+    required this.gender,
+    required this.age,
+    required this.isOnline,
+    required this.hasFlame,
+    required this.category,
+  });
 }

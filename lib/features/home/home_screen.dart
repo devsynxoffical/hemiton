@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     },
                     behavior: HitTestBehavior.opaque,
                     child: Container(
-                      margin: EdgeInsets.only(right: 14.w),
+                      margin: EdgeInsets.only(right: index == _headerTabs.length - 1 ? 8.w : 12.w),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           Text(
                             _headerTabs[index],
                             style: TextStyle(
-                              fontSize: isSelected ? 16.5.sp : 14.sp,
+                              fontSize: isSelected ? 15.sp : 13.5.sp,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                               color: isSelected
                                   ? (isDark ? Colors.white : AppColors.darkNavy)
@@ -110,13 +110,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               letterSpacing: -0.2,
                             ),
                           ),
-                          SizedBox(height: 4.h),
+                          SizedBox(height: 3.h),
                           // Active Pink Underline Indicator
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             curve: Curves.easeOut,
-                            width: isSelected ? 22.w : 0,
-                            height: 3.h,
+                            width: isSelected ? 20.w : 0,
+                            height: 2.5.h,
                             decoration: BoxDecoration(
                               color: isSelected ? AppColors.pink : Colors.transparent,
                               borderRadius: BorderRadius.circular(2.r),
@@ -139,6 +139,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
+          SizedBox(width: 6.w),
 
           // Search Icon Button
           GestureDetector(
@@ -173,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 );
               },
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF00E676), Color(0xFF00B0FF)],
@@ -190,13 +191,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.near_me_rounded, color: Colors.white, size: 14.sp),
-                    SizedBox(width: 4.w),
+                    Icon(Icons.near_me_rounded, color: Colors.white, size: 13.sp),
+                    SizedBox(width: 3.w),
                     Text(
                       'Post',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 12.5.sp,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

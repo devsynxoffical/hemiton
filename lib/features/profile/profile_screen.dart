@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -19,17 +20,20 @@ import '../svip/svip_center_screen.dart';
 import 'visitors_screen.dart';
 import '../../widgets/user_list_sheet.dart';
 import 'modules/invite_code_screen.dart';
+import '../social/create_post_screen.dart';
+import '../social/upload_video_screen.dart';
+import '../social/camera_recorder_screen.dart';
 
 /// HEMI TON Profile ("Me") Screen
-/// Matches the exact reference design from Image 4:
-/// - Ocean/Boat Scenic Cover with Dark Vignette
-/// - Hexagonal Settings Gear Icon (Top Right)
-/// - User Avatar with Double Neon Ring (Magenta / Cyan) + Camera Badge
-/// - Username ("danial"), Gender/Age/Height ("♂ 21 • 173cm >"), ID ("ID: 22773864") + "Copy" Button
+/// Features:
+/// - User Uploadable Cover Image (Sea image removed; customizable via camera button)
+/// - Crystal-Clear High-Contrast Username & ID on frosted glass with strong text shadow
 /// - 3 Stat Capsules ("Following", "Followers", "Visits") with Neon Glowing Borders
 /// - Golden Metallic SVIP Card ("Exclusive for top clients.") + "GO" Golden Pill
 /// - "Gold coins" Capsule with "Bonus" Red Pill & Balance
-/// - 2x2 Feature Grid: [Store, Diamonds, Personal Details, Share Invitation] (ONLY these 4 features)
+/// - 2x2 Feature Grid: [Store, Diamonds, Personal Details, Share Invitation]
+/// - User's Uploaded Posts Grid below 2x2 grid (Instagram / TikTok aesthetic)
+/// - Floating Action Button (+) to post photos, videos, or record
 /// - Supports Pure Dark Mode & Light Mode
 class ProfileScreen extends StatefulWidget {
   final UserModel? user;
@@ -40,6 +44,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  String? _customCoverPath;
+
   @override
   void initState() {
     super.initState();
@@ -83,6 +89,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     }
+  }
+
+  Future<void> _pickCoverImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 1200,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      if (pickedFile != null && mounted) {
+        setState(() {
+          _customCoverPath = pickedFile.path;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎉 Cover image updated successfully!'),
+            backgroundColor: Color(0xFF00E676),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update cover: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showCoverPickerOptions(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF13151D) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  'Upload Custom Cover',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.darkNavy,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_rounded, color: Color(0xFFFF1493)),
+                  title: Text('Take Photo', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickCoverImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_rounded, color: Color(0xFF00E5FF)),
+                  title: Text('Choose from Gallery', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickCoverImage(ImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showAvatarPickerOptions(BuildContext context, bool isDark) {
@@ -141,6 +237,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showCreatePostOptions(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF161928) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+                SizedBox(height: 14.h),
+                Text(
+                  'Create New Post / Moment ✨',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.darkNavy,
+                  ),
+                ),
+                SizedBox(height: 18.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildCreatePostItem(
+                      ctx,
+                      icon: Icons.photo_library_rounded,
+                      label: 'Photo Post',
+                      gradient: const [Color(0xFFFF1493), Color(0xFF8A2BE2)],
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+                        );
+                      },
+                    ),
+                    _buildCreatePostItem(
+                      ctx,
+                      icon: Icons.videocam_rounded,
+                      label: 'Record Video',
+                      gradient: const [Color(0xFF00E5FF), Color(0xFF0072FF)],
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CameraRecorderScreen()),
+                        );
+                      },
+                    ),
+                    _buildCreatePostItem(
+                      ctx,
+                      icon: Icons.upload_file_rounded,
+                      label: 'Upload Video',
+                      gradient: const [Color(0xFF00E676), Color(0xFF00B0FF)],
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const UploadVideoScreen()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCreatePostItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required List<Color> gradient,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 58.w,
+            height: 58.w,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: gradient),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: gradient.first.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 26.sp),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
@@ -160,9 +382,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF07060E) : const Color(0xFFF6F8FB),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showCreatePostOptions(context, isDark),
+        backgroundColor: Colors.transparent,
+        elevation: 6,
+        child: Container(
+          width: 56.w,
+          height: 56.w,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF1493), Color(0xFF8A2BE2), Color(0xFF00BFFF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF1493).withValues(alpha: 0.5),
+                blurRadius: 14,
+                spreadRadius: 1,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(Icons.add_rounded, color: Colors.white, size: 32),
+          ),
+        ),
+      ),
       body: Stack(
         children: [
-          // ── 1. Top Cover: Boat on Water Scenic Background ─────────────────
+          // ── 1. Top Cover: User Uploadable Cover Background ─────────────────
           Positioned(
             top: 0,
             left: 0,
@@ -171,27 +421,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(
-                  'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&q=85',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFF90CAF9),
+                if (_customCoverPath != null)
+                  Image.file(File(_customCoverPath!), fit: BoxFit.cover)
+                else
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF1E1035), Color(0xFF0C1028), Color(0xFF07060E)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
                   ),
-                ),
-                // Gradient dark vignette at top and bottom of cover
+
+                // Strong dark gradient overlay for 100% crystal-clear text contrast
                 DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.4),
-                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.55),
+                        Colors.black.withValues(alpha: 0.3),
                         isDark
-                            ? const Color(0xFF07060E).withValues(alpha: 0.95)
-                            : const Color(0xFFF6F8FB).withValues(alpha: 0.95),
+                            ? const Color(0xFF07060E).withValues(alpha: 0.98)
+                            : const Color(0xFFF6F8FB).withValues(alpha: 0.98),
                       ],
-                      stops: const [0.0, 0.45, 1.0],
+                      stops: const [0.0, 0.5, 1.0],
                     ),
                   ),
                 ),
@@ -207,33 +463,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top Settings Icon (Hexagon gear on right, matching Image 4)
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                        );
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(7.w),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
-                            width: 1.2,
+                  // Top Row: Upload Cover Button (Left) & Settings Icon (Right)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Upload Cover Button
+                      GestureDetector(
+                        onTap: () => _showCoverPickerOptions(context, isDark),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.camera_alt_outlined, color: Colors.white, size: 14.sp),
+                              SizedBox(width: 4.w),
+                              Text(
+                                'Cover',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Icon(
-                          Icons.settings_outlined,
-                          color: const Color(0xFF00E5FF),
-                          size: 20.w,
+                      ),
+
+                      // Settings Icon (Hexagon gear on right)
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                          );
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(7.w),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.settings_outlined,
+                            color: const Color(0xFF00E5FF),
+                            size: 20.w,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
 
                   SizedBox(height: 12.h),
@@ -241,12 +531,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ── User Header: Avatar, Name, Gender, ID & Copy Button ─────
                   _buildUserHeader(context, isDark, user, displayName, displayId, age, avatarUrl),
 
-                  SizedBox(height: 22.h),
+                  SizedBox(height: 20.h),
 
                   // ── 3 Stat Capsules: Following, Followers, Visits ──────────
                   _buildStatCapsules(context, isDark, user),
 
-                  SizedBox(height: 18.h),
+                  SizedBox(height: 16.h),
 
                   // ── SVIP Metallic Golden Banner ────────────────────────────
                   _buildSvipBanner(context),
@@ -261,7 +551,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ── 2x2 Feature Grid (Store, Diamonds, Personal Details, Share) ─
                   _buildTwoByTwoFeatureGrid(context, isDark, user),
 
-                  SizedBox(height: 40.h),
+                  SizedBox(height: 22.h),
+
+                  // ── User's Uploaded Posts Grid (Instagram / TikTok aesthetic) ─
+                  _buildUserPostsSection(context, isDark),
+
+                  SizedBox(height: 70.h),
                 ],
               ),
             ),
@@ -272,7 +567,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ===========================================================================
-  // User Header (Avatar with Neon Ring, Name, Gender/Height, ID & Copy)
+  // User Header (High-contrast, crystal-clear text visibility for Name & ID)
   // ===========================================================================
   Widget _buildUserHeader(
     BuildContext context,
@@ -283,196 +578,227 @@ class _ProfileScreenState extends State<ProfileScreen> {
     int age,
     String avatarUrl,
   ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Avatar with Double Neon Ring (Magenta & Cyan) + Camera Badge
-        GestureDetector(
-          onTap: () => _showAvatarPickerOptions(context, isDark),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 78.w,
-                height: 78.w,
-                padding: EdgeInsets.all(2.5.w),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFF1493), Color(0xFF00E5FF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFF1493).withValues(alpha: 0.6),
-                      blurRadius: 16,
-                      spreadRadius: 2,
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
-                      blurRadius: 14,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-                child: Container(
-                  padding: EdgeInsets.all(2.w),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black,
-                  ),
-                  child: ClipOval(
-                    child: Image.network(
-                      avatarUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFF1E2235),
-                        child: Icon(Icons.person, color: Colors.white70, size: 40.w),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Camera Badge on bottom right (cyan circle with camera icon)
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 24.w,
-                  height: 24.w,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161E30),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF00E5FF), width: 1.5),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.camera_alt_outlined,
-                      color: const Color(0xFF00E5FF),
-                      size: 13.sp,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.35)
+            : Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.05),
+          width: 1.0,
         ),
-
-        SizedBox(width: 14.w),
-
-        // User Info Details: Name, Gender/Height, ID & Copy
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Username (bold danial)
-              Text(
-                displayName,
-                style: TextStyle(
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : AppColors.darkNavy,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              SizedBox(height: 4.h),
-
-              // Gender, Age & Height ("♂ 21 • 173cm >")
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                  );
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.male_rounded,
-                      color: const Color(0xFF00E5FF),
-                      size: 16.sp,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Avatar with Double Neon Ring (Magenta & Cyan) + Camera Badge
+          GestureDetector(
+            onTap: () => _showAvatarPickerOptions(context, isDark),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 76.w,
+                  height: 76.w,
+                  padding: EdgeInsets.all(2.5.w),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF1493), Color(0xFF00E5FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    SizedBox(width: 3.w),
-                    Text(
-                      '$age • 173cm',
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.white70 : const Color(0xFF475569),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF1493).withValues(alpha: 0.6),
+                        blurRadius: 14,
+                        spreadRadius: 1,
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Container(
+                    padding: EdgeInsets.all(2.w),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black,
+                    ),
+                    child: ClipOval(
+                      child: Image.network(
+                        avatarUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: const Color(0xFF1E2235),
+                          child: Icon(Icons.person, color: Colors.white70, size: 38.w),
+                        ),
                       ),
                     ),
-                    SizedBox(width: 4.w),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: isDark ? Colors.white38 : Colors.grey,
-                      size: 18.sp,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              SizedBox(height: 6.h),
 
-              // ID Row + Cyan/Purple Glowing "Copy" Pill Button
-              Row(
-                children: [
-                  Text(
-                    'ID: $displayId',
-                    style: TextStyle(
-                      fontSize: 12.5.sp,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                // Camera Badge on bottom right
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 24.w,
+                    height: 24.w,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF161E30),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF00E5FF), width: 1.5),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.camera_alt_outlined,
+                        color: const Color(0xFF00E5FF),
+                        size: 13.sp,
+                      ),
                     ),
                   ),
-                  SizedBox(width: 8.w),
-                  GestureDetector(
-                    onTap: () {
-                      Clipboard.setData(ClipboardData(text: displayId));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('ID $displayId copied to clipboard! 📋'),
-                          backgroundColor: const Color(0xFF00E5FF),
-                          duration: const Duration(seconds: 1),
-                          behavior: SnackBarBehavior.floating,
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(width: 14.w),
+
+          // User Info Details with strong shadows & contrast for 100% visibility
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Username (Bold, pure bright white with shadow for extreme visibility)
+                Text(
+                  displayName,
+                  style: TextStyle(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : AppColors.darkNavy,
+                    letterSpacing: -0.3,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        offset: const Offset(0, 1.5),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 4.h),
+
+                // Gender, Age & Height ("♂ 21 • 173cm >")
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                    );
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.male_rounded,
+                        color: const Color(0xFF00E5FF),
+                        size: 16.sp,
+                      ),
+                      SizedBox(width: 3.w),
+                      Text(
+                        '$age • 173cm',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              blurRadius: 3,
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 2.5.h),
+                      ),
+                      SizedBox(width: 4.w),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: isDark ? Colors.white60 : Colors.grey,
+                        size: 18.sp,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 6.h),
+
+                // ID Row + Cyan/Purple Glowing "Copy" Pill Button
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF131526).withValues(alpha: 0.8)
-                            : const Color(0xFFE0F7FA),
-                        borderRadius: BorderRadius.circular(14.r),
-                        border: Border.all(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.8),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                            blurRadius: 6,
-                          ),
-                        ],
+                        color: Colors.black.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
                       child: Text(
-                        'Copy',
+                        'ID: $displayId',
                         style: TextStyle(
-                          fontSize: 10.5.sp,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF00E5FF),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    SizedBox(width: 8.w),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: displayId));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('ID $displayId copied to clipboard! 📋'),
+                            backgroundColor: const Color(0xFF00E5FF),
+                            duration: const Duration(seconds: 1),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 2.5.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF131526).withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(14.r),
+                          border: Border.all(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.8),
+                            width: 1.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          'Copy',
+                          style: TextStyle(
+                            fontSize: 10.5.sp,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF00E5FF),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -726,7 +1052,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: Row(
           children: [
-            // Gold Coin Icon (⭐/🪙)
+            // Gold Coin Icon
             Container(
               width: 28.w,
               height: 28.w,
@@ -780,7 +1106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const Spacer(),
 
-            // Coin Balance "🪙 0 >"
+            // Coin Balance
             Text(
               '🪙 ${user.coins}',
               style: TextStyle(
@@ -803,7 +1129,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ===========================================================================
   // 2x2 Feature Grid (Store, Diamonds, Personal Details, Share Invitation)
-  // Exactly matches Image 4 — No extra bloat
   // ===========================================================================
   Widget _buildTwoByTwoFeatureGrid(BuildContext context, bool isDark, UserModel user) {
     return Column(
@@ -1002,6 +1327,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // User Uploaded Posts Section (Instagram / TikTok Grid Aesthetic)
+  // ===========================================================================
+  Widget _buildUserPostsSection(BuildContext context, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.grid_view_rounded, color: const Color(0xFFFF1493), size: 18.sp),
+                SizedBox(width: 6.w),
+                Text(
+                  'My Moments & Posts',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : AppColors.darkNavy,
+                  ),
+                ),
+              ],
+            ),
+            GestureDetector(
+              onTap: () => _showCreatePostOptions(context, isDark),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF1493), Color(0xFF8A2BE2)],
+                  ),
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, color: Colors.white, size: 14.sp),
+                    SizedBox(width: 3.w),
+                    Text(
+                      'Post',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11.5.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        SizedBox(height: 12.h),
+
+        // 3-Column Posts Thumbnail Grid
+        GridView.count(
+          crossAxisCount: 3,
+          crossAxisSpacing: 8.w,
+          mainAxisSpacing: 8.h,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _buildPostThumbnailItem(
+              'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&q=80',
+              views: '1.4K',
+              isVideo: false,
+            ),
+            _buildPostThumbnailItem(
+              'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&q=80',
+              views: '2.8K',
+              isVideo: true,
+            ),
+            _buildPostThumbnailItem(
+              'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
+              views: '980',
+              isVideo: false,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPostThumbnailItem(String imageUrl, {required String views, required bool isVideo}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12.r),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFF1E2235)),
+          ),
+          if (isVideo)
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+              ),
+            ),
+          Positioned(
+            bottom: 5,
+            left: 6,
+            child: Row(
+              children: [
+                Icon(isVideo ? Icons.play_arrow : Icons.favorite, color: Colors.white, size: 12.sp),
+                const SizedBox(width: 3),
+                Text(
+                  views,
+                  style: TextStyle(color: Colors.white, fontSize: 10.5.sp, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

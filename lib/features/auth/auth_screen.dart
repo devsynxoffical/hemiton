@@ -490,26 +490,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                         height: keyboardOpen ? 44 : 48,
                                         radius: 14,
                                       ),
-                                      const SizedBox(height: 6),
-                                      TextButton.icon(
-                                        onPressed: () {
-                                          authProvider.login('demo@hemiton.com', 'hemiton123');
-                                          Navigator.of(context).pushAndRemoveUntil(
-                                            MaterialPageRoute(builder: (_) => const MainLayout()),
-                                            (route) => false,
-                                          );
-                                        },
-                                        icon: const Icon(Icons.flash_on_rounded, color: AppColors.gold, size: 16),
-                                        label: Text(
-                                          'Quick Demo Access (Skip to Home)',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.getPrimary(isDark),
-                                          ),
-                                        ),
-                                      ),
-
                                       // Social Divider & Buttons
                                       if (_currentMode == AuthMode.login) ...[
                                         const SizedBox(height: 10),
