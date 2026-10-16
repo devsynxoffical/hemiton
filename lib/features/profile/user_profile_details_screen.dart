@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 import '../../core/services/personal_details_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/user_model.dart';
+import '../../providers/auth_provider.dart';
 import '../messages/chat_screen.dart';
+import '../settings/edit_profile_screen.dart';
 
 /// User Profile Details Screen matching Image 5:
 /// - Top App Bar with Back Button (←) and Options Menu (•••)
@@ -70,14 +73,20 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final String displayName = _user.name.isNotEmpty ? _user.name : 'Mr.Shehryar';
-    final String displayId = _user.id.isNotEmpty
-        ? (_user.id.replaceAll(RegExp(r'[^0-9]'), '').isNotEmpty
-            ? _user.id.replaceAll(RegExp(r'[^0-9]'), '')
+    final auth = context.watch<AuthProvider>();
+    final currentUserId = auth.currentUser.id;
+    final bool isMe = (currentUserId.isNotEmpty && (_user.id == currentUserId || widget.userId == currentUserId)) ||
+        (widget.userId.isEmpty && widget.user == null);
+    final UserModel targetUser = isMe && auth.currentUser.id.isNotEmpty ? auth.currentUser : _user;
+
+    final String displayName = targetUser.name.isNotEmpty ? targetUser.name : 'Mr.Shehryar';
+    final String displayId = targetUser.id.isNotEmpty
+        ? (targetUser.id.replaceAll(RegExp(r'[^0-9]'), '').isNotEmpty
+            ? targetUser.id.replaceAll(RegExp(r'[^0-9]'), '')
             : '22219520')
         : '22219520';
-    final int age = _user.age > 0 ? _user.age : 24;
-    final bool isFemale = _user.gender.toLowerCase() == 'female' ||
+    final int age = targetUser.age > 0 ? targetUser.age : 24;
+    final bool isFemale = targetUser.gender.toLowerCase() == 'female' ||
         displayName.toLowerCase().contains('anam') ||
         displayName.toLowerCase().contains('shanzay') ||
         displayName.toLowerCase().contains('sonia') ||
@@ -86,13 +95,13 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
         displayName.toLowerCase().contains('ayesha') ||
         displayName.toLowerCase().contains('alishbha') ||
         displayName.toLowerCase().contains('hina');
-    final String avatarUrl = _user.avatarUrl.isNotEmpty
-        ? _user.avatarUrl
+    final String avatarUrl = targetUser.avatarUrl.isNotEmpty
+        ? targetUser.avatarUrl
         : (isFemale
             ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80'
             : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80');
-    final String location = _details?.location ?? (_user.region.isNotEmpty ? _user.region : 'Islamabad, Pakistan');
-    final String hometown = _details?.hometown ?? (_user.region.isNotEmpty ? _user.region.split(',').first.trim() : 'Islamabad');
+    final String location = _details?.location ?? (targetUser.region.isNotEmpty ? targetUser.region : 'Islamabad, Pakistan');
+    final String hometown = _details?.hometown ?? (targetUser.region.isNotEmpty ? targetUser.region.split(',').first.trim() : 'Islamabad');
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F111A) : Colors.white,
@@ -163,7 +172,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                             ),
                           ),
                           GestureDetector(
-                            onTap: () => _showProfileOptions(context, isDark),
+                            onTap: () => _showProfileOptions(context, isDark, isMe),
                             child: Container(
                               padding: EdgeInsets.all(8.w),
                               decoration: BoxDecoration(
@@ -235,47 +244,85 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                           ),
                           SizedBox(width: 10.w),
 
-                          // Following Pill Badge
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isFollowing = !_isFollowing;
-                              });
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(_isFollowing ? 'Followed $displayName! ❤️' : 'Unfollowed'),
-                                  backgroundColor: AppColors.pink,
-                                  duration: const Duration(seconds: 1),
-                                  behavior: SnackBarBehavior.floating,
+                          if (isMe)
+                            GestureDetector(
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                                );
+                                final updated = await PersonalDetailsService.instance.getDetails(auth.currentUser);
+                                if (mounted) setState(() => _details = updated);
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E2435) : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(14.r),
+                                  border: Border.all(
+                                    color: const Color(0xFFFF1493).withValues(alpha: 0.5),
+                                    width: 1.0,
+                                  ),
                                 ),
-                              );
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
-                              decoration: BoxDecoration(
-                                color: _isFollowing
-                                    ? (isDark ? const Color(0xFF1E2435) : const Color(0xFFF1F5F9))
-                                    : AppColors.pink,
-                                borderRadius: BorderRadius.circular(14.r),
-                                border: Border.all(
-                                  color: _isFollowing
-                                      ? (isDark ? Colors.white24 : const Color(0xFFCBD5E1))
-                                      : Colors.transparent,
-                                  width: 1.0,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.edit_rounded, size: 11.sp, color: const Color(0xFFFF1493)),
+                                    SizedBox(width: 4.w),
+                                    Text(
+                                      'Edit Profile',
+                                      style: TextStyle(
+                                        fontSize: 11.sp,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFFFF1493),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Text(
-                                _isFollowing ? 'Following' : '+ Follow',
-                                style: TextStyle(
-                                  fontSize: 11.sp,
-                                  fontWeight: FontWeight.w600,
+                            )
+                          else
+                            // Following Pill Badge
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isFollowing = !_isFollowing;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(_isFollowing ? 'Followed $displayName! ❤️' : 'Unfollowed'),
+                                    backgroundColor: AppColors.pink,
+                                    duration: const Duration(seconds: 1),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
+                                decoration: BoxDecoration(
                                   color: _isFollowing
-                                      ? (isDark ? Colors.white70 : const Color(0xFF64748B))
-                                      : Colors.white,
+                                      ? (isDark ? const Color(0xFF1E2435) : const Color(0xFFF1F5F9))
+                                      : AppColors.pink,
+                                  borderRadius: BorderRadius.circular(14.r),
+                                  border: Border.all(
+                                    color: _isFollowing
+                                        ? (isDark ? Colors.white24 : const Color(0xFFCBD5E1))
+                                        : Colors.transparent,
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Text(
+                                  _isFollowing ? 'Following' : '+ Follow',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: _isFollowing
+                                        ? (isDark ? Colors.white70 : const Color(0xFF64748B))
+                                        : Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
                         ],
                       ),
 
@@ -504,21 +551,31 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
             ),
           ),
 
-          // ── Sticky Bottom Bar: Glowing Green "💬 Chat" Button ──────────────
+          // ── Sticky Bottom Bar: Glowing Chat or Edit Profile Button ────────
           Positioned(
             left: 18.w,
             right: 18.w,
             bottom: 18.h,
             child: GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ChatScreen(
-                      user: _user,
+                if (isMe) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                  ).then((_) async {
+                    final updated = await PersonalDetailsService.instance.getDetails(auth.currentUser);
+                    if (mounted) setState(() => _details = updated);
+                  });
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatScreen(
+                        user: _user,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                }
               },
               child: Container(
                 height: 48.h,
@@ -538,10 +595,14 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 19.sp),
+                    Icon(
+                      isMe ? Icons.edit_note_rounded : Icons.chat_bubble_rounded,
+                      color: Colors.white,
+                      size: 19.sp,
+                    ),
                     SizedBox(width: 8.w),
                     Text(
-                      'Chat',
+                      isMe ? 'Edit Profile Details' : 'Chat',
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
@@ -630,7 +691,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
     );
   }
 
-  void _showProfileOptions(BuildContext context, bool isDark) {
+  void _showProfileOptions(BuildContext context, bool isDark, bool isMe) {
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xFF161928) : Colors.white,
@@ -641,28 +702,39 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
           children: [
             ListTile(
               leading: const Icon(Icons.share_rounded, color: Color(0xFF00B0FF)),
-              title: Text('Share Profile', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+              title: Text(isMe ? 'Share My Profile' : 'Share Profile', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
               onTap: () {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile link copied! 🔗')));
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.report_problem_rounded, color: Colors.orange),
-              title: Text('Report User', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted.')));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.block_rounded, color: Colors.redAccent),
-              title: Text('Block User', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-              onTap: () {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User blocked.')));
-              },
-            ),
+            if (isMe)
+              ListTile(
+                leading: const Icon(Icons.edit_rounded, color: Color(0xFFFF1493)),
+                title: Text('Edit Profile Details', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen()));
+                },
+              )
+            else ...[
+              ListTile(
+                leading: const Icon(Icons.report_problem_rounded, color: Colors.orange),
+                title: Text('Report User', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted.')));
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block_rounded, color: Colors.redAccent),
+                title: Text('Block User', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User blocked.')));
+                },
+              ),
+            ],
           ],
         ),
       ),

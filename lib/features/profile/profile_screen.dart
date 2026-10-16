@@ -11,7 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/wallet_provider.dart';
 import '../settings/settings_screen.dart';
 import '../settings/edit_profile_screen.dart';
-import '../wallet/wallet_screen.dart';
+import '../wallet/gold_coins_screen.dart';
 import '../wallet/diamonds_wallet_screen.dart';
 import '../store/store_screen.dart';
 import 'visitors_screen.dart';
@@ -857,7 +857,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const WalletScreen()),
+          MaterialPageRoute(builder: (_) => const GoldCoinsScreen()),
         );
       },
       child: Container(

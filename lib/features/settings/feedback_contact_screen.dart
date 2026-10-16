@@ -70,7 +70,7 @@ class _FeedbackContactScreenState extends State<FeedbackContactScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Color(0xFF00E676)),
+            const Icon(Icons.check_circle_rounded, color: Color(0xFFFF1493)),
             SizedBox(width: 8.w),
             const Text('Feedback Received', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
@@ -81,8 +81,8 @@ class _FeedbackContactScreenState extends State<FeedbackContactScreen> {
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E676),
-              foregroundColor: Colors.black,
+              backgroundColor: const Color(0xFFFF1493),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
             onPressed: () {
@@ -277,12 +277,12 @@ class _FeedbackContactScreenState extends State<FeedbackContactScreen> {
                 height: 48.h,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF00E676), Color(0xFF00B0FF)],
+                    colors: [Color(0xFFFF1493), Color(0xFF7928CA)],
                   ),
                   borderRadius: BorderRadius.circular(24.r),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E676).withValues(alpha: 0.35),
+                      color: const Color(0xFFFF1493).withValues(alpha: 0.4),
                       blurRadius: 15,
                       offset: const Offset(0, 4),
                     ),

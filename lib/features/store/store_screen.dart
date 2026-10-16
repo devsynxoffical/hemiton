@@ -8,7 +8,7 @@ import '../../providers/backpack_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../providers/wallet_provider.dart';
 import '../profile/modules/outfit_screen.dart';
-import '../wallet/wallet_screen.dart';
+import '../wallet/gold_coins_screen.dart';
 
 /// Luxury Store Screen inspired by Image 1:
 /// - Dark luxury golden wave header with user coins balance chip
@@ -66,7 +66,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
       context: context,
       barrierDismissible: false,
       builder: (c) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFFFFD700)),
+        child: CircularProgressIndicator(color: Color(0xFFFF1493)),
       ),
     );
 
@@ -96,7 +96,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
           action: SnackBarAction(
             label: 'MY OUTFIT',
-            textColor: const Color(0xFFFFD700),
+            textColor: const Color(0xFFFF1493),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const OutfitScreen()));
             },
@@ -122,11 +122,11 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
         backgroundColor: const Color(0xFF181926),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.r),
-          side: BorderSide(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
+          side: BorderSide(color: const Color(0xFFFF1493).withValues(alpha: 0.4)),
         ),
         title: Row(
           children: [
-            const Icon(Icons.monetization_on_rounded, color: Color(0xFFFFD700)),
+            const Icon(Icons.monetization_on_rounded, color: Color(0xFFFF1493)),
             SizedBox(width: 8.w),
             const Text(
               'Insufficient Coins',
@@ -145,13 +145,13 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFD700),
-              foregroundColor: Colors.black,
+              backgroundColor: const Color(0xFFFF1493),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
             onPressed: () {
               Navigator.pop(c);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const GoldCoinsScreen()));
             },
             child: const Text('Recharge Now', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -171,12 +171,12 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
       builder: (ctx) {
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF12131A),
+            color: const Color(0xFF12131F),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-            border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3), width: 1.2),
+            border: Border.all(color: const Color(0xFFFF1493).withValues(alpha: 0.35), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+                color: const Color(0xFFFF1493).withValues(alpha: 0.2),
                 blurRadius: 30,
                 spreadRadius: 2,
               ),
@@ -229,13 +229,13 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFFFFD700).withValues(alpha: 0.25),
+                      const Color(0xFFFF1493).withValues(alpha: 0.25),
                       const Color(0xFF1C1D29),
                       Colors.transparent,
                     ],
                   ),
                   border: Border.all(
-                    color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+                    color: const Color(0xFFFF1493).withValues(alpha: 0.45),
                     width: 1.5,
                   ),
                 ),
@@ -266,7 +266,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
               Text(
                 '${item.durationDays} Days Duration • ${item.categoryId}',
                 style: TextStyle(
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.8),
+                  color: const Color(0xFFFF4081),
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w600,
                 ),
@@ -295,7 +295,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                         Text(
                           item.priceCoins.toString(),
                           style: TextStyle(
-                            color: const Color(0xFFFFD700),
+                            color: const Color(0xFFFF4081),
                             fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                           ),
@@ -325,14 +325,14 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: isOwned
-                          ? [const Color(0xFF00E676), const Color(0xFF00B0FF)]
-                          : [const Color(0xFFFFB300), const Color(0xFFFF6D00)],
+                          ? [const Color(0xFF00E5FF), const Color(0xFF0070F3)]
+                          : [const Color(0xFFFF1493), const Color(0xFF7928CA)],
                     ),
                     borderRadius: BorderRadius.circular(24.r),
                     boxShadow: [
                       BoxShadow(
-                        color: (isOwned ? const Color(0xFF00E676) : const Color(0xFFFFB300))
-                            .withValues(alpha: 0.4),
+                        color: (isOwned ? const Color(0xFF00E5FF) : const Color(0xFFFF1493))
+                            .withValues(alpha: 0.45),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
@@ -369,7 +369,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
         errorBuilder: (context, error, stackTrace) => Icon(
           Icons.stars_rounded,
           size: imgSize * 0.7,
-          color: const Color(0xFFFFD700),
+          color: const Color(0xFFFF1493),
         ),
       );
     } else if (item.imageUrl.isNotEmpty) {
@@ -381,14 +381,14 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
         errorBuilder: (context, error, stackTrace) => Icon(
           Icons.stars_rounded,
           size: imgSize * 0.7,
-          color: const Color(0xFFFFD700),
+          color: const Color(0xFFFF1493),
         ),
       );
     }
     return Icon(
       Icons.stars_rounded,
       size: imgSize * 0.7,
-      color: const Color(0xFFFFD700),
+      color: const Color(0xFFFF1493),
     );
   }
 
@@ -439,8 +439,8 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF1F1A0E),
-            Color(0xFF0F1017),
+            Color(0xFF22112C),
+            Color(0xFF0F1018),
           ],
         ),
       ),
@@ -481,15 +481,15 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
           // Coin Balance Chip with tap to recharge
           GestureDetector(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const GoldCoinsScreen()));
             },
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E26),
+                color: const Color(0xFF1E1428),
                 borderRadius: BorderRadius.circular(20.r),
                 border: Border.all(
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+                  color: const Color(0xFFFF1493).withValues(alpha: 0.5),
                   width: 1.0,
                 ),
               ),
@@ -499,7 +499,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                   Text(
                     wallet.coins.toString(),
                     style: TextStyle(
-                      color: const Color(0xFFFFD700),
+                      color: const Color(0xFFFF4081),
                       fontSize: 12.sp,
                       fontWeight: FontWeight.bold,
                     ),
@@ -508,10 +508,10 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                   Container(
                     padding: EdgeInsets.all(2.w),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFFFD700),
+                      color: Color(0xFFFF1493),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.add, size: 10.sp, color: Colors.black),
+                    child: Icon(Icons.add, size: 10.sp, color: Colors.white),
                   ),
                 ],
               ),
@@ -527,10 +527,10 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
       margin: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: const Color(0xFF181510),
+        color: const Color(0xFF1A1224),
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+          color: const Color(0xFFFF1493).withValues(alpha: 0.25),
           width: 0.8,
         ),
       ),
@@ -539,7 +539,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
         children: [
           Icon(
             Icons.info_outline_rounded,
-            color: const Color(0xFFFFD700).withValues(alpha: 0.8),
+            color: const Color(0xFFFF1493).withValues(alpha: 0.9),
             size: 15.sp,
           ),
           SizedBox(width: 8.w),
@@ -571,12 +571,12 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
         dividerColor: Colors.transparent,
         indicator: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFFB300), Color(0xFFFF6D00)],
+            colors: [Color(0xFFFF1493), Color(0xFF7928CA)],
           ),
           borderRadius: BorderRadius.circular(20.r),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFFB300).withValues(alpha: 0.35),
+              color: const Color(0xFFFF1493).withValues(alpha: 0.45),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -638,10 +638,10 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
       onTap: () => _showItemPreviewModal(item),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF13141C),
+          color: const Color(0xFF13141F),
           borderRadius: BorderRadius.circular(18.r),
           border: Border.all(
-            color: const Color(0xFF2C2417),
+            color: const Color(0xFFFF1493).withValues(alpha: 0.25),
             width: 1.2,
           ),
           boxShadow: [
@@ -692,7 +692,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                   ),
                   child: Icon(
                     Icons.crop_free_rounded,
-                    color: const Color(0xFFFFD700).withValues(alpha: 0.7),
+                    color: const Color(0xFFFF1493).withValues(alpha: 0.8),
                     size: 14.sp,
                   ),
                 ),
@@ -709,7 +709,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        const Color(0xFFFFD700).withValues(alpha: 0.12),
+                        const Color(0xFFFF1493).withValues(alpha: 0.15),
                         Colors.transparent,
                       ],
                     ),
@@ -745,7 +745,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                     Text(
                       item.priceCoins.toString(),
                       style: TextStyle(
-                        color: const Color(0xFFFFD700),
+                        color: const Color(0xFFFF4081),
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w800,
                       ),

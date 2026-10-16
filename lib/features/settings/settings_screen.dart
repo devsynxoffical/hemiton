@@ -71,12 +71,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontSize: 13.5.sp,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     color: isSelected
-                        ? const Color(0xFF00E676)
+                        ? const Color(0xFFFF1493)
                         : (isDark ? Colors.white70 : Colors.black87),
                   ),
                 ),
                 trailing: isSelected
-                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF00E676))
+                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFFFF1493))
                     : null,
                 onTap: () {
                   setState(() => _selectedLanguage = lang);
@@ -151,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Email updated successfully!'),
-                  backgroundColor: Color(0xFF00E676),
+                  backgroundColor: Color(0xFFFF1493),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -415,7 +415,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('HEMI TON is up to date (Version 2.1.600)'),
-                    backgroundColor: Color(0xFF00E676),
+                    backgroundColor: Color(0xFFFF1493),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -537,7 +537,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 2.h),
         leading: Icon(
           isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-          color: isDark ? const Color(0xFF00E676) : const Color(0xFFFFB300),
+          color: const Color(0xFFFF1493),
           size: 22.sp,
         ),
         title: Text(
@@ -557,8 +557,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         trailing: Switch(
           value: isDark,
-          activeThumbColor: const Color(0xFF00E676),
-          inactiveThumbColor: const Color(0xFFFFB300),
+          activeThumbColor: const Color(0xFFFF1493),
+          activeTrackColor: const Color(0xFFFF1493).withValues(alpha: 0.4),
+          inactiveThumbColor: const Color(0xFF7928CA),
           inactiveTrackColor: Colors.grey.shade300,
           onChanged: (val) {
             themeProvider.setThemeMode(val ? ThemeMode.dark : ThemeMode.light);

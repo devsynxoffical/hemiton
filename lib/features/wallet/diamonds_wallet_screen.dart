@@ -237,14 +237,14 @@ class _DiamondsWalletScreenState extends State<DiamondsWalletScreen> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: hasEnough
-                          ? [const Color(0xFF00B0FF), const Color(0xFF00E676)]
+                          ? [const Color(0xFFFF1493), const Color(0xFF7928CA)]
                           : [Colors.grey.shade600, Colors.grey.shade700],
                     ),
                     borderRadius: BorderRadius.circular(24.r),
                     boxShadow: hasEnough
                         ? [
                             BoxShadow(
-                              color: const Color(0xFF00E676).withValues(alpha: 0.4),
+                              color: const Color(0xFFFF1493).withValues(alpha: 0.4),
                               blurRadius: 15,
                               offset: const Offset(0, 4),
                             ),
@@ -320,14 +320,14 @@ class _DiamondsWalletScreenState extends State<DiamondsWalletScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshAuthoritativeWallet,
-        color: const Color(0xFF00E676),
+        color: const Color(0xFFFF1493),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── 1. Top Radiant Balance Card (Cyan-to-Emerald) ──────────────
+              // ── 1. Top Radiant Balance Card (Signature Gradient) ───────────
               _buildRadiantBalanceCard(wallet.diamonds),
 
               SizedBox(height: 24.h),
@@ -381,14 +381,14 @@ class _DiamondsWalletScreenState extends State<DiamondsWalletScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF00B0FF),
-            Color(0xFF00E676),
+            Color(0xFFFF1493),
+            Color(0xFF7928CA),
           ],
         ),
         borderRadius: BorderRadius.circular(22.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00E676).withValues(alpha: 0.35),
+            color: const Color(0xFFFF1493).withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -442,8 +442,8 @@ class _DiamondsWalletScreenState extends State<DiamondsWalletScreen> {
           borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
             color: isDark
-                ? const Color(0xFFFFD700).withValues(alpha: 0.22)
-                : const Color(0xFFFFD700).withValues(alpha: 0.45),
+                ? const Color(0xFFFF1493).withValues(alpha: 0.28)
+                : const Color(0xFFFF1493).withValues(alpha: 0.22),
             width: 1.2,
           ),
           boxShadow: [
