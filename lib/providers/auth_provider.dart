@@ -418,6 +418,27 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
 
+    if (AppConfig.isBackendDisconnected) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      final clean = usernameOrEmail.trim();
+      final username = clean.contains('@') ? clean.split('@').first : clean;
+      _currentUser = UserModel(
+        id: 'user_hemiton_${DateTime.now().millisecondsSinceEpoch}',
+        username: username.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_'),
+        name: username,
+        email: clean.contains('@') ? clean : null,
+        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80',
+        coins: 50000,
+        diamonds: 10000,
+        profileCompleted: true,
+        isOnline: true,
+      );
+      _isAuthenticated = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
+
     try {
       await _clearUserLocalSession();
 
@@ -495,6 +516,25 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
 
+    if (AppConfig.isBackendDisconnected) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      _currentUser = UserModel(
+        id: 'user_hemiton_${DateTime.now().millisecondsSinceEpoch}',
+        username: name.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_'),
+        name: name.trim(),
+        email: email.trim(),
+        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80',
+        coins: 50000,
+        diamonds: 10000,
+        profileCompleted: true,
+        isOnline: true,
+      );
+      _isAuthenticated = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
+
     try {
       // Clear any existing stale session tokens before starting fresh signup
       await _clearUserLocalSession();
@@ -569,6 +609,24 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+
+    if (AppConfig.isBackendDisconnected) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      _currentUser = const UserModel(
+        id: 'user_hemiton_google',
+        username: 'hemiton_user',
+        name: 'HEMI TON User',
+        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80',
+        coins: 50000,
+        diamonds: 10000,
+        profileCompleted: true,
+        isOnline: true,
+      );
+      _isAuthenticated = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
 
     try {
       await _clearUserLocalSession();
