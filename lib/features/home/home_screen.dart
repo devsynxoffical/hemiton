@@ -11,7 +11,8 @@ import '../store/store_screen.dart';
 import '../live/live_room_screen.dart';
 import '../messages/chat_screen.dart';
 import '../messages/inbox_screen.dart';
-import '../social/social_feed_screen.dart';
+import '../social/moments_feed_screen.dart';
+import '../social/create_post_screen.dart';
 
 /// HEMI TON Modern Home Screen
 /// Matches the exact reference design:
@@ -59,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: _selectedHeaderTab == 0
                   ? _buildRecommendTab(isDark, liveRooms)
                   : _selectedHeaderTab == 1
-                      ? const SocialFeedScreen(isScreenActive: true)
+                      ? const MomentsFeedScreen()
                       : _buildFriendsTab(isDark),
             ),
           ],
@@ -160,29 +161,70 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-          SizedBox(width: 10.w),
+          SizedBox(width: 8.w),
 
-          // Store / Gift Box Icon Button
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const StoreScreen()),
-              );
-            },
-            child: Container(
-              padding: EdgeInsets.all(6.w),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDark ? const Color(0xFF14171F) : const Color(0xFFF0F4F8),
+          // If on Moments: show "✈ Post" pill button (matching Image 1); otherwise Store button
+          if (_selectedHeaderTab == 1)
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00E676), Color(0xFF00B0FF)],
+                  ),
+                  borderRadius: BorderRadius.circular(20.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E676).withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.near_me_rounded, color: Colors.white, size: 14.sp),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'Post',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Icon(
-                Icons.card_giftcard_rounded,
-                size: 22.w,
-                color: isDark ? Colors.white : AppColors.darkNavy,
+            )
+          else
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StoreScreen()),
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.all(6.w),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark ? const Color(0xFF14171F) : const Color(0xFFF0F4F8),
+                ),
+                child: Icon(
+                  Icons.card_giftcard_rounded,
+                  size: 22.w,
+                  color: isDark ? Colors.white : AppColors.darkNavy,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

@@ -117,12 +117,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
       ),
     ];
 
-    // Periodic floating heart stream on right edge
-    _heartStreamTimer = Timer.periodic(const Duration(milliseconds: 1200), (t) {
-      if (mounted) {
-        _addRandomFloatingHeart();
-      }
-    });
+    // Floating hearts will only trigger on user double-tap or button tap (not automatically)
   }
 
   @override
@@ -255,6 +250,18 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
             ),
           ),
 
+          // Double-Tap anywhere to send live heart likes (only on double-tap)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onDoubleTap: () {
+                _addRandomFloatingHeart();
+                _addRandomFloatingHeart();
+              },
+              child: const SizedBox.expand(),
+            ),
+          ),
+
           // ── 2. Top Header Bar ──────────────────────────────────────────────
           SafeArea(
             child: Align(
@@ -310,7 +317,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                   controller: _scrollController,
                   physics: const BouncingScrollPhysics(),
                   itemCount: _chatMessages.length,
-                  separatorBuilder: (_, __) => SizedBox(height: 5.h),
+                  separatorBuilder: (context, index) => SizedBox(height: 5.h),
                   itemBuilder: (context, index) {
                     final msg = _chatMessages[index];
                     return _buildChatMessageItem(msg);
@@ -501,7 +508,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                       child: Image.network(
                         url,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white70, size: 14),
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: Colors.white70, size: 14),
                       ),
                     ),
                   );
@@ -627,7 +634,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                 child: Image.network(
                   msg.avatarUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white, size: 12),
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: Colors.white, size: 12),
                 ),
               ),
             ),
@@ -741,20 +748,20 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
   // ── Bottom Action Bar (Image 3 exact icons & style) ──────────────────────────
   Widget _buildBottomActionBar() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
       color: Colors.transparent,
       child: Row(
         children: [
           // "Type a message..." Input Box with Smiley Face
           Expanded(
             child: Container(
-              height: 38.h,
-              padding: EdgeInsets.symmetric(horizontal: 12.w),
+              height: 40.h,
+              padding: EdgeInsets.symmetric(horizontal: 10.w),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20.r),
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(22.r),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: Colors.white.withValues(alpha: 0.28),
                   width: 1.0,
                 ),
               ),
@@ -763,16 +770,21 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                   Expanded(
                     child: TextField(
                       controller: _commentController,
-                      style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                      cursorColor: const Color(0xFFFF1493),
+                      style: TextStyle(color: Colors.white, fontSize: 13.sp),
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
                         hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
+                          color: Colors.white.withValues(alpha: 0.55),
                           fontSize: 12.sp,
                         ),
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        fillColor: Colors.transparent,
                         isDense: true,
-                        contentPadding: EdgeInsets.zero,
+                        contentPadding: EdgeInsets.symmetric(vertical: 8.h),
                       ),
                       onSubmitted: (_) => _sendMessage(),
                     ),
@@ -781,20 +793,20 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                     onTap: () {
                       _commentController.text += ' 😊';
                     },
-                    child: const Text('😊', style: TextStyle(fontSize: 17)),
+                    child: const Text('😊', style: TextStyle(fontSize: 18)),
                   ),
                 ],
               ),
             ),
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 4.w),
 
           // Menu/Chat Icon (💬)
           _buildActionButton(
             icon: Icons.chat_bubble_outline_rounded,
             onTap: () {},
           ),
-          SizedBox(width: 6.w),
+          SizedBox(width: 4.w),
 
           // Gamepad Controller Icon (🎮)
           _buildActionButton(
@@ -811,7 +823,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
               );
             },
           ),
-          SizedBox(width: 6.w),
+          SizedBox(width: 4.w),
 
           // Golden Laurel Wreath / Trophy (🏆)
           _buildActionButton(
@@ -828,7 +840,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
               );
             },
           ),
-          SizedBox(width: 6.w),
+          SizedBox(width: 4.w),
 
           // Gift Box Icon with Ribbon (🎁)
           GestureDetector(
@@ -846,25 +858,25 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
               );
             },
             child: Container(
-              width: 36.w,
-              height: 36.w,
+              width: 34.w,
+              height: 34.w,
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.45),
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Text('🎁', style: TextStyle(fontSize: 19.sp)),
+                child: Text('🎁', style: TextStyle(fontSize: 17.sp)),
               ),
             ),
           ),
-          SizedBox(width: 6.w),
+          SizedBox(width: 4.w),
 
           // Paper Plane Send / Share Icon (➤)
           GestureDetector(
             onTap: () => _sendMessage(),
             child: Container(
-              width: 36.w,
-              height: 36.w,
+              width: 34.w,
+              height: 34.w,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFFFF1493), Color(0xFF8A2BE2)],
@@ -872,7 +884,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Icon(Icons.send_rounded, color: Colors.white, size: 17.w),
+                child: Icon(Icons.send_rounded, color: Colors.white, size: 16.w),
               ),
             ),
           ),
@@ -889,14 +901,14 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36.w,
-        height: 36.w,
+        width: 34.w,
+        height: 34.w,
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.45),
           shape: BoxShape.circle,
         ),
         child: Center(
-          child: Icon(icon, color: color, size: 20.w),
+          child: Icon(icon, color: color, size: 18.w),
         ),
       ),
     );
