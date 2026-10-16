@@ -1,8 +1,9 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_config.dart';
 
 /// Standard Normalized API Exception for Mobile App
 class ApiException implements Exception {
@@ -72,6 +73,22 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          if (AppConfig.isBackendDisconnected) {
+            return handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: {
+                  'success': true,
+                  'message': 'Backend disconnected',
+                  'data': [],
+                  'items': [],
+                  'users': [],
+                  'rooms': [],
+                },
+              ),
+            );
+          }
           // Attach Access Token if available
           final token = await getAccessToken();
           if (token != null && token.isNotEmpty) {

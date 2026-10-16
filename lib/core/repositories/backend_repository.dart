@@ -11,6 +11,7 @@ import '../../models/notification_model.dart';
 import '../../models/message_model.dart';
 import '../services/socket_service.dart';
 import 'room_repository.dart';
+import '../config/app_config.dart';
 
 /// Production-ready Reactive Backend Repository Service
 class BackendRepository extends ChangeNotifier {
@@ -21,13 +22,16 @@ class BackendRepository extends ChangeNotifier {
   StreamSubscription? _socketRoomClosedSub;
 
   BackendRepository._internal() {
-    SocketService.instance.connect();
-    fetchLiveRooms();
-    _startAutoRefresh();
-    _initSocketSubscriptions();
+    if (!AppConfig.isBackendDisconnected) {
+      SocketService.instance.connect();
+      fetchLiveRooms();
+      _startAutoRefresh();
+      _initSocketSubscriptions();
+    }
   }
 
   void _startAutoRefresh() {
+    if (AppConfig.isBackendDisconnected) return;
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       fetchLiveRooms();

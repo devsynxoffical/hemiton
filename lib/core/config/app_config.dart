@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import '../services/api_client.dart';
 
 enum AppEnvironment {
@@ -11,6 +11,9 @@ enum AppEnvironment {
 class AppConfig {
   static AppEnvironment _environment = AppEnvironment.production;
   static String _apiBaseUrl = railwayApiUrl;
+
+  /// Disconnect backend calls for offline/standalone UI mode
+  static bool isBackendDisconnected = true;
 
   static AppEnvironment get environment => _environment;
   static String get apiBaseUrl => _apiBaseUrl;

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +13,7 @@ import '../core/repositories/social_repository.dart';
 import '../core/repositories/backend_repository.dart';
 import '../core/services/media_upload_service.dart';
 import '../core/utils/firebase_auth_errors.dart';
+import '../core/config/app_config.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _authRepository = AuthRepository.instance;
@@ -53,6 +54,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _initModerationListeners() {
+    if (AppConfig.isBackendDisconnected) return;
     _banSubscription = SocketService.instance.onModerationBan.listen((data) {
       if (_currentUser != null) {
         _currentUser = _currentUser!.copyWith(status: 'BANNED');
@@ -148,8 +150,10 @@ class AuthProvider extends ChangeNotifier {
       }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_userSessionKey, jsonEncode(user.toJson()));
-      SocketService.instance.connect();
-      BackendRepository.instance.fetchLiveRooms();
+      if (!AppConfig.isBackendDisconnected) {
+        SocketService.instance.connect();
+        BackendRepository.instance.fetchLiveRooms();
+      }
     } catch (e) {
       debugPrint('Failed to save user session locally: $e');
     }
@@ -182,6 +186,22 @@ class AuthProvider extends ChangeNotifier {
 
   /// Restore authentication state securely from backend JWT or local saved session
   Future<void> _restoreSession() async {
+    if (AppConfig.isBackendDisconnected) {
+      _currentUser = const UserModel(
+        id: 'user_hemiton_demo',
+        username: 'hemiton_official',
+        name: 'HEMI TON',
+        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80',
+        coins: 50000,
+        diamonds: 12000,
+        profileCompleted: true,
+        isOnline: true,
+      );
+      _isAuthenticated = true;
+      _isInitialized = true;
+      notifyListeners();
+      return;
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
 

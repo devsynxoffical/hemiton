@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'api_client.dart';
+import '../config/app_config.dart';
 
 class SocketService {
   static final SocketService instance = SocketService._internal();
@@ -184,6 +185,10 @@ class SocketService {
 
   /// Connect to backend Socket.IO server with JWT token
   Future<void> connect({String? token, Map<String, dynamic>? user}) async {
+    if (AppConfig.isBackendDisconnected) {
+      debugPrint('[SocketService] Backend disconnected. Skipping WebSocket connection.');
+      return;
+    }
     final authToken = token ?? await ApiClient.instance.getAccessToken() ?? 'guest_anonymous';
 
     if (user != null) {
