@@ -41,10 +41,18 @@ class _GoldButtonState extends State<GoldButton> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = widget.onPressed != null && !widget.isLoading;
-    final activeGradient = isDark ? AppColors.metallicGoldGradient : AppColors.metallicBlueGradient;
-    final contentColor = isDark ? AppColors.black : AppColors.white;
-    final shadowColor1 = isDark ? AppColors.metallicGold : AppColors.royalBlue;
-    final shadowColor2 = isDark ? AppColors.warmGold : AppColors.deepRoyalBlue;
+    const activeGradient = LinearGradient(
+      colors: [
+        AppColors.pink,
+        AppColors.purple,
+        AppColors.blue,
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    const contentColor = Colors.white;
+    final shadowColor1 = AppColors.pink.withValues(alpha: 0.5);
+    final shadowColor2 = AppColors.neonPink.withValues(alpha: 0.3);
 
     return GestureDetector(
       onTapDown: enabled ? (_) => _setPressed(true) : null,

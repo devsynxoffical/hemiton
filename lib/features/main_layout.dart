@@ -8,7 +8,7 @@ import '../widgets/glass_nav_bar.dart';
 import 'home/home_screen.dart';
 import 'social/camera_recorder_screen.dart';
 import 'social/upload_video_screen.dart';
-import 'live/live_vertical_feed_screen.dart';
+import 'live/live_explore_screen.dart';
 import 'live/create_live_room_screen.dart';
 import 'party_room/create_party_screen.dart';
 import 'pk_battle/pk_battle_screen.dart';
@@ -413,7 +413,7 @@ class _MainLayoutState extends State<MainLayout> {
           index: _currentIndex,
           children: [
             const HomeScreen(),
-            const LiveVerticalFeedScreen(),
+            const LiveExploreScreen(),
             const SizedBox.shrink(), // Create Gap — never actually shown
             const InboxScreen(),
             const ProfileScreen(),

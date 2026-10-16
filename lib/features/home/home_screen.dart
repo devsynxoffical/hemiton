@@ -79,59 +79,63 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         children: [
           // Header Tabs (Recommend, Moments, Friends)
           Expanded(
-            child: Row(
-              children: List.generate(_headerTabs.length, (index) {
-                final isSelected = _selectedHeaderTab == index;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedHeaderTab = index;
-                    });
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    margin: EdgeInsets.only(right: 18.w),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          _headerTabs[index],
-                          style: TextStyle(
-                            fontSize: isSelected ? 18.sp : 15.sp,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                            color: isSelected
-                                ? (isDark ? Colors.white : AppColors.darkNavy)
-                                : (isDark ? const Color(0xFF7A8B9E) : const Color(0xFF8A9BA8)),
-                            letterSpacing: -0.2,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: List.generate(_headerTabs.length, (index) {
+                  final isSelected = _selectedHeaderTab == index;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedHeaderTab = index;
+                      });
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      margin: EdgeInsets.only(right: 14.w),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            _headerTabs[index],
+                            style: TextStyle(
+                              fontSize: isSelected ? 16.5.sp : 14.sp,
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                              color: isSelected
+                                  ? (isDark ? Colors.white : AppColors.darkNavy)
+                                  : (isDark ? const Color(0xFF7A8B9E) : const Color(0xFF8A9BA8)),
+                              letterSpacing: -0.2,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 4.h),
-                        // Active Pink Underline Indicator
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOut,
-                          width: isSelected ? 22.w : 0,
-                          height: 3.h,
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppColors.pink : Colors.transparent,
-                            borderRadius: BorderRadius.circular(2.r),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: AppColors.pink.withValues(alpha: 0.65),
-                                      blurRadius: 6,
-                                      spreadRadius: 0.5,
-                                    ),
-                                  ]
-                                : null,
+                          SizedBox(height: 4.h),
+                          // Active Pink Underline Indicator
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOut,
+                            width: isSelected ? 22.w : 0,
+                            height: 3.h,
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.pink : Colors.transparent,
+                              borderRadius: BorderRadius.circular(2.r),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.pink.withValues(alpha: 0.65),
+                                        blurRadius: 6,
+                                        spreadRadius: 0.5,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
           ),
 
@@ -309,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
         // Horizontal List of Live Cards
         SizedBox(
-          height: 185.h,
+          height: 155.h,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -356,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         );
       },
       child: Container(
-        width: 130.w,
+        width: 108.w,
         margin: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16.r),
@@ -505,7 +509,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         );
       },
       child: Container(
-        width: 130.w,
+        width: 108.w,
         margin: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16.r),
@@ -735,7 +739,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
         // Horizontal Profiles List
         SizedBox(
-          height: 205.h,
+          height: 178.h,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -753,9 +757,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildRecommendedProfileCard(_RecommendedProfileItem p, bool isDark) {
     return Container(
-      width: 124.w,
+      width: 106.w,
       margin: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
-      padding: EdgeInsets.all(8.w),
+      padding: EdgeInsets.all(7.w),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF111111) : Colors.white,
         borderRadius: BorderRadius.circular(16.r),
@@ -782,10 +786,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: Image.network(
                   p.imageUrl,
                   width: double.infinity,
-                  height: 82.h,
+                  height: 70.h,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    height: 82.h,
+                    height: 70.h,
                     color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFEEF2F6),
                     child: Center(
                       child: Icon(Icons.person, color: AppColors.pink, size: 30.w),

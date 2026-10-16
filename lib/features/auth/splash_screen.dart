@@ -5,11 +5,7 @@ import '../../core/theme/theme_provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_logo.dart';
-import '../../core/config/app_config.dart';
-import '../../models/user_model.dart';
 import 'auth_screen.dart';
-import 'profile_setup_screen.dart';
-import '../main_layout.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -56,45 +52,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if (!mounted || _navigated) return;
     _navigated = true;
 
-    // In disconnected backend mode, automatically seed demo user and open MainLayout (Home page)
-    if (AppConfig.isBackendDisconnected) {
-      authProvider.mockSetCurrentUser(
-        const UserModel(
-          id: 'user_hemiton_demo',
-          username: 'hemiton_official',
-          name: 'HEMI TON',
-          avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80',
-          coins: 50000,
-          diamonds: 12000,
-          profileCompleted: true,
-          isOnline: true,
-        ),
-      );
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainLayout()),
-        (route) => false,
-      );
-      return;
-    }
-
-    if (authProvider.isAuthenticated) {
-      if (!authProvider.currentUser.profileCompleted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
-          (route) => false,
-        );
-      } else {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainLayout()),
-          (route) => false,
-        );
-      }
-    } else {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AuthScreen(initialMode: AuthMode.login)),
-        (route) => false,
-      );
-    }
+    // After Splash, navigate to Login / Sign Up screen so client can review the auth UI
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthScreen(initialMode: AuthMode.login)),
+      (route) => false,
+    );
   }
 
   @override

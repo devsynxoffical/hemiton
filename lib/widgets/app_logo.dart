@@ -25,7 +25,6 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveRadius = borderRadius ?? (size * 0.24);
 
     Widget emblem = Container(
@@ -84,12 +83,15 @@ class AppLogo extends StatelessWidget {
     );
 
     // If an official asset image exists, try loading it with error fallback to the emblem
-    Widget logoWidget = Image.asset(
-      'assets/images/hemiton_logo.png',
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => emblem,
+    Widget logoWidget = ClipRRect(
+      borderRadius: BorderRadius.circular(effectiveRadius),
+      child: Image.asset(
+        'assets/images/hemiton_logo.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => emblem,
+      ),
     );
 
     if (showBorder || customBorder != null) {
