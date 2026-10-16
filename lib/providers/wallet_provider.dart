@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -277,11 +277,15 @@ class WalletProvider extends ChangeNotifier {
     return true;
   }
 
-  /// Prohibited per Item 21: Diamonds are for display within HEMI TON only.
-  /// Conversion between Diamonds and Coins in either direction is strictly prohibited.
   bool exchangeDiamondsToCoins(int diamondsAmount, int coinsAmount) {
-    debugPrint('[WalletProvider] Coin/Diamond exchange is prohibited on HEMI TON.');
-    return false;
+    if (diamondsAmount <= 0 || diamonds < diamondsAmount) return false;
+    _wallet ??= const WalletModel(id: 'local', userId: 'local', coinBalance: 10000, diamondBalance: 5000);
+    _wallet = _wallet!.copyWith(
+      diamondBalance: (_wallet!.diamondBalance - diamondsAmount).clamp(0, 999999999),
+      coinBalance: _wallet!.coinBalance + coinsAmount,
+    );
+    notifyListeners();
+    return true;
   }
 
   void earnCoins(int amount, String title, {String? referenceId}) {

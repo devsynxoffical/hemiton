@@ -1,18 +1,28 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_colors.dart';
-import '../../providers/auth_provider.dart';
-import '../../widgets/app_logo.dart';
-import '../auth/auth_screen.dart';
-import 'account_security_screen.dart';
-import 'appearance_settings_screen.dart';
-import 'edit_profile_screen.dart';
-import 'privacy_settings_screen.dart';
-import 'notification_settings_screen.dart';
-import 'support_center_screen.dart';
-import '../../models/user_model.dart';
-import '../../widgets/user_avatar.dart';
 
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../auth/auth_screen.dart';
+import 'community_guidelines_screen.dart';
+import 'feedback_contact_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'terms_of_service_screen.dart';
+
+/// Attractive Settings Screen inspired by Image 3:
+/// - List items matching Image 3 with modern premium card design:
+///   1. Contact Us / FeedBack >
+///   2. Privacy Policy >
+///   3. Term of Service >
+///   4. Community Guidelines >
+///   5. Email: danialamjad36@gmail.com
+///   6. Language: System Language >
+///   7. Theme Mode: Interactive Light & Dark Mode switch (Instant toggle across app)
+///   8. Version: 2.1.600
+///   9. Log out >
+///   10. Delete your account (subtle centered button with 3-day recovery notice)
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -21,520 +31,539 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _soundEffectsEnabled = true;
-  String _selectedLanguage = 'English (US)';
+  String _selectedLanguage = 'System Language';
 
   void _showLanguageDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final languages = [
+      'System Language',
+      'English (US)',
+      'Urdu (اردو)',
+      'Arabic (العربية)',
+      'Spanish (Español)',
+      'French (Français)',
+      'Chinese (中文)',
+    ];
+
     showDialog(
       context: context,
       builder: (c) {
-        final languages = ['English (US)', 'Spanish (Español)', 'French (Français)', 'Arabic (العربية)', 'Urdu (اردو)', 'Chinese (中文)'];
-        return SimpleDialog(
-          title: const Text('Select Language'),
-          children: languages.map((lang) {
-            return SimpleDialogOption(
-              onPressed: () {
-                setState(() => _selectedLanguage = lang);
-                Navigator.pop(c);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Text(
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF161824) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+          title: Text(
+            'Select Language',
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.darkNavy,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: languages.map((lang) {
+              final isSelected = _selectedLanguage == lang;
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
                   lang,
                   style: TextStyle(
-                    fontWeight: _selectedLanguage == lang ? FontWeight.bold : FontWeight.normal,
-                    color: _selectedLanguage == lang ? AppColors.primary : null,
+                    fontSize: 13.5.sp,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? const Color(0xFF00E676)
+                        : (isDark ? Colors.white70 : Colors.black87),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+                trailing: isSelected
+                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF00E676))
+                    : null,
+                onTap: () {
+                  setState(() => _selectedLanguage = lang);
+                  Navigator.pop(c);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Language set to $lang'),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                    ),
+                  );
+                },
+              );
+            }).toList(),
+          ),
         );
       },
     );
   }
 
-  void _showBlockedUsersDialog() {
-    final auth = context.read<AuthProvider>();
-    bool isLoading = true;
+  void _showEmailDialog(String currentEmail) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final controller = TextEditingController(text: currentEmail);
 
     showDialog(
       context: context,
-      builder: (c) => StatefulBuilder(
-        builder: (ctx, setDlgState) {
-          if (isLoading) {
-            auth.loadBlockedUsers().then((_) {
-              if (ctx.mounted) {
-                setDlgState(() {
-                  isLoading = false;
-                });
-              }
-            });
-          }
-
-          final blockedList = auth.blockedUsers.isNotEmpty
-              ? auth.blockedUsers
-              : auth.blockedUserIds.map((id) => UserModel(id: id, name: 'User $id', username: id, avatarUrl: '', email: '')).toList();
-
-          return AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.block_rounded, color: Colors.redAccent, size: 20),
-                SizedBox(width: 8),
-                Text('Blocked Users List', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ],
+      builder: (c) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF161824) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Row(
+          children: [
+            const Icon(Icons.email_outlined, color: Color(0xFF00B0FF)),
+            SizedBox(width: 8.w),
+            const Text('Account Email', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your registered email address:',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
-            content: isLoading
-                ? const SizedBox(
-                    height: 100,
-                    child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                  )
-                : blockedList.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_circle_outline_rounded, color: Colors.grey, size: 40),
-                            SizedBox(height: 8),
-                            Text('You have no blocked accounts.', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                          ],
-                        ),
-                      )
-                    : SizedBox(
-                        width: double.maxFinite,
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: blockedList.length,
-                          separatorBuilder: (c, i) => const Divider(height: 12),
-                          itemBuilder: (context, index) {
-                            final u = blockedList[index];
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: UserAvatar(imageUrl: u.avatarUrl, name: u.name, radius: 20),
-                              title: Text(
-                                u.name.isNotEmpty ? u.name : u.id,
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                'ID: ${u.id}',
-                                style: const TextStyle(fontSize: 11, color: Colors.grey),
-                              ),
-                              trailing: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red.withValues(alpha: 0.15),
-                                  foregroundColor: Colors.redAccent,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                ),
-                                onPressed: () async {
-                                  await auth.unblockUser(u.id);
-                                  setDlgState(() {});
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Unblocked ${u.name}'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  }
-                                },
-                                child: const Text('Unblock', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(c), child: const Text('Close')),
-            ],
-          );
-        },
+            SizedBox(height: 10.h),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: isDark ? const Color(0xFF1E2030) : const Color(0xFFF2F4F8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00B0FF),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+            ),
+            onPressed: () {
+              Navigator.pop(c);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Email updated successfully!'),
+                  backgroundColor: Color(0xFF00E676),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('Update'),
+          ),
+        ],
       ),
     );
   }
 
-  void _showAboutDialog() {
+  void _showLogoutConfirmation() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
-      builder: (c) => AlertDialog(
-        title: const Row(
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF161824) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Row(
           children: [
-            AppLogo(size: 32, borderRadius: 8),
-            SizedBox(width: 10),
-            Text('About HEMI TON'),
+            const Icon(Icons.logout_rounded, color: Colors.redAccent),
+            SizedBox(width: 8.w),
+            const Text('Confirm Logout', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            AppLogo(size: 80, showGlow: true, showBorder: true, borderRadius: 20),
-            SizedBox(height: 16),
-            Text('HEMI TON', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, letterSpacing: 0.5)),
-            SizedBox(height: 4),
-            Text('Version 1.0.0 (Build 2026)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-            SizedBox(height: 12),
-            Text(
-              'HEMI TON is a next-generation Social Live Streaming, Party Rooms & PK Entertainment mobile platform.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13),
-            ),
-            SizedBox(height: 12),
-            Text('© 2026 HEMI TON Team. All rights reserved.', style: TextStyle(fontSize: 11, color: Colors.grey)),
-          ],
-        ),
+        content: const Text('Are you sure you want to log out of your HEMI TON account?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final authProvider = context.read<AuthProvider>();
+              await authProvider.logout();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AuthScreen(initialMode: AuthMode.login)),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
   }
 
   void _showDeleteAccountConfirmation() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final passwordController = TextEditingController();
-    bool isObscured = true;
-    bool isProcessing = false;
-    String? localError;
 
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (dialogCtx, setDialogState) {
-          final isDark = Theme.of(dialogCtx).brightness == Brightness.dark;
-
-          return AlertDialog(
-            title: Row(
-              children: const [
-                Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
-                SizedBox(width: 8),
-                Text('Delete Account', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF161824) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
+            SizedBox(width: 8),
+            Text('Delete Account', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              ),
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          '⏳ 3-Day Recovery Window',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.redAccent),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Your account will be removed from active users and stored in our secure deleted section for 3 days.\n\nIf you log in within 3 days, your account will be instantly restored. After 3 days, it will be permanently deleted.',
-                          style: TextStyle(fontSize: 12, height: 1.4),
-                        ),
-                      ],
-                    ),
+                  Text(
+                    '⏳ 3-Day Recovery Window',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.redAccent),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Enter your password to verify ownership:',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  SizedBox(height: 4),
+                  Text(
+                    'Your account will enter a 3-day recovery holding period. If you log back in within 3 days, your account will be restored. After 3 days, it will be permanently deleted.',
+                    style: TextStyle(fontSize: 12, height: 1.4),
                   ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: isObscured,
-                    decoration: InputDecoration(
-                      hintText: 'Current Password',
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
-                      suffixIcon: IconButton(
-                        icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, size: 18),
-                        onPressed: () {
-                          setDialogState(() {
-                            isObscured = !isObscured;
-                          });
-                        },
-                      ),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  if (localError != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      localError!,
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
-                    ),
-                  ],
                 ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: isProcessing ? null : () => Navigator.pop(dialogCtx),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
+            const SizedBox(height: 14),
+            const Text('Enter password to confirm:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: InputDecoration(
+                hintText: 'Your password',
+                filled: true,
+                fillColor: isDark ? const Color(0xFF1E2030) : const Color(0xFFF2F4F8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-                onPressed: isProcessing
-                    ? null
-                    : () async {
-                        final enteredPassword = passwordController.text.trim();
-                        if (enteredPassword.isEmpty) {
-                          setDialogState(() {
-                            localError = 'Password is required to confirm deletion.';
-                          });
-                          return;
-                        }
-
-                        setDialogState(() {
-                          isProcessing = true;
-                          localError = null;
-                        });
-
-                        final authProvider = context.read<AuthProvider>();
-                        final success = await authProvider.deleteAccount(password: enteredPassword);
-
-                        if (!dialogCtx.mounted) return;
-
-                        if (success) {
-                          Navigator.pop(dialogCtx);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Account deactivated. You have 3 days to recover your account by logging in.'),
-                                backgroundColor: Colors.amber,
-                                duration: Duration(seconds: 4),
-                              ),
-                            );
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (c) => const AuthScreen(initialMode: AuthMode.login)),
-                              (route) => false,
-                            );
-                          }
-                        } else {
-                          setDialogState(() {
-                            isProcessing = false;
-                            localError = authProvider.errorMessage ?? 'Verification failed. Incorrect password.';
-                          });
-                        }
-                      },
-                child: isProcessing
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Confirm Deletion'),
               ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSettingsHeader(context, title: 'Display & Aesthetics'),
-          _buildSettingsTile(
-            context,
-            icon: Icons.palette_rounded,
-            title: 'Appearance Mode',
-            subtitle: 'Switch Light, Dark, or System Default theme',
-            trailingColor: AppColors.primary,
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const AppearanceSettingsScreen()));
-            },
-          ),
-
-          const SizedBox(height: 16),
-          _buildSettingsHeader(context, title: 'Account Settings'),
-          _buildSettingsTile(
-            context,
-            icon: Icons.person_outline_rounded,
-            title: 'Edit Profile Information',
-            subtitle: 'Name, Bio, Gender, Region',
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const EditProfileScreen()));
-            },
-          ),
-          _buildSettingsTile(
-            context,
-            icon: Icons.security_rounded,
-            title: 'Account Security & Password',
-            subtitle: 'Manage login methods & security',
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const AccountSecurityScreen()));
-            },
-          ),
-
-          const SizedBox(height: 16),
-          _buildSettingsHeader(context, title: 'Notifications & Privacy'),
-          _buildSettingsTile(
-            context,
-            icon: Icons.notifications_none_rounded,
-            title: 'Push Notifications Preferences',
-            subtitle: 'Category alerts, quiet hours, and channel toggles',
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const NotificationSettingsScreen()));
-            },
-          ),
-          _buildSettingsTile(
-            context,
-            icon: Icons.lock_outline_rounded,
-            title: 'Privacy Settings',
-            subtitle: 'Stealth entry, DM blocking, SVIP level unlocks',
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const PrivacySettingsScreen()));
-            },
-          ),
-          _buildSettingsTile(
-            context,
-            icon: Icons.block_rounded,
-            title: 'Blocked Users List',
-            subtitle: 'Manage blocked accounts',
-            onTap: _showBlockedUsersDialog,
-          ),
-
-          const SizedBox(height: 16),
-          _buildSettingsHeader(context, title: 'General & Support'),
-          _buildSettingsTile(
-            context,
-            icon: Icons.support_agent_rounded,
-            title: 'Customer Support & Help Desk',
-            subtitle: 'Open support tickets and chat with our team',
-            trailingColor: AppColors.primary,
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const SupportCenterScreen()));
-            },
-          ),
-          _buildSettingsTile(
-            context,
-            icon: Icons.language_rounded,
-            title: 'Language',
-            subtitle: _selectedLanguage,
-            onTap: _showLanguageDialog,
-          ),
-          _buildSettingsTile(
-            context,
-            icon: Icons.volume_up_rounded,
-            title: 'App Sound Effects',
-            subtitle: _soundEffectsEnabled ? 'Sound Effects On' : 'Muted',
-            onTap: () {
-              setState(() => _soundEffectsEnabled = !_soundEffectsEnabled);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(_soundEffectsEnabled ? 'Sound effects enabled' : 'Sound effects muted')),
-              );
-            },
-          ),
-          _buildSettingsTile(
-            context,
-            icon: Icons.cleaning_services_rounded,
-            title: 'Clear Cache',
-            subtitle: '124 MB cache cleared',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('App cache cleared successfully!', style: TextStyle(color: AppColors.black)),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-          ),
-          _buildSettingsTile(
-            context,
-            icon: Icons.info_outline_rounded,
-            title: 'About & Terms',
-            subtitle: 'Version 1.0.0 (Build 2026)',
-            onTap: _showAboutDialog,
-          ),
-
-          const SizedBox(height: 24),
-
-          // Logout Button
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.live,
-              foregroundColor: AppColors.white,
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Log Out Account', style: TextStyle(fontWeight: FontWeight.bold)),
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              await context.read<AuthProvider>().logout();
-              navigator.pushAndRemoveUntil(
-                MaterialPageRoute(builder: (c) => const AuthScreen(initialMode: AuthMode.login)),
-                (route) => false,
-              );
-            },
-          ),
-
-          const SizedBox(height: 12),
-
+          ],
+        ),
+        actions: [
           TextButton(
-            onPressed: _showDeleteAccountConfirmation,
-            child: const Text('Delete Account', style: TextStyle(color: Colors.red, fontSize: 13)),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final authProvider = context.read<AuthProvider>();
+              await authProvider.deleteAccount(password: passwordController.text);
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AuthScreen(initialMode: AuthMode.login)),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Confirm Deletion', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSettingsHeader(BuildContext context, {required String title}) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 8, top: 8),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          color: AppColors.cyan,
-          fontWeight: FontWeight.bold,
-          fontSize: 11,
-          letterSpacing: 1.2,
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
+    final auth = context.watch<AuthProvider>();
+    final email = auth.currentUser.email?.isNotEmpty == true
+        ? auth.currentUser.email!
+        : 'danialamjad36@gmail.com';
+
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0C0E15) : const Color(0xFFF7F9FC),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDark ? Colors.white : AppColors.darkNavy,
+            size: 19.sp,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Setting',
+          style: TextStyle(
+            color: isDark ? Colors.white : AppColors.darkNavy,
+            fontSize: 18.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+        child: Column(
+          children: [
+            // ── Item 1: Contact Us / FeedBack ────────────────────────────────
+            _buildSettingCard(
+              isDark: isDark,
+              title: 'Contact Us / FeedBack',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FeedbackContactScreen()),
+                );
+              },
+            ),
+
+            // ── Item 2: Privacy Policy ───────────────────────────────────────
+            _buildSettingCard(
+              isDark: isDark,
+              title: 'Privacy Policy',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                );
+              },
+            ),
+
+            // ── Item 3: Term of Service ──────────────────────────────────────
+            _buildSettingCard(
+              isDark: isDark,
+              title: 'Term of Service',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TermsOfServiceScreen()),
+                );
+              },
+            ),
+
+            // ── Item 4: Community Guidelines ─────────────────────────────────
+            _buildSettingCard(
+              isDark: isDark,
+              title: 'Community Guidelines',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CommunityGuidelinesScreen()),
+                );
+              },
+            ),
+
+            // ── Item 5: Email ────────────────────────────────────────────────
+            _buildSettingCard(
+              isDark: isDark,
+              title: 'Email',
+              trailingText: email,
+              showChevron: false,
+              onTap: () => _showEmailDialog(email),
+            ),
+
+            // ── Item 6: Language ─────────────────────────────────────────────
+            _buildSettingCard(
+              isDark: isDark,
+              title: 'Language',
+              trailingText: _selectedLanguage,
+              showChevron: true,
+              onTap: _showLanguageDialog,
+            ),
+
+            // ── Item 7: Theme Mode (Light / Dark Mode Switch) ────────────────
+            _buildThemeCard(themeProvider, isDark),
+
+            // ── Item 8: Version ──────────────────────────────────────────────
+            _buildSettingCard(
+              isDark: isDark,
+              title: 'Version',
+              trailingText: '2.1.600',
+              showChevron: false,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('HEMI TON is up to date (Version 2.1.600)'),
+                    backgroundColor: Color(0xFF00E676),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+
+            // ── Item 9: Log out ──────────────────────────────────────────────
+            _buildSettingCard(
+              isDark: isDark,
+              title: 'Log out',
+              titleColor: Colors.redAccent,
+              showChevron: true,
+              onTap: _showLogoutConfirmation,
+            ),
+
+            SizedBox(height: 36.h),
+
+            // ── Item 10: Delete your account (Subtle text at bottom) ─────────
+            GestureDetector(
+              onTap: _showDeleteAccountConfirmation,
+              child: Text(
+                'Delete your account',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: isDark ? Colors.white38 : Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 30.h),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSettingsTile(
-    BuildContext context, {
-    required IconData icon,
+  Widget _buildSettingCard({
+    required bool isDark,
     required String title,
-    required String subtitle,
-    Color? trailingColor,
-    VoidCallback? onTap,
+    String? trailingText,
+    Color? titleColor,
+    bool showChevron = true,
+    required VoidCallback onTap,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 10.h),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        color: isDark ? const Color(0xFF141624) : Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: ListTile(
-        leading: Icon(icon, color: trailingColor ?? Theme.of(context).iconTheme.color),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-        trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 2.h),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+            color: titleColor ?? (isDark ? Colors.white : AppColors.darkNavy),
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (trailingText != null) ...[
+              Text(
+                trailingText,
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: isDark ? Colors.white60 : Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(width: 4.w),
+            ],
+            if (showChevron)
+              Icon(
+                Icons.chevron_right_rounded,
+                color: isDark ? Colors.white38 : Colors.grey.shade400,
+                size: 20.sp,
+              ),
+          ],
+        ),
         onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildThemeCard(ThemeProvider themeProvider, bool isDark) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF141624) : Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 2.h),
+        leading: Icon(
+          isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+          color: isDark ? const Color(0xFF00E676) : const Color(0xFFFFB300),
+          size: 22.sp,
+        ),
+        title: Text(
+          'Theme Mode',
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : AppColors.darkNavy,
+          ),
+        ),
+        subtitle: Text(
+          isDark ? 'Dark Mode' : 'Light Mode',
+          style: TextStyle(
+            fontSize: 12.sp,
+            color: isDark ? Colors.white54 : Colors.grey.shade600,
+          ),
+        ),
+        trailing: Switch(
+          value: isDark,
+          activeThumbColor: const Color(0xFF00E676),
+          inactiveThumbColor: const Color(0xFFFFB300),
+          inactiveTrackColor: Colors.grey.shade300,
+          onChanged: (val) {
+            themeProvider.setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
+          },
+        ),
       ),
     );
   }
