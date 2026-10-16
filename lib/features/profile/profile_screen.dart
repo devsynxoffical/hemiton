@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,11 +11,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/wallet_provider.dart';
 import '../settings/settings_screen.dart';
 import '../settings/edit_profile_screen.dart';
-import 'user_profile_details_screen.dart';
 import '../wallet/wallet_screen.dart';
 import '../wallet/diamonds_wallet_screen.dart';
 import '../store/store_screen.dart';
-import '../svip/svip_center_screen.dart';
 import 'visitors_screen.dart';
 import '../../widgets/user_list_sheet.dart';
 import 'modules/invite_code_screen.dart';
@@ -44,8 +41,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String? _customCoverPath;
-
   @override
   void initState() {
     super.initState();
@@ -89,96 +84,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     }
-  }
-
-  Future<void> _pickCoverImage(ImageSource source) async {
-    try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(
-        source: source,
-        maxWidth: 1200,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
-      if (pickedFile != null && mounted) {
-        setState(() {
-          _customCoverPath = pickedFile.path;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎉 Cover image updated successfully!'),
-            backgroundColor: Color(0xFF00E676),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update cover: $e'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showCoverPickerOptions(BuildContext context, bool isDark) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: isDark ? const Color(0xFF13151D) : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2.r),
-                  ),
-                ),
-                SizedBox(height: 16.h),
-                Text(
-                  'Upload Custom Cover',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.darkNavy,
-                  ),
-                ),
-                SizedBox(height: 16.h),
-                ListTile(
-                  leading: const Icon(Icons.photo_camera_rounded, color: Color(0xFFFF1493)),
-                  title: Text('Take Photo', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickCoverImage(ImageSource.camera);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.photo_library_rounded, color: Color(0xFF00E5FF)),
-                  title: Text('Choose from Gallery', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickCoverImage(ImageSource.gallery);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   void _showAvatarPickerOptions(BuildContext context, bool isDark) {
@@ -410,121 +315,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          // ── 1. Top Cover: User Uploadable Cover Background ─────────────────
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 250.h,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (_customCoverPath != null)
-                  Image.file(File(_customCoverPath!), fit: BoxFit.cover)
-                else
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF1E1035), Color(0xFF0C1028), Color(0xFF07060E)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-
-                // Strong dark gradient overlay for 100% crystal-clear text contrast
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.55),
-                        Colors.black.withValues(alpha: 0.3),
-                        isDark
-                            ? const Color(0xFF07060E).withValues(alpha: 0.98)
-                            : const Color(0xFFF6F8FB).withValues(alpha: 0.98),
-                      ],
-                      stops: const [0.0, 0.5, 1.0],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── 2. Scrollable Body Content ────────────────────────────────────
-          SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Row: Settings Icon (Right)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Top Row: Upload Cover Button (Left) & Settings Icon (Right)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Upload Cover Button
-                      GestureDetector(
-                        onTap: () => _showCoverPickerOptions(context, isDark),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.camera_alt_outlined, color: Colors.white, size: 14.sp),
-                              SizedBox(width: 4.w),
-                              Text(
-                                'Cover',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                      );
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(7.w),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
+                          width: 1.2,
                         ),
                       ),
-
-                      // Settings Icon (Hexagon gear on right)
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                          );
-                        },
-                        child: Container(
-                          padding: EdgeInsets.all(7.w),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.settings_outlined,
-                            color: const Color(0xFF00E5FF),
-                            size: 20.w,
-                          ),
-                        ),
+                      child: Icon(
+                        Icons.settings_outlined,
+                        color: const Color(0xFF00E5FF),
+                        size: 20.w,
                       ),
-                    ],
+                    ),
                   ),
+                ],
+              ),
 
                   SizedBox(height: 12.h),
 
@@ -561,9 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-        ],
-      ),
-    );
+        );
   }
 
   // ===========================================================================
@@ -928,9 +753,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSvipBanner(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SVIPCenterScreen()),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('SVIP Privileges Center Coming Soon!'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
         );
       },
       child: Container(
@@ -1225,7 +1053,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => UserProfileDetailsScreen(user: user)),
+                    MaterialPageRoute(builder: (_) => const EditProfileScreen()),
                   );
                 },
               ),

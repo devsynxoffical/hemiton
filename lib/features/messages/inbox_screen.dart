@@ -31,6 +31,7 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _showRecentVisitors = true;
 
   // Demo conversations matching Image 3 reference
   final List<_ConversationData> _demoChats = [
@@ -435,12 +436,13 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
 
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+      padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 120.h),
       children: [
-        // ── Recent Visitors Banner (Matching Image 3) ────────────────────────
-        _buildRecentVisitorsCard(isDark),
-
-        SizedBox(height: 10.h),
+        // ── Recent Visitors Banner (Dismissible notification) ───────────────
+        if (_showRecentVisitors) ...[
+          _buildRecentVisitorsCard(isDark),
+          SizedBox(height: 10.h),
+        ],
 
         // ── Conversations List ──────────────────────────────────────────────
         ...filteredChats.map((chat) => _buildConversationTile(chat, isDark)),
@@ -451,6 +453,7 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
   Widget _buildRecentVisitorsCard(bool isDark) {
     return GestureDetector(
       onTap: () {
+        setState(() => _showRecentVisitors = false);
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const VisitorsScreen()),
@@ -522,20 +525,34 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
               ),
             ),
 
-            // Time & Arrow
+            // Time & Dismiss Close Button
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                GestureDetector(
+                  onTap: () => setState(() => _showRecentVisitors = false),
+                  child: Container(
+                    padding: EdgeInsets.all(4.w),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 14.sp,
+                      color: isDark ? Colors.white54 : Colors.grey,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 6.h),
                 Text(
                   'just now',
                   style: TextStyle(
-                    fontSize: 11.sp,
+                    fontSize: 10.5.sp,
                     color: const Color(0xFF00E676),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4.h),
-                Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white38 : Colors.grey, size: 18.sp),
               ],
             ),
           ],
@@ -760,7 +777,7 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
                 )
               : ListView.separated(
                   physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 120.h),
                   itemCount: filteredFriends.length,
                   separatorBuilder: (context, _) => SizedBox(height: 8.h),
                   itemBuilder: (context, index) {

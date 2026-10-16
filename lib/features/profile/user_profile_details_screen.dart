@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../core/services/personal_details_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/user_model.dart';
 import '../messages/chat_screen.dart';
@@ -31,6 +32,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
   late TabController _tabController;
   late UserModel _user;
   bool _isFollowing = true;
+  UserPersonalDetails? _details;
 
   @override
   void initState() {
@@ -53,6 +55,10 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
         region: 'Islamabad, Pakistan',
       );
     }
+
+    PersonalDetailsService.instance.getDetails(_user).then((d) {
+      if (mounted) setState(() => _details = d);
+    });
   }
 
   @override
@@ -71,11 +77,22 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
             : '22219520')
         : '22219520';
     final int age = _user.age > 0 ? _user.age : 24;
+    final bool isFemale = _user.gender.toLowerCase() == 'female' ||
+        displayName.toLowerCase().contains('anam') ||
+        displayName.toLowerCase().contains('shanzay') ||
+        displayName.toLowerCase().contains('sonia') ||
+        displayName.toLowerCase().contains('neha') ||
+        displayName.toLowerCase().contains('queen') ||
+        displayName.toLowerCase().contains('ayesha') ||
+        displayName.toLowerCase().contains('alishbha') ||
+        displayName.toLowerCase().contains('hina');
     final String avatarUrl = _user.avatarUrl.isNotEmpty
         ? _user.avatarUrl
-        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80';
-    final String location = _user.region.isNotEmpty ? _user.region : 'Islamabad, Pakistan';
-    final String hometown = _user.region.isNotEmpty ? _user.region.split(',').first.trim() : 'Islamabad';
+        : (isFemale
+            ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80'
+            : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80');
+    final String location = _details?.location ?? (_user.region.isNotEmpty ? _user.region : 'Islamabad, Pakistan');
+    final String hometown = _details?.hometown ?? (_user.region.isNotEmpty ? _user.region.split(',').first.trim() : 'Islamabad');
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F111A) : Colors.white,
@@ -264,17 +281,17 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
 
                       SizedBox(height: 6.h),
 
-                      // Gender / Age Badge ("♂ 24")
+                      // Gender / Age Badge (Dynamic Male ♂ or Female ♀)
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF29B6F6),
+                          color: isFemale ? const Color(0xFFFF4081) : const Color(0xFF29B6F6),
                           borderRadius: BorderRadius.circular(10.r),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.male_rounded, size: 12.sp, color: Colors.white),
+                            Icon(isFemale ? Icons.female_rounded : Icons.male_rounded, size: 12.sp, color: Colors.white),
                             SizedBox(width: 2.w),
                             Text(
                               '$age',
@@ -349,7 +366,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                             width: 22.w,
                             height: 3.h,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00E676),
+                              color: const Color(0xFFFF1493),
                               borderRadius: BorderRadius.circular(2.r),
                             ),
                           ),
@@ -386,13 +403,13 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
 
                       Row(
                         children: [
-                          _buildDetailItem(Icons.height_rounded, '175cm', isDark),
-                          SizedBox(width: 40.w),
-                          _buildDetailItem(Icons.speed_rounded, '55-60KG', isDark),
+                          _buildDetailItem(Icons.height_rounded, _details?.height ?? (isFemale ? '165cm' : '175cm'), isDark),
+                          SizedBox(width: 35.w),
+                          _buildDetailItem(Icons.speed_rounded, _details?.weight ?? (isFemale ? '50-54KG' : '60-65KG'), isDark),
                         ],
                       ),
                       SizedBox(height: 12.h),
-                      _buildDetailItem(Icons.work_outline_rounded, 'Developer', isDark),
+                      _buildDetailItem(Icons.work_outline_rounded, _details?.occupation ?? (isFemale ? 'Streamer & Creator' : 'Developer'), isDark),
                     ],
                   ),
                 ),
@@ -417,12 +434,9 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                       Wrap(
                         spacing: 8.w,
                         runSpacing: 8.h,
-                        children: const [
-                          _TraitChip(label: 'Romantic'),
-                          _TraitChip(label: 'Patient'),
-                          _TraitChip(label: 'Adventurous'),
-                          _TraitChip(label: 'Ambitious'),
-                        ],
+                        children: (_details?.traits ?? ['Romantic', 'Patient', 'Adventurous', 'Ambitious'])
+                            .map((t) => _TraitChip(label: t))
+                            .toList(),
                       ),
                     ],
                   ),
@@ -510,12 +524,12 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                 height: 48.h,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF00E676), Color(0xFF00B0FF)],
+                    colors: [Color(0xFFFF1493), Color(0xFF7928CA)],
                   ),
                   borderRadius: BorderRadius.circular(26.r),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00E676).withValues(alpha: 0.45),
+                      color: const Color(0xFFFF1493).withValues(alpha: 0.45),
                       blurRadius: 14,
                       offset: const Offset(0, 4),
                     ),
