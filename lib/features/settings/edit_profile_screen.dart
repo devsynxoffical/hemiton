@@ -1,0 +1,833 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/theme/app_colors.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/country_picker_sheet.dart';
+import '../../widgets/user_avatar.dart';
+
+class EditProfileScreen extends StatefulWidget {
+  const EditProfileScreen({super.key});
+
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late TextEditingController _nameController;
+  late TextEditingController _bioController;
+  late TextEditingController _regionController;
+
+  String _selectedGender = 'Not Specified';
+  DateTime? _selectedBirthday;
+  String? _coverImagePath;
+  String? _avatarImagePath;
+  bool _isSaving = false;
+
+  late String _initialName;
+  late String _initialBio;
+  late String _initialRegion;
+  late String _initialGender;
+  DateTime? _initialBirthday;
+
+  final List<String> _selectedTags = [];
+
+  static const List<String> _availableTags = [
+    'Music 🎵',
+    'Gaming 🎮',
+    'Dancing 💃',
+    'Streaming 🎙️',
+    'Chatting 💬',
+    'Anime 🌸',
+    'Fashion 👠',
+    'Travel ✈️',
+    'Fitness 🏋️',
+  ];
+
+  static const List<String> _prohibitedWords = [
+    'admin',
+    'administrator',
+    'moderator',
+    'official',
+    'support',
+    'system',
+    'zeparty',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<AuthProvider>().currentUser;
+    String rawName = user.name;
+    final isTechId = rawName.isEmpty ||
+        rawName.length >= 20 ||
+        RegExp(r'^[a-zA-Z0-9_-]{20,}$').hasMatch(rawName) ||
+        rawName.startsWith('user_') ||
+        rawName.startsWith('google_') ||
+        rawName == 'Guest';
+    if (isTechId) {
+      if (user.username.isNotEmpty && !user.username.startsWith('user_') && user.username.length < 20) {
+        rawName = user.username[0].toUpperCase() + user.username.substring(1);
+      } else {
+        rawName = 'ZeParty Member';
+      }
+    }
+    _initialName = rawName.length > 25 ? rawName.substring(0, 25).trim() : rawName;
+    _initialBio = user.bio;
+    String initialCountryStr = user.region.trim();
+    if (initialCountryStr.isEmpty || initialCountryStr == 'Global' || initialCountryStr == 'United States') {
+      initialCountryStr = '${user.countryFlag} ${user.cleanCountryName.isNotEmpty && user.cleanCountryName != "United States" ? user.cleanCountryName : "Pakistan"}';
+    } else if (!initialCountryStr.contains(RegExp(r'[\u{1F1E6}-\u{1F1FF}]{2}', unicode: true))) {
+      initialCountryStr = '${user.countryFlag} ${user.cleanCountryName.isNotEmpty ? user.cleanCountryName : "Pakistan"}';
+    }
+    _initialRegion = initialCountryStr;
+    _initialGender = user.gender.isEmpty ? 'Not Specified' : user.gender;
+
+    _nameController = TextEditingController(text: _initialName);
+    _bioController = TextEditingController(text: _initialBio);
+    _regionController = TextEditingController(text: _initialRegion);
+    _selectedGender = _initialGender;
+    _selectedBirthday = user.dateOfBirth ?? (user.age > 0 ? DateTime.now().subtract(Duration(days: user.age * 365)) : DateTime(2000, 1, 1));
+    _initialBirthday = _selectedBirthday;
+    _selectedTags.addAll(['Music 🎵', 'Streaming 🎙️']);
+
+    _nameController.addListener(_onFieldChanged);
+    _bioController.addListener(_onFieldChanged);
+    _regionController.addListener(_onFieldChanged);
+  }
+
+  bool _pendingCountryLock = false;
+
+  void _onFieldChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _showCountrySelectionDialog(BuildContext context, bool isDark) {
+    final user = context.read<AuthProvider>().currentUser;
+    CountryPickerSheet.show(
+      context,
+      initialCode: user.countryFlag,
+      onSelect: (country) {
+        setState(() {
+          _regionController.text = '${country.flag} ${country.name}';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Selected ${country.flag} ${country.name}. Tap Save to update profile.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _bioController.dispose();
+    _regionController.dispose();
+    super.dispose();
+  }
+
+  bool get _hasChanges {
+    return _nameController.text.trim() != _initialName.trim() ||
+        _bioController.text.trim() != _initialBio.trim() ||
+        _regionController.text.trim() != _initialRegion.trim() ||
+        _selectedGender != _initialGender ||
+        _selectedBirthday != _initialBirthday ||
+        _coverImagePath != null ||
+        _avatarImagePath != null;
+  }
+
+  Future<void> _pickAvatar(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 1080,
+        maxHeight: 1080,
+        imageQuality: 80,
+      );
+
+      if (pickedFile != null && mounted) {
+        setState(() {
+          _avatarImagePath = pickedFile.path;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎉 Avatar image selected! Tap Save to apply.'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick avatar: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickCoverImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 1200,
+        maxHeight: 600,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null && mounted) {
+        setState(() {
+          _coverImagePath = pickedFile.path;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🖼️ Profile cover image selected!'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick cover image: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showAvatarOptions(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.getCard(isDark),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Change Profile Photo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAvatar(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: Colors.purpleAccent),
+                title: const Text('Choose from Gallery', style: TextStyle(fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAvatar(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCoverOptions(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.getCard(isDark),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            const Text('Change Profile Cover', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
+              title: const Text('Take Cover Photo'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickCoverImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.image_rounded, color: Colors.amberAccent),
+              title: const Text('Choose Cover from Gallery'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickCoverImage(ImageSource.gallery);
+              },
+            ),
+            if (_coverImagePath != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                title: const Text('Remove Cover Image', style: TextStyle(color: Colors.redAccent)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() => _coverImagePath = null);
+                },
+              ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _selectBirthday() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedBirthday ?? DateTime(2000, 1, 1),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedBirthday = picked;
+      });
+    }
+  }
+
+  bool _containsProhibitedWords(String text) {
+    final lower = text.toLowerCase();
+    for (final word in _prohibitedWords) {
+      if (lower.contains(word)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_hasChanges || _isSaving) return;
+
+    final name = _nameController.text.trim();
+    final bio = _bioController.text.trim();
+    final region = _regionController.text.trim();
+
+    if (name.length < 2 || name.length > 25) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Display Name must be between 2 and 25 characters.'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
+    }
+
+    if (_containsProhibitedWords(name) || _containsProhibitedWords(bio)) {
+      showDialog(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Security & Title Filter Alert'),
+          content: const Text(
+            'Your proposed Name or Bio contains prohibited terms or reserved Admin titles ("admin", "official", "support", etc.). Please choose a different title.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    final auth = context.read<AuthProvider>();
+
+    final user = auth.currentUser;
+    final success = await auth.updateProfile(
+      name: name,
+      username: null,
+      bio: bio,
+      gender: _selectedGender,
+      region: region.isEmpty ? '🇵🇰 Pakistan' : region,
+      birthDate: _selectedBirthday,
+      avatarUrl: _avatarImagePath,
+      coverUrl: _coverImagePath,
+      isCountryLocked: _pendingCountryLock || user.isCountryLocked,
+    );
+
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🎉 Profile updated successfully!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Failed to update profile. Please try again.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<bool> _confirmDiscardChanges() async {
+    if (!_hasChanges) return true;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Discard Unsaved Changes?'),
+        content: const Text('You have unsaved changes to your profile. Are you sure you want to discard them?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Continue Editing', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Discard', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = context.watch<AuthProvider>().currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = AppColors.getCard(isDark);
+    final borderColor = AppColors.getBorder(isDark);
+    final primaryText = AppColors.getTextPrimary(isDark);
+    final secondaryText = AppColors.getTextSecondary(isDark);
+
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _confirmDiscardChanges();
+        if (shouldPop && context.mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.getBackground(isDark),
+        appBar: AppBar(
+          title: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: AppColors.getBackground(isDark),
+          elevation: 0,
+          actions: [
+            TextButton(
+              onPressed: _hasChanges && !_isSaving ? _saveProfile : null,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                    )
+                  : Text(
+                      'Save',
+                      style: TextStyle(
+                        color: _hasChanges ? AppColors.primary : Colors.grey,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ─── Profile Cover Header ───
+              GestureDetector(
+                onTap: () => _showCoverOptions(context, isDark),
+                child: Container(
+                  height: 130,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF2E1A47), Color(0xFF120F24)],
+                    ),
+                    image: (_coverImagePath != null &&
+                            File(_coverImagePath!).existsSync() &&
+                            File(_coverImagePath!).lengthSync() > 0)
+                        ? DecorationImage(
+                            image: FileImage(File(_coverImagePath!)),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text('Edit Cover', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ─── Avatar Header ───
+              Center(
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _showAvatarOptions(context, isDark),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          (_avatarImagePath != null &&
+                                  File(_avatarImagePath!).existsSync() &&
+                                  File(_avatarImagePath!).lengthSync() > 0)
+                              ? CircleAvatar(
+                                  radius: 46,
+                                  backgroundImage: FileImage(File(_avatarImagePath!)),
+                                )
+                              : UserAvatar(imageUrl: user.avatarUrl, radius: 46),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextButton(
+                      onPressed: () => _showAvatarOptions(context, isDark),
+                      child: const Text('Change Avatar', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ─── Account Identity & Registered Email (Read-Only) ───
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.verified_user_rounded, size: 16, color: AppColors.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Account Identity',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: primaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // User ID
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('User ID (7-Digit)', style: TextStyle(fontSize: 12, color: secondaryText)),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                user.id,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: Colors.amber,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            InkWell(
+                              onTap: () {
+                                Clipboard.setData(ClipboardData(text: user.id));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('User ID copied to clipboard'), duration: Duration(seconds: 2)),
+                                );
+                              },
+                              child: const Icon(Icons.copy_rounded, size: 16, color: AppColors.primary),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 18),
+                    // Registered Email (Read-Only)
+                    Row(
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.lock_outline_rounded, size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text('Registered Email', style: TextStyle(fontSize: 12, color: secondaryText)),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            (user.email != null && user.email!.isNotEmpty)
+                                ? user.email!
+                                : ((user.phone != null && user.phone!.isNotEmpty) ? user.phone! : 'Not linked'),
+                            textAlign: TextAlign.end,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: primaryText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '🔒 Registered email is permanent and cannot be modified.',
+                      style: TextStyle(fontSize: 10, color: secondaryText),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ─── User Profile Editable Fields ───
+              Text('Personal Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: primaryText)),
+              const SizedBox(height: 12),
+
+              // Display Name
+              TextField(
+                controller: _nameController,
+                maxLength: 25,
+                decoration: InputDecoration(
+                  labelText: 'Display Name (Nickname)',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+
+
+              // Personal Note / Bio
+              TextField(
+                controller: _bioController,
+                maxLines: 3,
+                maxLength: 150,
+                decoration: InputDecoration(
+                  labelText: 'Personal Note / Bio',
+                  hintText: 'Share a note about yourself...',
+                  alignLabelWithHint: true,
+                  prefixIcon: const Icon(Icons.edit_note_rounded),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Region / Country (1-time change flag-based searchable picker)
+              Consumer<AuthProvider>(
+                builder: (context, authProv, _) {
+                  final isLocked = authProv.currentUser.isCountryLocked || _pendingCountryLock;
+                  final currentFlag = RegExp(r'[\u{1F1E6}-\u{1F1FF}]{2}', unicode: true).firstMatch(_regionController.text)?.group(0) ?? authProv.currentUser.countryFlag;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      InkWell(
+                        onTap: () => _showCountrySelectionDialog(context, isDark),
+                        borderRadius: BorderRadius.circular(14),
+                        child: IgnorePointer(
+                          child: TextField(
+                            controller: _regionController,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            decoration: InputDecoration(
+                              labelText: 'Country / Region',
+                              hintText: 'Tap to select country...',
+                              prefixIcon: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                child: Text(currentFlag, style: const TextStyle(fontSize: 22)),
+                              ),
+                              suffixIcon: Icon(
+                                isLocked ? Icons.lock_rounded : Icons.arrow_drop_down,
+                                color: isLocked ? Colors.amberAccent : AppColors.getTextSecondary(isDark),
+                              ),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                              filled: isLocked,
+                              fillColor: isLocked ? (isDark ? Colors.black26 : Colors.grey.shade100) : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Text(
+                          isLocked
+                              ? '🔒 Permanent Account Country (1-time change limit reached)'
+                              : 'Region changes follow product account policy (1-time permanent change limit)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isLocked ? Colors.amber.shade700 : AppColors.getTextSecondary(isDark),
+                            fontWeight: isLocked ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Gender Selection
+              Text('Gender', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: primaryText)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: ['Female', 'Male', 'Non-Binary', 'Not Specified'].map((g) {
+                  final isSelected = _selectedGender == g;
+                  return ChoiceChip(
+                    label: Text(g),
+                    selected: isSelected,
+                    selectedColor: AppColors.primary,
+                    labelStyle: TextStyle(color: isSelected ? Colors.black : primaryText),
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedGender = g);
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+
+              // Birthday Picker
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.cake_rounded, color: Colors.pinkAccent),
+                title: const Text('Birthdate', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                subtitle: Text(
+                  _selectedBirthday != null
+                      ? '${_selectedBirthday!.year}-${_selectedBirthday!.month.toString().padLeft(2, '0')}-${_selectedBirthday!.day.toString().padLeft(2, '0')}'
+                      : 'Select Birthdate',
+                  style: TextStyle(color: secondaryText, fontSize: 12),
+                ),
+                trailing: const Icon(Icons.calendar_today_rounded, size: 18),
+                onTap: _selectBirthday,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Interest Tags Multi-Select
+              Text('Interest Tags', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: primaryText)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _availableTags.map((tag) {
+                  final isSelected = _selectedTags.contains(tag);
+                  return FilterChip(
+                    label: Text(tag),
+                    selected: isSelected,
+                    selectedColor: Colors.amberAccent,
+                    labelStyle: TextStyle(color: isSelected ? Colors.black : primaryText, fontSize: 11),
+                    onSelected: (val) {
+                      setState(() {
+                        if (val) {
+                          _selectedTags.add(tag);
+                        } else {
+                          _selectedTags.remove(tag);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

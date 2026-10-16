@@ -1,0 +1,521 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/utils/formatters.dart';
+import '../../models/vip_honor_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/svip_provider.dart';
+import '../../providers/vip_honor_provider.dart';
+import '../../widgets/design/premium_card.dart';
+import '../../widgets/user_avatar.dart';
+
+class VIPHonorScreen extends StatefulWidget {
+  const VIPHonorScreen({super.key});
+
+  @override
+  State<VIPHonorScreen> createState() => _VIPHonorScreenState();
+}
+
+class _VIPHonorScreenState extends State<VIPHonorScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<VIPHonorProvider>().fetchHonorData(
+          context.read<AuthProvider>(),
+          context.read<SVIPProvider>(),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = AppColors.getPrimary(isDark);
+    final honor = context.watch<VIPHonorProvider>();
+    final auth = context.watch<AuthProvider>();
+    final svip = context.watch<SVIPProvider>();
+    final hof = honor.hallOfFame;
+    final rem = hof.remainingDuration;
+
+    return Scaffold(
+      backgroundColor: AppColors.getBackground(isDark),
+      appBar: AppBar(
+        backgroundColor: AppColors.getBackground(isDark),
+        title: Text(
+          'VIP Honor & Hall of Fame',
+          style: TextStyle(
+            color: AppColors.getTextPrimary(isDark),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: primary,
+          labelColor: primary,
+          unselectedLabelColor: AppColors.getTextSecondary(isDark),
+          tabs: const [
+            Tab(text: 'VIP Rank'),
+            Tab(text: 'Hall of Fame 🏆'),
+          ],
+        ),
+      ),
+      body: honor.isLoading
+          ? Center(child: CircularProgressIndicator(color: primary))
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                // ─── TAB 1: VIP RANK ───
+                _buildVipRankTab(honor, auth, svip, isDark, primary),
+
+                // ─── TAB 2: HALL OF FAME ───
+                _buildHallOfFameTab(honor, hof, rem, isDark, primary),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildVipRankTab(VIPHonorProvider honor, AuthProvider auth, SVIPProvider svip, bool isDark, Color primary) {
+    final hasUser = auth.hasUser;
+    final user = auth.currentUser;
+    final nickname = hasUser ? user.name : 'You';
+    final avatarUrl = hasUser ? user.avatarUrl : null;
+    final svipLvl = svip.currentLevel > 0 ? svip.currentLevel : (hasUser ? (int.tryParse(user.vipLevel) ?? 0) : 0);
+    final currentPoints = svip.currentPoints > 0 ? svip.currentPoints : (hasUser ? user.coins : 0);
+    final rank = honor.hallOfFame.currentUserRank.rank;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Personal Real VIP Standing
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: AppColors.getPremiumGradient(isDark),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: AppColors.primaryGlow(isDark, alpha: 0.3, blur: 16),
+            ),
+            child: Row(
+              children: [
+                UserAvatar(
+                  imageUrl: avatarUrl,
+                  name: nickname,
+                  radius: 28,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nickname,
+                        style: TextStyle(
+                          color: AppColors.onPrimary(isDark: isDark),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Global Rank #$rank • SVIP $svipLvl',
+                        style: TextStyle(
+                          color: AppColors.onPrimary(isDark: isDark).withValues(alpha: 0.8),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${AppFormatters.formatNumber(currentPoints)} Honor Points',
+                        style: TextStyle(
+                          color: AppColors.onPrimary(isDark: isDark),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          Text(
+            'VIP Honor Reward Tiers',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+              color: AppColors.getTextPrimary(isDark),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          ...honor.hallOfFame.rewardTiers.map((tier) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: PremiumCard(
+                padding: const EdgeInsets.all(16),
+                radius: 16,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          tier.rankRangeText,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: primary,
+                          ),
+                        ),
+                        Text(
+                          '+${AppFormatters.formatNumber(tier.bonusCoins)} Coins',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppColors.getTextPrimary(isDark),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      tier.title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: AppColors.getTextPrimary(isDark),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${tier.rewardFrame} • ${tier.entranceEffect}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.getTextSecondary(isDark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHallOfFameTab(VIPHonorProvider honor, HallOfFameRanking hof, Duration rem, bool isDark, Color primary) {
+    final hasRankings = hof.topPodium.isNotEmpty || hof.listRankings.isNotEmpty;
+
+    return Column(
+      children: [
+        // Countdown banner (Real season end)
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          color: isDark ? AppColors.softBlack : AppColors.champagneSoft,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.timer_rounded, size: 16, color: Colors.orangeAccent),
+              const SizedBox(width: 6),
+              Text(
+                'Season Ends In: ${rem.inDays}d ${rem.inHours % 24}h ${rem.inMinutes % 60}m',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orangeAccent),
+              ),
+            ],
+          ),
+        ),
+
+        Expanded(
+          child: !hasRankings
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 76,
+                          height: 76,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: primary.withValues(alpha: 0.12),
+                            border: Border.all(color: primary.withValues(alpha: 0.35)),
+                          ),
+                          child: const Center(
+                            child: Text('🏆', style: TextStyle(fontSize: 34)),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          'No Hall of Fame Champions Yet',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.getTextPrimary(isDark),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Recharge SVIP points or send gifts in live party rooms to claim the #1 Grand Emperor throne for this season!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.getTextSecondary(isDark),
+                            fontSize: 12.5,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      // ─── Top 3 Podium ───
+                      _buildTop3Podium(hof.topPodium, isDark, primary),
+
+                      const SizedBox(height: 24),
+
+                      // ─── 4th Onward Ranked List ───
+                      ...hof.listRankings.map((user) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: PremiumCard(
+                            padding: const EdgeInsets.all(12),
+                            radius: 14,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 28,
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '#${user.rank}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 14,
+                                      color: AppColors.getTextSecondary(isDark),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                UserAvatar(
+                                  imageUrl: user.avatarUrl,
+                                  name: user.nickname,
+                                  radius: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(user.countryFlag),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              user.nickname,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                color: AppColors.getTextPrimary(isDark),
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        'SVIP ${user.svipLevel}',
+                                        style: TextStyle(fontSize: 10, color: primary, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  '${AppFormatters.formatNumber(user.points)} pts',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: AppColors.getTextPrimary(isDark),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 60),
+                    ],
+                  ),
+                ),
+        ),
+
+        // Sticky Bottom User Rank Bar
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.getCard(isDark),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, -3)),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: primary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '#${hof.currentUserRank.rank}',
+                    style: TextStyle(color: primary, fontWeight: FontWeight.w900, fontSize: 13),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                UserAvatar(
+                  imageUrl: hof.currentUserRank.avatarUrl,
+                  name: hof.currentUserRank.nickname,
+                  radius: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        hof.currentUserRank.nickname,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.getTextPrimary(isDark)),
+                      ),
+                      Text(
+                        'SVIP ${hof.currentUserRank.svipLevel} • Your Standing',
+                        style: TextStyle(fontSize: 10, color: AppColors.getTextSecondary(isDark)),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${AppFormatters.formatNumber(hof.currentUserRank.points)} pts',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: primary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTop3Podium(List<VIPRankUser> top3, bool isDark, Color primary) {
+    if (top3.isEmpty) return const SizedBox.shrink();
+    final rank1 = top3.isNotEmpty ? top3[0] : null;
+    final rank2 = top3.length > 1 ? top3[1] : null;
+    final rank3 = top3.length > 2 ? top3[2] : null;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Rank 2 (Left)
+        if (rank2 != null) ...[
+          _buildPodiumPillar(rank2, 2, 110, Colors.grey.shade400, '🥈', isDark),
+          const SizedBox(width: 10),
+        ],
+        // Rank 1 (Center - Tallest)
+        if (rank1 != null) ...[
+          _buildPodiumPillar(rank1, 1, 140, Colors.amber, '👑', isDark),
+        ],
+        // Rank 3 (Right)
+        if (rank3 != null) ...[
+          const SizedBox(width: 10),
+          _buildPodiumPillar(rank3, 3, 90, Colors.brown.shade400, '🥉', isDark),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPodiumPillar(VIPRankUser user, int rank, double height, Color crownColor, String crownIcon, bool isDark) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(crownIcon, style: const TextStyle(fontSize: 22)),
+          const SizedBox(height: 2),
+          UserAvatar(
+            imageUrl: user.avatarUrl,
+            name: user.nickname,
+            radius: rank == 1 ? 30 : 24,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            user.nickname,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              color: AppColors.getTextPrimary(isDark),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            '${(user.points / 1000000).toStringAsFixed(1)}M pts',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.getTextSecondary(isDark),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: height,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [crownColor.withValues(alpha: 0.6), crownColor.withValues(alpha: 0.2)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: crownColor, width: 1),
+            ),
+            child: Center(
+              child: Text(
+                '#$rank',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 22,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
