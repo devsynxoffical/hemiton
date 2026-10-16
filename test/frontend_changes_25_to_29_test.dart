@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
-import 'package:zeparty/core/utils/noble_badge_helper.dart';
-import 'package:zeparty/models/coin_seller_model.dart';
-import 'package:zeparty/models/live_host_model.dart';
-import 'package:zeparty/models/party_message_model.dart';
-import 'package:zeparty/models/user_model.dart';
-import 'package:zeparty/providers/auth_provider.dart';
-import 'package:zeparty/providers/coin_agency_provider.dart';
-import 'package:zeparty/providers/live_host_provider.dart';
-import 'package:zeparty/providers/live_party_provider.dart';
-import 'package:zeparty/features/live_host/live_host_center_screen.dart';
+import 'package:hemiton/core/utils/noble_badge_helper.dart';
+import 'package:hemiton/models/coin_seller_model.dart';
+import 'package:hemiton/models/live_host_model.dart';
+import 'package:hemiton/models/party_message_model.dart';
+import 'package:hemiton/models/user_model.dart';
+import 'package:hemiton/providers/auth_provider.dart';
+import 'package:hemiton/providers/coin_agency_provider.dart';
+import 'package:hemiton/providers/live_host_provider.dart';
+import 'package:hemiton/providers/live_party_provider.dart';
+import 'package:hemiton/features/live_host/live_host_center_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

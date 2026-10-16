@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zeparty/core/repositories/store_repository.dart';
-import 'package:zeparty/models/agency_application_model.dart';
-import 'package:zeparty/models/store_item_model.dart';
-import 'package:zeparty/models/user_model.dart';
-import 'package:zeparty/providers/agency_provider.dart';
-import 'package:zeparty/providers/auth_provider.dart';
-import 'package:zeparty/providers/store_provider.dart';
+import 'package:hemiton/core/repositories/store_repository.dart';
+import 'package:hemiton/models/agency_application_model.dart';
+import 'package:hemiton/models/store_item_model.dart';
+import 'package:hemiton/models/user_model.dart';
+import 'package:hemiton/providers/agency_provider.dart';
+import 'package:hemiton/providers/auth_provider.dart';
+import 'package:hemiton/providers/store_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:zeparty/models/user_model.dart';
-import 'package:zeparty/models/store_item_model.dart';
-import 'package:zeparty/core/repositories/store_repository.dart';
-import 'package:zeparty/providers/backpack_provider.dart';
-import 'package:zeparty/providers/recharge_agency_provider.dart';
-import 'package:zeparty/providers/auth_provider.dart';
-import 'package:zeparty/providers/wallet_provider.dart';
-import 'package:zeparty/providers/usd_balance_provider.dart';
-import 'package:zeparty/features/recharge_agency/recharge_agency_screen.dart';
+import 'package:hemiton/models/user_model.dart';
+import 'package:hemiton/models/store_item_model.dart';
+import 'package:hemiton/core/repositories/store_repository.dart';
+import 'package:hemiton/providers/backpack_provider.dart';
+import 'package:hemiton/providers/recharge_agency_provider.dart';
+import 'package:hemiton/providers/auth_provider.dart';
+import 'package:hemiton/providers/wallet_provider.dart';
+import 'package:hemiton/providers/usd_balance_provider.dart';
+import 'package:hemiton/features/recharge_agency/recharge_agency_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zeparty/core/services/room_config_manager.dart';
-import 'package:zeparty/core/utils/formatters.dart';
-import 'package:zeparty/models/live_room_model.dart';
-import 'package:zeparty/models/user_model.dart';
+import 'package:hemiton/core/services/room_config_manager.dart';
+import 'package:hemiton/core/utils/formatters.dart';
+import 'package:hemiton/models/live_room_model.dart';
+import 'package:hemiton/models/user_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

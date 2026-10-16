@@ -5,20 +5,20 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zeparty/models/user_model.dart';
-import 'package:zeparty/models/cumulative_recharge_model.dart';
-import 'package:zeparty/providers/wallet_provider.dart';
-import 'package:zeparty/providers/cumulative_recharge_provider.dart';
-import 'package:zeparty/features/wallet/wallet_screen.dart';
-import 'package:zeparty/features/wallet/diamonds_wallet_screen.dart';
-import 'package:zeparty/features/wallet/coin_exchange_screen.dart';
-import 'package:zeparty/features/wallet/diamond_exchange_screen.dart';
-import 'package:zeparty/features/host/host_dashboard_screen.dart';
-import 'package:zeparty/features/recharge/cumulative_recharge_screen.dart';
-import 'package:zeparty/providers/auth_provider.dart';
-import 'package:zeparty/core/theme/theme_provider.dart';
-import 'package:zeparty/providers/wallet_details_provider.dart';
-import 'package:zeparty/core/utils/formatters.dart';
+import 'package:hemiton/models/user_model.dart';
+import 'package:hemiton/models/cumulative_recharge_model.dart';
+import 'package:hemiton/providers/wallet_provider.dart';
+import 'package:hemiton/providers/cumulative_recharge_provider.dart';
+import 'package:hemiton/features/wallet/wallet_screen.dart';
+import 'package:hemiton/features/wallet/diamonds_wallet_screen.dart';
+import 'package:hemiton/features/wallet/coin_exchange_screen.dart';
+import 'package:hemiton/features/wallet/diamond_exchange_screen.dart';
+import 'package:hemiton/features/host/host_dashboard_screen.dart';
+import 'package:hemiton/features/recharge/cumulative_recharge_screen.dart';
+import 'package:hemiton/providers/auth_provider.dart';
+import 'package:hemiton/core/theme/theme_provider.dart';
+import 'package:hemiton/providers/wallet_details_provider.dart';
+import 'package:hemiton/core/utils/formatters.dart';
 
 class _MockHttpOverrides extends HttpOverrides {
   @override
