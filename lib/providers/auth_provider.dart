@@ -136,9 +136,9 @@ class AuthProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  static const String _userSessionKey = 'zeparty_user_session_json';
-  static const String _followingIdsKey = 'zeparty_following_ids';
-  static const String _blockedIdsKey = 'zeparty_blocked_ids';
+  static const String _userSessionKey = 'hemiton_user_session_json';
+  static const String _followingIdsKey = 'hemiton_following_ids';
+  static const String _blockedIdsKey = 'hemiton_blocked_ids';
 
   Future<void> _saveUserLocalSession(UserModel user) async {
     try {

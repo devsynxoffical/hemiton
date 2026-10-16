@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/theme_provider.dart';
 import '../providers/messaging_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// HEMI TON Custom Bottom Navigation Bar
-/// Matching the exact visual design:
-/// - Dark Navy (#00152E) background with subtle top rounded curve & border
-/// - Home, Live (with ((●)) radio waves icon & active pink indicator underline)
-/// - Center floating vivid Pink (+) button
-/// - Chats (with unread notification badge)
-/// - Profile
+/// Matching the exact visual design reference:
+/// - Dark Mode:  PURE BLACK (#000000) background
+/// - Light Mode: PURE WHITE (#FFFFFF) background
+/// - Active Tab: Pink (#FF1493) with glowing horizontal underline bar
+/// - Center Button: Floating Hot Pink (#FF1493) to Neon Pink (#FF00FF) (+) button
+/// - Chats Tab: Notification badge in Hot Pink
 class GlassNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
@@ -25,6 +26,8 @@ class GlassNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
+
     // Unread count for Chats tab
     int unreadMessages = 0;
     try {
@@ -32,7 +35,7 @@ class GlassNavBar extends StatelessWidget {
       unreadMessages = messaging.totalCombinedUnreadCount;
     } catch (_) {}
     if (unreadMessages <= 0) {
-      unreadMessages = 2; // Matches default demonstration count from design reference
+      unreadMessages = 2; // Matches demonstration count from design reference
     }
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -44,37 +47,26 @@ class GlassNavBar extends StatelessWidget {
         alignment: Alignment.bottomCenter,
         clipBehavior: Clip.none,
         children: [
-          // Main Nav Bar Body
+          // Main Nav Bar Body (Black in Dark Mode, White in Light Mode)
           Container(
             height: 66.h + bottomPadding,
             padding: EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding * 0.6 : 0),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF00152E), // Dark Navy
-                  Color(0xFF021733),
-                  Color(0xFF00152E),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+              color: isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF),
               borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
               border: Border(
                 top: BorderSide(
-                  color: const Color(0xFF143868).withValues(alpha: 0.8),
+                  color: isDark
+                      ? const Color(0xFF222222)
+                      : const Color(0xFFE2E8F0),
                   width: 1.2,
                 ),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  blurRadius: 20,
+                  color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.08),
+                  blurRadius: 18,
                   offset: const Offset(0, -4),
-                ),
-                BoxShadow(
-                  color: AppColors.purple.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, -2),
                 ),
               ],
             ),
@@ -83,41 +75,49 @@ class GlassNavBar extends StatelessWidget {
               children: [
                 // Tab 0: Home
                 _buildNavItem(
+                  context: context,
                   index: 0,
                   icon: Icons.home_rounded,
                   label: 'Home',
                   isSelected: selectedIndex == 0,
+                  isDark: isDark,
                   onTap: () => onTabSelected(0),
                 ),
 
                 // Tab 1: Live
                 _buildNavItem(
+                  context: context,
                   index: 1,
                   icon: Icons.sensors_rounded, // ((●)) Antenna Broadcast Waves
                   label: 'Live',
                   isSelected: selectedIndex == 1,
+                  isDark: isDark,
                   onTap: () => onTabSelected(1),
                 ),
 
-                // Spacer for Center Action Button
+                // Spacer for Center Floating Action Button
                 SizedBox(width: 68.w),
 
                 // Tab 3: Chats
                 _buildNavItem(
+                  context: context,
                   index: 3,
                   icon: Icons.chat_bubble_rounded,
                   label: 'Chats',
                   isSelected: selectedIndex == 3,
+                  isDark: isDark,
                   badgeCount: unreadMessages,
                   onTap: () => onTabSelected(3),
                 ),
 
                 // Tab 4: Profile
                 _buildNavItem(
+                  context: context,
                   index: 4,
                   icon: Icons.person_rounded,
                   label: 'Profile',
                   isSelected: selectedIndex == 4,
+                  isDark: isDark,
                   onTap: () => onTabSelected(4),
                 ),
               ],
@@ -158,7 +158,7 @@ class GlassNavBar extends StatelessWidget {
                     ),
                   ],
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: Colors.white.withValues(alpha: 0.4),
                     width: 1.5,
                   ),
                 ),
@@ -178,15 +178,19 @@ class GlassNavBar extends StatelessWidget {
   }
 
   Widget _buildNavItem({
+    required BuildContext context,
     required int index,
     required IconData icon,
     required String label,
     required bool isSelected,
+    required bool isDark,
     required VoidCallback onTap,
     int? badgeCount,
   }) {
     const selectedColor = AppColors.pink;
-    final unselectedColor = Colors.white.withValues(alpha: 0.82);
+    final unselectedColor = isDark
+        ? Colors.white.withValues(alpha: 0.85)
+        : AppColors.darkNavy.withValues(alpha: 0.65);
 
     return Expanded(
       child: GestureDetector(
@@ -226,7 +230,7 @@ class GlassNavBar extends StatelessWidget {
                         shape: badgeCount > 99 ? BoxShape.rectangle : BoxShape.circle,
                         borderRadius: badgeCount > 99 ? BorderRadius.circular(10.r) : null,
                         border: Border.all(
-                          color: const Color(0xFF00152E),
+                          color: isDark ? Colors.black : Colors.white,
                           width: 1.5,
                         ),
                         boxShadow: [

@@ -56,9 +56,15 @@ Future<void> main() async {
     environment: kReleaseMode ? AppEnvironment.production : AppEnvironment.development,
   );
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Initialize Firebase (safely guarded so app runs smoothly until you configure your new Firebase)
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('[Firebase] Initialized successfully');
+  } catch (e) {
+    debugPrint('[Firebase] Waiting for new Firebase configuration (Run flutterfire configure): $e');
+  }
 
   runApp(const LiveStreamApp());
 }

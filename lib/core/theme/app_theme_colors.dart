@@ -4,13 +4,8 @@ import 'app_colors.dart';
 /// ---------------------------------------------------------------------------
 /// AppThemeColors — a single resolved palette for HEMI TON.
 ///
-/// USAGE in any widget:
-///   final tc = AppThemeColors.of(context);
-///   container.color = tc.primary;     // Pink (#FF1493)
-///   text.color     = tc.textPrimary;  // White (dark) or Dark Navy (light)
-///
-/// Dark mode  → Dark Navy (#00152E) + Pink (#FF1493) + Purple (#8A2BE2)
-/// Light mode → White (#FFFFFF) + Pink (#FF1493) + Dark Navy (#00152E)
+/// Dark mode  → PURE BLACK (#000000) Background + Pink (#FF1493) & Purple (#8A2BE2)
+/// Light mode → PURE WHITE (#FFFFFF) Background + Pink (#FF1493) & Dark Navy (#00152E)
 /// ---------------------------------------------------------------------------
 class AppThemeColors {
   final bool isDark;
@@ -24,9 +19,9 @@ class AppThemeColors {
   }
 
   // ── Surfaces / Backgrounds ────────────────────────────────────────────────
-  Color get background      => isDark ? AppColors.darkNavy       : AppColors.lightBackground;
-  Color get card            => isDark ? AppColors.cardNavy       : AppColors.lightCard;
-  Color get surface         => isDark ? AppColors.softNavy       : AppColors.lightSurface;
+  Color get background      => isDark ? AppColors.black          : AppColors.lightBackground;
+  Color get card            => isDark ? AppColors.cardBlack      : AppColors.lightCard;
+  Color get surface         => isDark ? AppColors.softBlack      : AppColors.lightSurface;
   Color get surfaceVariant  => isDark ? AppColors.darkBlack      : AppColors.lightCardSecondary;
 
   // ── Primary accent (Pink & Purple) ────────────────────────────────────────
@@ -38,13 +33,13 @@ class AppThemeColors {
   Color get onPrimary       => AppColors.white;
 
   // ── Text ─────────────────────────────────────────────────────────────────
-  Color get textPrimary     => isDark ? AppColors.white          : AppColors.darkNavy;
+  Color get textPrimary     => isDark ? AppColors.primaryText    : AppColors.lightTextPrimary;
   Color get textSecondary   => isDark ? AppColors.secondaryText  : AppColors.lightTextSecondary;
   Color get textMuted       => isDark ? AppColors.mutedText      : AppColors.lightMuted;
 
   // ── Borders ───────────────────────────────────────────────────────────────
-  Color get border          => isDark ? AppColors.borderNavy     : AppColors.lightBorder;
-  Color get borderStrong    => isDark ? AppColors.pink           : AppColors.pink.withValues(alpha: 0.7);
+  Color get border          => isDark ? AppColors.borderDarkNavy : AppColors.lightBorder;
+  Color get borderStrong    => AppColors.pink;
 
   // ── Gradients ─────────────────────────────────────────────────────────────
   LinearGradient get accentGradient   => AppColors.primaryGradient;
@@ -54,12 +49,12 @@ class AppThemeColors {
       ? const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF00152E), Color(0xFF001024), Color(0xFF00152E)],
+          colors: [Color(0xFF000000), Color(0xFF080808), Color(0xFF000000)],
         )
       : const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFFFFFFF), Color(0xFFF7FAFD), Color(0xFFF0F5FA)],
+          colors: [Color(0xFFFFFFFF), Color(0xFFF9FAFC), Color(0xFFFFFFFF)],
         );
 
   // ── Shadows / Glows ───────────────────────────────────────────────────────

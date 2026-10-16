@@ -4,19 +4,23 @@ import 'package:flutter/material.dart';
 /// Design System — HEMI TON
 ///
 /// Palette:
-/// - Pink:            #FF1493 (Primary Accent / CTA / Selected Tab)
-/// - Purple:          #8A2BE2 (Secondary Accent / Gradients)
-/// - Blue:            #00BFFF (Electric Sky Blue / Badges)
-/// - Dark Navy:       #00152E (Deep Background & Dark Mode Surface)
+/// - Pink:            #FF1493 (Primary Accent / CTA / Selected Tab / Buttons)
+/// - Purple:          #8A2BE2 (Secondary Accent / Gradients / Highlights)
+/// - Blue:            #00BFFF (Electric Sky Blue / Chips / Badges)
+/// - Dark Navy:       #00152E (Deep Navy Accent / High-contrast Light Text)
 /// - White:           #FFFFFF (Light Mode Background & Crisp Contrast)
 /// - Golden Yellow:   #FFD700 (Coins, VIP, Special Rewards)
-/// - Neon Pink Glow:  #FF00FF (Highlights, Glows, Live Pulse)
+/// - Neon Pink Glow:  #FF00FF (Glows, Neon Highlights, Live Pulse)
+///
+/// Mode Backgrounds:
+/// - DARK MODE:  PURE BLACK (#000000)
+/// - LIGHT MODE: PURE WHITE (#FFFFFF)
 /// ---------------------------------------------------------------------------
 class AppColors {
   AppColors._();
 
   // =====================================================================
-  // HEMI TON Official Brand Palette
+  // User's Exact Brand Palette
   // =====================================================================
   static const Color pink = Color(0xFFFF1493);
   static const Color purple = Color(0xFF8A2BE2);
@@ -27,56 +31,63 @@ class AppColors {
   static const Color goldenYellow = Color(0xFFFFD700);
   static const Color neonPink = Color(0xFFFF00FF);
 
-  // Surfaces / Tints derived from Dark Navy
-  static const Color cardNavy = Color(0xFF072142);
-  static const Color softNavy = Color(0xFF0D2D56);
-  static const Color borderNavy = Color(0xFF143868);
-  static const Color lightNavy = Color(0xFF133663);
-
   // =====================================================================
-  // Dark Surfaces (Mapped to Dark Navy System)
+  // Backgrounds & Surfaces:
+  // Dark Mode  -> PURE BLACK (#000000)
+  // Light Mode -> PURE WHITE (#FFFFFF)
   // =====================================================================
-  static const Color black = Color(0xFF00152E); // Dark Navy background
-  static const Color darkBlack = Color(0xFF001024); // Deeper Dark Navy
-  static const Color cardBlack = Color(0xFF072142); // Card Navy
-  static const Color softBlack = Color(0xFF0D2D56); // Soft Navy Surface
+  static const Color black = Color(0xFF000000); // Pure Black (Dark Mode Background)
+  static const Color darkBlack = Color(0xFF080808); // Near Black
+  static const Color cardBlack = Color(0xFF111111); // Dark Card Surface
+  static const Color softBlack = Color(0xFF181818); // Soft Dark Surface
+  static const Color borderDarkNavy = Color(0xFF1E2330); // Subtle Dark Border
 
-  // Light-mode surfaces (White theme)
-  static const Color champagne = Color(0xFFF4F7FB);
-  static const Color champagneCard = Color(0xFFFFFFFF);
-  static const Color champagneSoft = Color(0xFFE8EEF5);
+  // Light Mode Background & Surfaces
+  static const Color lightBackground = Color(0xFFFFFFFF); // Pure White (Light Mode Background)
+  static const Color lightCard = Color(0xFFFFFFFF); // Pure White Card
+  static const Color lightSurface = Color(0xFFF7F8FA); // Light Off-White Surface
+  static const Color lightBorder = Color(0xFFE2E8F0); // Light Border
+  static const Color lightTextPrimary = Color(0xFF00152E); // Dark Navy Text
+  static const Color lightTextSecondary = Color(0xFF4A5568);
+  static const Color lightMuted = Color(0xFF718096);
+
+  // Surface aliases for backward compatibility
+  static const Color champagne = lightBackground;
+  static const Color champagneCard = lightCard;
+  static const Color champagneSoft = lightSurface;
 
   // =====================================================================
   // Primary Accents (Pink / Purple / Blue / Neon Pink)
+  // ZeParty old gold/bronze mapped directly to HEMI TON palette
   // =====================================================================
   static const Color warmGold = pink; // Primary Pink (#FF1493)
   static const Color metallicGold = purple; // Purple (#8A2BE2)
   static const Color lightGold = neonPink; // Neon Pink (#FF00FF)
-  static const Color deepBronze = blue; // Electric Blue (#00BFFF)
+  static const Color deepBronze = blue; // Electric Sky Blue (#00BFFF)
   static const Color goldBorder = pink; // Pink border
   static const Color goldHighlight = neonPink; // Neon glow
-  static const Color borderGold = borderNavy; // Dark navy border
+  static const Color borderGold = borderDarkNavy;
 
   // =====================================================================
-  // Text
+  // Text Colors
   // =====================================================================
-  static const Color primaryText = Color(0xFFFFFFFF); // White
-  static const Color secondaryText = Color(0xFFB0C4DE); // Light Steel Navy
-  static const Color mutedText = Color(0xFF7A94B8); // Muted Navy
+  static const Color primaryText = Color(0xFFFFFFFF); // White on Black
+  static const Color secondaryText = Color(0xFFB0B0B0); // Muted on Black
+  static const Color mutedText = Color(0xFF757575);
 
   // =====================================================================
-  // Status / System
+  // Status Colors
   // =====================================================================
   static const Color success = Color(0xFF10B981);
   static const Color liveGreen = Color(0xFF10B981);
-  static const Color liveRed = pink; // Live Pink
+  static const Color liveRed = pink; // Live Pink (#FF1493)
   static const Color live = pink;
   static const Color error = Color(0xFFFF3366);
   static const Color danger = Color(0xFFE11D48);
   static const Color transparent = Color(0x00000000);
 
   // =====================================================================
-  // Gradients — HEMI TON
+  // Gradients — HEMI TON Brand (Pink · Purple · Blue · Neon Pink · Gold)
   // =====================================================================
 
   /// Vibrant Pink-to-Purple brand gradient
@@ -100,14 +111,14 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
-  /// Golden Yellow gradient for coins and special rewards
+  /// Golden Yellow gradient for coins & rewards (#FFD700)
   static const LinearGradient goldGradient = LinearGradient(
     colors: [Color(0xFFFFE066), gold, Color(0xFFE6AC00)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  /// Multistep metallic gradient
+  /// Multistep brand gradient (Pink -> Purple -> Blue -> Purple -> Pink)
   static const LinearGradient metallicGoldGradient = LinearGradient(
     colors: [
       purple,
@@ -132,37 +143,27 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
-  /// Dark Navy reflection banner gradient
+  /// Dark banner gradient on Black
   static const LinearGradient bannerGradient = LinearGradient(
     colors: [
-      Color(0xFF00152E),
-      Color(0xFF0A2244),
-      Color(0xFF1A123C),
-      Color(0xFF00152E),
+      Color(0xFF000000),
+      Color(0xFF0F0B18),
+      Color(0xFF160924),
+      Color(0xFF000000),
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  /// Navy wash gradient behind screens
+  /// Soft wash gradient behind screens
   static const LinearGradient bronzeWashGradient = LinearGradient(
     colors: [
-      Color(0xFF00152E),
-      Color(0xFF072142),
-      Color(0xFF00152E),
+      Color(0xFF000000),
+      Color(0xFF0D0814),
+      Color(0xFF000000),
     ],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-  );
-
-  /// Soft pink radial glow
-  static final RadialGradient radialGoldGlow = RadialGradient(
-    colors: [
-      pink.withValues(alpha: 0.20),
-      purple.withValues(alpha: 0.08),
-      transparent,
-    ],
-    radius: 1.1,
   );
 
   // =====================================================================
@@ -215,33 +216,15 @@ class AppColors {
   ];
 
   // =====================================================================
-  // Light Mode Palette — White · Pink · Purple · Dark Navy
-  // =====================================================================
-  static const Color lightBackground = Color(0xFFFFFFFF);
-  static const Color lightCard = Color(0xFFFFFFFF);
-  static const Color lightSurface = Color(0xFFF3F6FA);
-  static const Color lightTextPrimary = Color(0xFF00152E); // Dark Navy text
-  static const Color lightTextSecondary = Color(0xFF334E68);
-  static const Color lightMuted = Color(0xFF627D98);
-  static const Color lightBorder = Color(0xFFDCE4EC);
-  static const Color lightAccent = pink;
-
-  static const Color metallicBlue = blue;
-  static const Color lightBlueAccent = Color(0xFFE1F5FE);
-  static const Color darkNavyAccent = darkNavy;
-  static const Color royalBlue = blue;
-  static const Color deepRoyalBlue = Color(0xFF0288D1);
-
-  // =====================================================================
-  // Primary & Color Aliases
+  // Color Aliases
   // =====================================================================
   static const Color primaryBlue = blue;
   static const Color cyan = blue;
   static const Color violet = purple;
   static const Color accent = pink;
   static const Color primary = pink;
-  static const Color deepBlue = Color(0xFF00224D);
-  static const Color lightBlue = Color(0xFFE1F5FE);
+  static const Color deepBlue = darkNavy;
+  static const Color lightBlue = Color(0xFFE0F7FA);
   static const Color veryLightSurface = Color(0xFFF8FAFC);
   static const Color lightCardSecondary = Color(0xFFF1F5F9);
   static const Color secondaryTextLight = lightTextSecondary;
@@ -252,8 +235,6 @@ class AppColors {
   static const Color cardBackground = cardBlack;
   static const Color background = black;
   static const Color surface = softBlack;
-
-  // Dark-mode aliases
   static const Color darkBackground = black;
   static const Color darkCard = cardBlack;
   static const Color darkCardSecondary = softBlack;
@@ -265,7 +246,13 @@ class AppColors {
   static const Color mutedIconDark = mutedText;
   static const Color borderDark = borderGold;
 
-  // Blue / Secondary gradients
+  static const Color metallicBlue = blue;
+  static const Color lightBlueAccent = Color(0xFFE0F7FA);
+  static const Color darkNavyAccent = darkNavy;
+  static const Color royalBlue = blue;
+  static const Color deepRoyalBlue = darkNavy;
+  static const Color lightAccent = pink;
+
   static const LinearGradient metallicBlueGradient = LinearGradient(
     colors: [
       purple,
@@ -278,36 +265,26 @@ class AppColors {
     end: Alignment.bottomCenter,
   );
 
-  static const LinearGradient premiumBlueGradient = LinearGradient(
-    colors: [
-      purple,
-      blue,
-      neonPink,
-      pink,
-    ],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
+  static const LinearGradient premiumBlueGradient = premiumGradient;
   static const LinearGradient bannerBlueGradient = bannerGradient;
   static const LinearGradient vipGradient = premiumGradient;
 
   // =====================================================================
-  // Theme-aware helpers
-  // Dark Mode  = Dark Navy (#00152E) + Pink (#FF1493) + Purple (#8A2BE2)
-  // Light Mode = White (#FFFFFF) + Pink (#FF1493) + Dark Navy (#00152E)
+  // Theme-Aware Helpers
+  // DARK MODE:  BACKGROUND IS BLACK (#000000)
+  // LIGHT MODE: BACKGROUND IS WHITE (#FFFFFF)
   // =====================================================================
   static Color getPrimary(bool isDark) => pink;
   static Color getPrimaryDeep(bool isDark) => purple;
   static Color getPrimaryLight(bool isDark) => neonPink;
   static Color getOnPrimary(bool isDark) => white;
-  static Color getBackground(bool isDark) => isDark ? darkNavy : lightBackground;
-  static Color getCard(bool isDark) => isDark ? cardNavy : lightCard;
-  static Color getSurface(bool isDark) => isDark ? softNavy : lightSurface;
-  static Color getTextPrimary(bool isDark) => isDark ? white : lightTextPrimary;
+  static Color getBackground(bool isDark) => isDark ? black : lightBackground;
+  static Color getCard(bool isDark) => isDark ? cardBlack : lightCard;
+  static Color getSurface(bool isDark) => isDark ? softBlack : lightSurface;
+  static Color getTextPrimary(bool isDark) => isDark ? primaryText : lightTextPrimary;
   static Color getTextSecondary(bool isDark) => isDark ? secondaryText : lightTextSecondary;
   static Color getMuted(bool isDark) => isDark ? mutedText : lightMuted;
-  static Color getBorder(bool isDark) => isDark ? borderNavy : lightBorder;
+  static Color getBorder(bool isDark) => isDark ? borderDarkNavy : lightBorder;
   static Color getBorderStrong(bool isDark) => pink;
   static LinearGradient getAccentGradient(bool isDark) => primaryGradient;
   static LinearGradient getPremiumGradient(bool isDark) => premiumGradient;
@@ -317,9 +294,9 @@ class AppColors {
   static Color onGold({bool isDark = true}) => white;
 
   static Color shimmerHighlight({bool isDark = true}) =>
-      isDark ? const Color(0xFF143868) : const Color(0xFFE2E8F0);
+      isDark ? const Color(0xFF202020) : const Color(0xFFE2E8F0);
   static Color shimmerBase({bool isDark = true}) =>
-      isDark ? const Color(0xFF072142) : const Color(0xFFF1F5F9);
+      isDark ? const Color(0xFF101010) : const Color(0xFFF1F5F9);
 
   static List<BoxShadow> primaryGlow(
     bool isDark, {
@@ -342,7 +319,9 @@ class AppColors {
       ];
 }
 
-/// Reusable background that layers a soft radial glow over the canvas.
+/// Reusable background widget:
+/// Dark Mode  -> PURE BLACK (#000000)
+/// Light Mode -> PURE WHITE (#FFFFFF)
 class LuxBackground extends StatelessWidget {
   final Widget child;
   final bool showGlow;
@@ -359,27 +338,7 @@ class LuxBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(
-        gradient: isDark
-            ? const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF00152E), // Dark Navy
-                  Color(0xFF001024),
-                  Color(0xFF00152E),
-                ],
-              )
-            : const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFFFFFFF),
-                  Color(0xFFF7FAFD),
-                  Color(0xFFF0F5FA),
-                ],
-              ),
-      ),
+      color: isDark ? AppColors.black : AppColors.lightBackground,
       child: Stack(
         children: [
           if (showGlow)
@@ -390,7 +349,7 @@ class LuxBackground extends StatelessWidget {
                     gradient: RadialGradient(
                       colors: [
                         (isDark ? AppColors.pink : AppColors.purple)
-                            .withValues(alpha: isDark ? 0.12 : 0.05),
+                            .withValues(alpha: isDark ? 0.08 : 0.04),
                         AppColors.transparent,
                         AppColors.transparent,
                       ],
