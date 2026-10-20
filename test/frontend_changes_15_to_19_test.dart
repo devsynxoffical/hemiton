@@ -107,7 +107,7 @@ void main() {
       final app = AgencyApplicationModel(
         id: 'test_app_1',
         applicantUserId: 'user_1001',
-        applicantZePartyId: '1001',
+        applicantHemitonId: '1001',
         applicantName: 'Sarah Jenkins',
         applicantAvatar: 'https://example.com/avatar.png',
         agencyName: 'Star Talent Agency',
@@ -132,7 +132,7 @@ void main() {
       final agencyProvider = AgencyProvider();
       final result = await agencyProvider.submitAgencyApplication(
         applicantUserId: 'user_1',
-        applicantZePartyId: '1',
+        applicantHemitonId: '1',
         applicantName: 'Test Applicant',
         applicantAvatar: '',
         agencyName: 'Test Agency',
@@ -149,7 +149,7 @@ void main() {
       final agencyProvider = AgencyProvider();
       final result = await agencyProvider.submitAgencyApplication(
         applicantUserId: 'user_1',
-        applicantZePartyId: '1',
+        applicantHemitonId: '1',
         applicantName: 'Test Applicant',
         applicantAvatar: '',
         agencyName: 'Test Agency',
@@ -166,7 +166,7 @@ void main() {
       final agencyProvider = AgencyProvider();
       final result = await agencyProvider.submitAgencyApplication(
         applicantUserId: 'user_1',
-        applicantZePartyId: '10001',
+        applicantHemitonId: '10001',
         applicantName: 'Test Applicant',
         applicantAvatar: '',
         agencyName: 'Phoenix Agency',
@@ -187,7 +187,7 @@ void main() {
       final agencyProvider = AgencyProvider();
       await agencyProvider.submitAgencyApplication(
         applicantUserId: 'user_2',
-        applicantZePartyId: '10002',
+        applicantHemitonId: '10002',
         applicantName: 'Applicant 2',
         applicantAvatar: '',
         agencyName: 'Apex Agency',
@@ -213,7 +213,7 @@ void main() {
       final agencyProvider = AgencyProvider();
       await agencyProvider.submitAgencyApplication(
         applicantUserId: 'user_3',
-        applicantZePartyId: '10003',
+        applicantHemitonId: '10003',
         applicantName: 'Applicant 3',
         applicantAvatar: '',
         agencyName: 'Rejected Agency',

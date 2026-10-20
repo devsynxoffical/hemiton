@@ -3,17 +3,20 @@ import '../core/services/api_client.dart';
 
 class EmojiPickerSheet extends StatefulWidget {
   final Function(String emoji) onEmojiSelected;
+  final Function(String reactionAsset, String symbol)? onReactionSelected;
   final String? roomId;
 
   const EmojiPickerSheet({
     super.key,
     required this.onEmojiSelected,
+    this.onReactionSelected,
     this.roomId,
   });
 
   static void show(
     BuildContext context, {
     required Function(String emoji) onEmojiSelected,
+    Function(String reactionAsset, String symbol)? onReactionSelected,
     String? roomId,
   }) {
     showModalBottomSheet(
@@ -22,6 +25,7 @@ class EmojiPickerSheet extends StatefulWidget {
       isScrollControlled: true,
       builder: (_) => EmojiPickerSheet(
         onEmojiSelected: onEmojiSelected,
+        onReactionSelected: onReactionSelected,
         roomId: roomId,
       ),
     );
@@ -36,7 +40,151 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
   bool _isLoading = true;
   List<Map<String, dynamic>> _dynamicCategories = [];
 
+  static const List<Map<String, dynamic>> _customAssetCategories = [
+    {
+      'title': 'Live ✨',
+      'icon': Icons.auto_awesome_rounded,
+      'isCustomAssets': true,
+      'items': [
+        {
+          'name': 'Applaud',
+          'icon': 'assets/emojis/panel_icons/emoji_applaud.png',
+          'reaction': 'assets/emojis/reactions/emoji_applaud_reaction.webp',
+          'symbol': '👏',
+        },
+        {
+          'name': 'Laugh',
+          'icon': 'assets/emojis/panel_icons/emoji_laugh.png',
+          'reaction': 'assets/emojis/reactions/emoji_laugh_reaction.webp',
+          'symbol': '😂',
+        },
+        {
+          'name': 'Show Love',
+          'icon': 'assets/emojis/panel_icons/emoji_showlove.png',
+          'reaction': 'assets/emojis/reactions/emoji_showlove_reaction.webp',
+          'symbol': '💖',
+        },
+        {
+          'name': 'Rich',
+          'icon': 'assets/emojis/panel_icons/emoji_rich.png',
+          'reaction': 'assets/emojis/reactions/emoji_rich_reaction.webp',
+          'symbol': '🤑',
+        },
+        {
+          'name': 'Salute',
+          'icon': 'assets/emojis/panel_icons/emoji_salute.png',
+          'reaction': 'assets/emojis/reactions/emoji_salute_reaction.webp',
+          'symbol': '🫡',
+        },
+        {
+          'name': 'Cool',
+          'icon': 'assets/emojis/panel_icons/emoji_smoking.png',
+          'reaction': 'assets/emojis/reactions/emoji_smoking_reaction.webp',
+          'symbol': '😎',
+        },
+        {
+          'name': 'Music',
+          'icon': 'assets/emojis/panel_icons/emoji_music.png',
+          'reaction': 'assets/emojis/reactions/emoji_music_reaction.webp',
+          'symbol': '🎶',
+        },
+        {
+          'name': 'Cry',
+          'icon': 'assets/emojis/panel_icons/emoji_sad.png',
+          'reaction': 'assets/emojis/reactions/emoji_sad_reaction.webp',
+          'symbol': '😭',
+        },
+        {
+          'name': 'Handclap',
+          'icon': 'assets/emojis/panel_icons/emoji_handclap.png',
+          'reaction': 'assets/emojis/reactions/emoji_handclap_reaction.webp',
+          'symbol': '🙌',
+        },
+        {
+          'name': 'Thumbs Up',
+          'icon': 'assets/emojis/panel_icons/emoji_up.png',
+          'reaction': 'assets/emojis/reactions/emoji_up_reaction.webp',
+          'symbol': '👍',
+        },
+        {
+          'name': 'Thumbs Down',
+          'icon': 'assets/emojis/panel_icons/emoji_down.png',
+          'reaction': 'assets/emojis/reactions/emoji_down_reaction.webp',
+          'symbol': '👎',
+        },
+        {
+          'name': 'Point Left',
+          'icon': 'assets/emojis/panel_icons/emoji_left.png',
+          'reaction': 'assets/emojis/reactions/emoji_left_reaction.webp',
+          'symbol': '👈',
+        },
+        {
+          'name': 'Point Right',
+          'icon': 'assets/emojis/panel_icons/emoji_right.png',
+          'reaction': 'assets/emojis/reactions/emoji_right_reaction.webp',
+          'symbol': '👉',
+        },
+      ]
+    },
+    {
+      'title': 'Games 🎲',
+      'icon': Icons.casino_rounded,
+      'isCustomAssets': true,
+      'items': [
+        {
+          'name': 'Roll Dice',
+          'icon': 'assets/emojis/panel_icons/emoji_dice.png',
+          'reaction': 'assets/emojis/game/dice_roll_loop.webp',
+          'symbol': '🎲',
+        },
+        {
+          'name': 'Lucky Digits',
+          'icon': 'assets/emojis/panel_icons/emoji_number.png',
+          'reaction': 'assets/emojis/game/number_roll_loop.webp',
+          'symbol': '🎰',
+        },
+        {
+          'name': 'Dice Face 1',
+          'icon': 'assets/emojis/game/dice_face_1.png',
+          'reaction': 'assets/emojis/game/dice_land_1.webp',
+          'symbol': '⚀',
+        },
+        {
+          'name': 'Dice Face 2',
+          'icon': 'assets/emojis/game/dice_face_2.png',
+          'reaction': 'assets/emojis/game/dice_land_2.webp',
+          'symbol': '⚁',
+        },
+        {
+          'name': 'Dice Face 3',
+          'icon': 'assets/emojis/game/dice_face_3.png',
+          'reaction': 'assets/emojis/game/dice_land_3.webp',
+          'symbol': '⚂',
+        },
+        {
+          'name': 'Dice Face 4',
+          'icon': 'assets/emojis/game/dice_face_4.png',
+          'reaction': 'assets/emojis/game/dice_land_4.webp',
+          'symbol': '⚃',
+        },
+        {
+          'name': 'Dice Face 5',
+          'icon': 'assets/emojis/game/dice_face_5.png',
+          'reaction': 'assets/emojis/game/dice_land_5.webp',
+          'symbol': '⚄',
+        },
+        {
+          'name': 'Dice Face 6',
+          'icon': 'assets/emojis/game/dice_face_6.png',
+          'reaction': 'assets/emojis/game/dice_land_6.webp',
+          'symbol': '⚅',
+        },
+      ]
+    },
+  ];
+
   static const List<Map<String, dynamic>> _defaultCategories = [
+    ..._customAssetCategories,
     {
       'title': 'Popular',
       'icon': Icons.local_fire_department_rounded,
@@ -96,7 +244,10 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
 
           if (mounted && loadedCategories.isNotEmpty) {
             setState(() {
-              _dynamicCategories = loadedCategories;
+              _dynamicCategories = [
+                ..._customAssetCategories,
+                ...loadedCategories,
+              ];
               _tabController.dispose();
               _tabController = TabController(length: _dynamicCategories.length, vsync: this);
               _isLoading = false;
@@ -124,6 +275,17 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
     return Icons.emoji_emotions_rounded;
   }
 
+  void _onSelectAssetEmoji(Map<String, dynamic> item) {
+    final reaction = item['reaction']?.toString() ?? item['icon']?.toString() ?? '';
+    final symbol = item['symbol']?.toString() ?? '✨';
+
+    if (widget.onReactionSelected != null) {
+      widget.onReactionSelected!(reaction, symbol);
+    }
+    widget.onEmojiSelected(reaction);
+    if (mounted) Navigator.pop(context);
+  }
+
   Future<void> _onSelectCustomEmoji(Map<String, dynamic> item) async {
     final symbol = item['symbol']?.toString() ?? item['code']?.toString() ?? '✨';
     final emojiId = item['id']?.toString();
@@ -137,6 +299,9 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
       } catch (_) {}
     }
 
+    if (widget.onReactionSelected != null) {
+      widget.onReactionSelected!(symbol, symbol);
+    }
     widget.onEmojiSelected(symbol);
     if (mounted) Navigator.pop(context);
   }
@@ -153,7 +318,7 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
     final activeCategories = _dynamicCategories.isNotEmpty ? _dynamicCategories : _defaultCategories;
 
     return Container(
-      height: 340,
+      height: 380,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1B2E) : const Color(0xFF2B243B),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -176,15 +341,16 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           // Tab Bar
           TabBar(
             controller: _tabController,
-            isScrollable: activeCategories.length > 5,
-            indicatorColor: Colors.amber,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            indicatorColor: const Color(0xFFFF1493),
             indicatorSize: TabBarIndicatorSize.label,
-            labelColor: Colors.amber,
+            labelColor: const Color(0xFFFF1493),
             unselectedLabelColor: Colors.white54,
             tabs: activeCategories.map((c) => Tab(
               icon: Icon(c['icon'] as IconData, size: 20),
@@ -197,11 +363,70 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
           // Emojis Grid
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF1493)))
                 : TabBarView(
                     controller: _tabController,
                     children: activeCategories.map((cat) {
-                      if (_dynamicCategories.isNotEmpty) {
+                      // 1. Custom Asset Emojis (Live Reactions & Games)
+                      if (cat['isCustomAssets'] == true) {
+                        final List items = cat['items'] as List? ?? [];
+                        return GridView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            childAspectRatio: 0.92,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                          ),
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index] as Map<String, dynamic>;
+                            final iconPath = item['icon'] as String;
+                            final name = item['name'] as String;
+
+                            return GestureDetector(
+                              onTap: () => _onSelectAssetEmoji(item),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.14),
+                                    width: 1,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(6),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      iconPath,
+                                      width: 36,
+                                      height: 36,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => const Text('✨', style: TextStyle(fontSize: 26)),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 10.5,
+                                        color: Colors.white70,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }
+
+                      // 2. Dynamic Backend Items
+                      if (cat['items'] != null) {
                         final List items = cat['items'] as List? ?? [];
                         return GridView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -252,8 +477,8 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
                         );
                       }
 
-                      // Default static fallback
-                      final List<String> emojis = cat['emojis'] as List<String>;
+                      // 3. Default static fallback unicode emojis
+                      final List<String> emojis = (cat['emojis'] as List?)?.cast<String>() ?? [];
                       return GridView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -266,6 +491,9 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
                           final emoji = emojis[index];
                           return GestureDetector(
                             onTap: () {
+                              if (widget.onReactionSelected != null) {
+                                widget.onReactionSelected!(emoji, emoji);
+                              }
                               widget.onEmojiSelected(emoji);
                               Navigator.pop(context);
                             },
@@ -292,4 +520,3 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
     );
   }
 }
-

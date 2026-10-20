@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
@@ -27,6 +27,20 @@ class RoomShareService {
 
   static String generateCoHostLink(String roomId) {
     return 'https://HEMI TON.app/live/cohost/$roomId';
+  }
+
+  /// Copies text to clipboard and shows share snackbar
+  static Future<void> shareText(BuildContext context, String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Share link copied to clipboard!'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   /// Share Co-Host Invitation Link to split screen and co-host live stream

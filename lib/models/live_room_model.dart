@@ -1,4 +1,4 @@
-﻿import 'user_model.dart';
+import 'user_model.dart';
 
 class LiveRoomModel {
   final String id;
@@ -32,6 +32,11 @@ class LiveRoomModel {
   final String closeRoomEffect;
   final List<String> bannedUserIds;
 
+  // Feature 1: Friend-of-Friend Live fields
+  final bool isFriendOfFriend;
+  final String? mutualFriendName;
+  final String? mutualFriendAvatar;
+
   const LiveRoomModel({
     required this.id,
     required this.title,
@@ -40,7 +45,8 @@ class LiveRoomModel {
     required this.viewerCount,
     required this.category,
     this.isPrivate = false,
-    this.announcement = 'Welcome to the stream! Enjoy the vibe & stay positive! 🎉',
+    this.announcement =
+        'Welcome to the stream! Enjoy the vibe & stay positive! 🎉',
     required this.startTime,
     this.roomType = 'AUDIO_PARTY',
     this.seatCapacity = 8,
@@ -61,12 +67,17 @@ class LiveRoomModel {
     this.allowAdminChangeMode = false,
     this.closeRoomEffect = 'Standard',
     this.bannedUserIds = const [],
+    this.isFriendOfFriend = false,
+    this.mutualFriendName,
+    this.mutualFriendAvatar,
   });
 
   factory LiveRoomModel.fromJson(Map<String, dynamic> json) {
     final hostData = json['creator'] is Map
         ? Map<String, dynamic>.from(json['creator'] as Map)
-        : (json['host'] is Map ? Map<String, dynamic>.from(json['host'] as Map) : <String, dynamic>{});
+        : (json['host'] is Map
+              ? Map<String, dynamic>.from(json['host'] as Map)
+              : <String, dynamic>{});
 
     final hostUser = hostData.isNotEmpty
         ? UserModel.fromJson(hostData)
@@ -74,7 +85,8 @@ class LiveRoomModel {
             id: json['creatorUserId']?.toString() ?? 'host_unknown',
             username: 'host_streamer',
             name: 'Stream Host',
-            avatarUrl: json['coverImageUrl']?.toString() ??
+            avatarUrl:
+                json['coverImageUrl']?.toString() ??
                 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
           );
 
@@ -82,18 +94,34 @@ class LiveRoomModel {
         ? json['id'].toString()
         : (json['roomId']?.toString() ?? '');
     final title = json['title']?.toString() ?? 'HEMI TON Live';
-    final coverUrl = json['coverImageUrl']?.toString() ??
+    final coverUrl =
+        json['coverImageUrl']?.toString() ??
         json['coverUrl']?.toString() ??
         'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80';
-    final viewerCount = int.tryParse(json['viewerCount']?.toString() ?? '') ??
-        int.tryParse(json['currentViewersCount']?.toString() ?? '') ?? 0;
+    final viewerCount =
+        int.tryParse(json['viewerCount']?.toString() ?? '') ??
+        int.tryParse(json['currentViewersCount']?.toString() ?? '') ??
+        0;
     final category = json['category']?.toString() ?? 'Live';
     final roomType = json['roomType']?.toString() ?? 'AUDIO_PARTY';
     final startTime = json['createdAt'] != null
         ? (DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now())
         : DateTime.now();
 
-    final rawBanned = json['bannedUserIds'] is List ? (json['bannedUserIds'] as List) : [];
+    final rawBanned = json['bannedUserIds'] is List
+        ? (json['bannedUserIds'] as List)
+        : [];
+    final bool isFriendOfFriend =
+        json['isFriendOfFriend'] == true || json['mutualFriend'] != null;
+    final String? mutualFriendName = json['mutualFriend'] is Map
+        ? (json['mutualFriend']['displayName'] ??
+                  json['mutualFriend']['name'] ??
+                  json['mutualFriend']['username'])
+              ?.toString()
+        : json['mutualFriendName']?.toString();
+    final String? mutualFriendAvatar = json['mutualFriend'] is Map
+        ? json['mutualFriend']['avatarUrl']?.toString()
+        : json['mutualFriendAvatar']?.toString();
 
     return LiveRoomModel(
       id: id,
@@ -103,11 +131,15 @@ class LiveRoomModel {
       viewerCount: viewerCount,
       category: category,
       isPrivate: json['isPrivate'] == true,
-      announcement: json['announcement']?.toString() ?? 'Welcome to the party room! 🎉',
+      announcement:
+          json['announcement']?.toString() ?? 'Welcome to the party room! 🎉',
       startTime: startTime,
       roomType: roomType,
       seatCapacity: int.tryParse(json['seatCapacity']?.toString() ?? '') ?? 8,
-      nobleTitle: json['nobleTitle']?.toString() ?? (hostUser.nobleTitle ?? (hostUser.svipLevel > 0 ? 'SVIP ${hostUser.svipLevel}' : '')),
+      nobleTitle:
+          json['nobleTitle']?.toString() ??
+          (hostUser.nobleTitle ??
+              (hostUser.svipLevel > 0 ? 'SVIP ${hostUser.svipLevel}' : '')),
       agoraChannelName: json['agoraChannelName']?.toString(),
       creatorUserId: json['creatorUserId']?.toString() ?? hostUser.id,
       status: json['status']?.toString() ?? 'LIVE',
@@ -124,6 +156,9 @@ class LiveRoomModel {
       allowAdminChangeMode: json['allowAdminChangeMode'] ?? false,
       closeRoomEffect: json['closeRoomEffect']?.toString() ?? 'Standard',
       bannedUserIds: rawBanned.map((e) => e.toString()).toList(),
+      isFriendOfFriend: isFriendOfFriend,
+      mutualFriendName: mutualFriendName,
+      mutualFriendAvatar: mutualFriendAvatar,
     );
   }
 
@@ -153,6 +188,9 @@ class LiveRoomModel {
       'allowAdminChangeMode': allowAdminChangeMode,
       'closeRoomEffect': closeRoomEffect,
       'bannedUserIds': bannedUserIds,
+      'isFriendOfFriend': isFriendOfFriend,
+      'mutualFriendName': mutualFriendName,
+      'mutualFriendAvatar': mutualFriendAvatar,
     };
   }
 
@@ -185,6 +223,9 @@ class LiveRoomModel {
     bool? allowAdminChangeMode,
     String? closeRoomEffect,
     List<String>? bannedUserIds,
+    bool? isFriendOfFriend,
+    String? mutualFriendName,
+    String? mutualFriendAvatar,
   }) {
     return LiveRoomModel(
       id: id ?? this.id,
@@ -211,10 +252,14 @@ class LiveRoomModel {
       allowHistoryMessages: allowHistoryMessages ?? this.allowHistoryMessages,
       allowUnderMicEmoji: allowUnderMicEmoji ?? this.allowUnderMicEmoji,
       allowUnderMicDice: allowUnderMicDice ?? this.allowUnderMicDice,
-      allowAdminEditSettings: allowAdminEditSettings ?? this.allowAdminEditSettings,
+      allowAdminEditSettings:
+          allowAdminEditSettings ?? this.allowAdminEditSettings,
       allowAdminChangeMode: allowAdminChangeMode ?? this.allowAdminChangeMode,
       closeRoomEffect: closeRoomEffect ?? this.closeRoomEffect,
       bannedUserIds: bannedUserIds ?? this.bannedUserIds,
+      isFriendOfFriend: isFriendOfFriend ?? this.isFriendOfFriend,
+      mutualFriendName: mutualFriendName ?? this.mutualFriendName,
+      mutualFriendAvatar: mutualFriendAvatar ?? this.mutualFriendAvatar,
     );
   }
 }

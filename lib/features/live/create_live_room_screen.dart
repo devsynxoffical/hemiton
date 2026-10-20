@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -522,6 +522,7 @@ class _CreateLiveRoomScreenState extends State<CreateLiveRoomScreen> {
                             roomType: 'LIVE_VIDEO',
                             category: _selectedCategory,
                             isPrivate: _isPrivate,
+                            hostUser: currentUser,
                           );
                         } catch (e) {
                           debugPrint('[CreateLiveRoom] Backend createRoom error: $e');

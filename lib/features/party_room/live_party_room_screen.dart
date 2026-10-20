@@ -43,6 +43,11 @@ import 'widgets/in_room_profile_card_sheet.dart';
 import 'widgets/expanded_message_panel.dart';
 import '../../widgets/multi_role_seat_grid.dart';
 import '../../widgets/svip_entry_banner.dart';
+import '../../widgets/bring_my_friend_sheet.dart';
+import '../../widgets/icebreaker_sheet.dart';
+import '../../widgets/hangout_together_sheet.dart';
+import '../../widgets/hangout_challenges_sheet.dart';
+import '../../widgets/hangout_xp_rewards_sheet.dart';
 import '../live/widgets/high_value_announcement.dart';
 import '../../widgets/animated_live_comment_item.dart';
 import '../../widgets/emoji_reaction_overlay.dart';
@@ -2123,9 +2128,39 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                         Colors.cyanAccent,
                         () {
                           Navigator.pop(ctx);
-                          GameCenterSheet.show(context);
+                          GameCenterSheet.show(
+                            context,
+                            roomId: widget.room.id,
+                            roomTitle: widget.room.title,
+                          );
                         },
                         imageAsset: 'assets/images/party_tool_game_center.png',
+                      ),
+                      _buildRoomToolBtn(
+                        Icons.person_add_rounded,
+                        'Bring Friend',
+                        Colors.tealAccent,
+                        () {
+                          Navigator.pop(ctx);
+                          BringMyFriendSheet.show(
+                            context,
+                            roomId: widget.room.id,
+                            roomTitle: widget.room.title,
+                          );
+                        },
+                      ),
+                      _buildRoomToolBtn(
+                        Icons.psychology_alt_rounded,
+                        'Icebreaker',
+                        Colors.orangeAccent,
+                        () {
+                          Navigator.pop(ctx);
+                          IcebreakerSheet.show(
+                            context,
+                            roomId: widget.room.id,
+                            currentSpeakerName: widget.room.host.name,
+                          );
+                        },
                       ),
 
                       // Management Controls (CR 38 - Strictly Gated to Owner & Admins)
@@ -2313,6 +2348,34 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                             _handleClearScreen(provider);
                           },
                           imageAsset: 'assets/images/party_tool_clear_screen.png',
+                        ),
+                        _buildRoomToolBtn(
+                          Icons.military_tech_rounded,
+                          'Challenges',
+                          Colors.amber,
+                          () {
+                            Navigator.pop(ctx);
+                            final authUser = context.read<AuthProvider>().currentUser;
+                            HangoutChallengesSheet.show(
+                              context,
+                              currentUserId: authUser.id,
+                              currentUserName: authUser.name,
+                            );
+                          },
+                        ),
+                        _buildRoomToolBtn(
+                          Icons.workspace_premium_rounded,
+                          'Hangout XP',
+                          Colors.purpleAccent,
+                          () {
+                            Navigator.pop(ctx);
+                            final authUser = context.read<AuthProvider>().currentUser;
+                            HangoutXpRewardsSheet.show(
+                              context,
+                              userId: authUser.id,
+                              userName: authUser.name,
+                            );
+                          },
                         ),
                       ],
                     ],
@@ -4074,102 +4137,17 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
     );
   }
 
-  // ── Module 06: YouTube Shared Control Dialog ──
+  // ── Module 06: YouTube Shared Control Dialog (Hangout Together Mode) ──
   void _showYouTubeControlDialog(BuildContext context) {
     final provider = context.read<LivePartyProvider>();
-    final urlController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (d) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1B2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.play_circle_fill_rounded, color: Colors.redAccent),
-            SizedBox(width: 8),
-            Text('YouTube Shared Stream', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (provider.youtubeVideoId != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.music_note_rounded, color: Colors.redAccent),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Active: ${provider.youtubeTitle}',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    icon: Icon(provider.youtubePlayState == 'playing' ? Icons.pause_circle_filled : Icons.play_circle_filled, color: Colors.amber, size: 36),
-                    onPressed: () {
-                      provider.setYouTubePlayState(provider.youtubePlayState == 'playing' ? 'paused' : 'playing');
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.stop_circle_rounded, color: Colors.red, size: 36),
-                    onPressed: () {
-                      provider.stopYouTubeTrack();
-                      Navigator.pop(d);
-                    },
-                  ),
-                ],
-              ),
-              const Divider(color: Colors.white24),
-            ],
-            const Text('Enter YouTube Link or Search Query:', style: TextStyle(color: Colors.white70, fontSize: 12)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: urlController,
-              decoration: InputDecoration(
-                hintText: 'https://youtube.com/watch?v=...',
-                hintStyle: const TextStyle(color: Colors.white38),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              style: const TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(d), child: const Text('Close', style: TextStyle(color: Colors.white60))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () {
-              final query = urlController.text.trim();
-              if (query.isNotEmpty) {
-                final videoId = query.contains('v=') ? query.split('v=').last.split('&').first : 'dQw4w9WgXcQ';
-                final sessionId = 'yt_${DateTime.now().millisecondsSinceEpoch}';
-                provider.startYouTubeTrack(videoId: videoId, title: query.length > 20 ? '${query.substring(0, 18)}...' : query, sessionId: sessionId);
-                Navigator.pop(d);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('🎉 YouTube video synchronized to room!'), backgroundColor: Colors.green),
-                );
-              }
-            },
-            child: const Text('Start Playback', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+    final auth = context.read<AuthProvider>();
+    final isHost = widget.room.host.id == auth.currentUser.id;
+    HangoutTogetherSheet.show(
+      context,
+      partyProvider: provider,
+      currentUserId: auth.currentUser.id,
+      currentUserName: auth.currentUser.name,
+      isHost: isHost,
     );
   }
 
@@ -4189,6 +4167,7 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
     bool isLockedStatus = RoomLockManager.instance.isRoomLocked(widget.room.id) || provider.isRoomLocked;
     String selectedMode = RoomLockManager.instance.getRoomLockMode(widget.room.id);
     final pinCtrl = TextEditingController(text: RoomLockManager.instance.getRoomPin(widget.room.id));
+    bool allowFriendBypass = RoomLockManager.instance.doesAllowFriendBypass(widget.room.id);
 
     showDialog(
       context: context,
@@ -4295,6 +4274,29 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                   ),
                 ),
               ],
+              if (isLockedStatus) ...[
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Allow Friends to Bypass Lock',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ),
+                    Switch(
+                      value: allowFriendBypass,
+                      activeThumbColor: const Color(0xFF00F5D4),
+                      onChanged: (val) {
+                        setState(() {
+                          allowFriendBypass = val;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
           actions: [
@@ -4314,6 +4316,12 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                   isLocked: isLockedStatus,
                   mode: selectedMode,
                   pin: pin,
+                  privacyLevel: isLockedStatus
+                      ? (selectedMode == 'Approval'
+                          ? RoomPrivacyLevel.inviteOnly
+                          : RoomPrivacyLevel.password)
+                      : RoomPrivacyLevel.public,
+                  allowFriendBypass: allowFriendBypass,
                 );
                 provider.configureRoomLock(
                   isLocked: isLockedStatus,

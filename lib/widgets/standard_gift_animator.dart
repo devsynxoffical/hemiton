@@ -143,10 +143,12 @@ class _StandardGiftAnimatorState extends State<StandardGiftAnimator>
                       ),
                     ],
                   ),
-                  child: Text(
-                    widget.event.giftIcon,
-                    style: const TextStyle(fontSize: 64),
-                  ),
+                  child: widget.event.giftIcon.startsWith('assets/')
+                      ? Image.asset(widget.event.giftIcon, width: 80, height: 80, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Text('🎁', style: TextStyle(fontSize: 64)))
+                      : Text(
+                          widget.event.giftIcon,
+                          style: const TextStyle(fontSize: 64),
+                        ),
                 ),
               ),
             ),

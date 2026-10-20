@@ -13,6 +13,9 @@ import '../../../core/utils/noble_badge_helper.dart';
 import '../../messages/chat_screen.dart';
 import '../../../widgets/gift_dialog.dart';
 import '../../profile/user_profile_details_screen.dart';
+import '../../../models/friendship_level_model.dart';
+import '../../../widgets/friendship_level_badge.dart';
+import '../../../widgets/social_circle_badge.dart';
 
 /// Requirement 18 & In-Room Profile Card Sheet
 /// Refactored to remove mock data, support functional 3-dot actions (Report, Block, Copy ID),
@@ -359,6 +362,27 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                               ),
                             ),
                           ],
+                        ),
+
+                        // Feature 5: Friendship Level Badge (Visible for other users)
+                        if (!isMe) ...[
+                          const SizedBox(height: 6),
+                          FriendshipLevelBadge(
+                            friendship: FriendshipLevelModel.sampleBetween(
+                              currentUser.id,
+                              user.id,
+                            ),
+                            otherUserName: user.displayName,
+                            otherUserAvatar: user.avatarUrl,
+                            currentUserName: currentUser.displayName,
+                            currentUserAvatar: currentUser.avatarUrl,
+                          ),
+                        ],
+
+                        // Feature 8: Social Circle Badge
+                        const SizedBox(height: 6),
+                        const SocialCircleBadge(
+                          circleName: 'Night Owls Chill 🌙',
                         ),
 
                         // Assigned Tags (Show ONLY if assigned)

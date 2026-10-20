@@ -117,35 +117,57 @@ class PartyRoomCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Room Lock Badge (Outside listing)
-                  if (RoomLockManager.instance.isRoomLocked(room.id) || room.isPrivate || room.roomMode == 'Lock mode')
-                    Positioned(
-                      top: 32.h,
-                      left: 8.w,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(6.r),
-                          border: Border.all(color: Colors.cyanAccent, width: 0.8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.lock_rounded, size: 9.sp, color: Colors.cyanAccent),
-                            SizedBox(width: 2.w),
-                            Text(
-                              'Locked',
-                              style: TextStyle(
-                                color: Colors.cyanAccent,
-                                fontSize: 8.sp,
-                                fontWeight: FontWeight.bold,
+                  // Room Lock & Privacy Badge (Feature 6: Private Hangout Rooms)
+                  if (RoomLockManager.instance.isRoomLocked(room.id) ||
+                      room.isPrivate ||
+                      room.roomMode == 'Lock mode' ||
+                      RoomLockManager.instance.getRoomPrivacyLevel(room.id) !=
+                          RoomPrivacyLevel.public)
+                    Builder(builder: (ctx) {
+                      final priv =
+                          RoomLockManager.instance.getRoomPrivacyLevel(room.id);
+                      final badgeText = priv != RoomPrivacyLevel.public &&
+                              priv.badgeText.isNotEmpty
+                          ? priv.badgeText
+                          : 'Locked';
+                      final icon = priv != RoomPrivacyLevel.public
+                          ? priv.icon
+                          : Icons.lock_rounded;
+                      final badgeColor = priv == RoomPrivacyLevel.friendsOnly
+                          ? const Color(0xFF00F5D4)
+                          : priv == RoomPrivacyLevel.inviteOnly
+                              ? const Color(0xFFFF007A)
+                              : Colors.cyanAccent;
+
+                      return Positioned(
+                        top: 32.h,
+                        left: 8.w,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 6.w, vertical: 2.h),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.75),
+                            borderRadius: BorderRadius.circular(6.r),
+                            border: Border.all(color: badgeColor, width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(icon, size: 9.sp, color: badgeColor),
+                              SizedBox(width: 2.w),
+                              Text(
+                                badgeText,
+                                style: TextStyle(
+                                  color: badgeColor,
+                                  fontSize: 8.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    }),
 
                   Positioned(
                     top: 8.h,

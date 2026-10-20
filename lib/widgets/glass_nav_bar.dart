@@ -15,13 +15,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class GlassNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
-  final VoidCallback onCreatePressed;
+  final VoidCallback? onCreatePressed;
 
   const GlassNavBar({
     super.key,
     required this.selectedIndex,
     required this.onTabSelected,
-    required this.onCreatePressed,
+    this.onCreatePressed,
   });
 
   @override
@@ -35,7 +35,7 @@ class GlassNavBar extends StatelessWidget {
       unreadMessages = messaging.totalCombinedUnreadCount;
     } catch (_) {}
     if (unreadMessages <= 0) {
-      unreadMessages = 2; // Matches demonstration count from design reference
+      unreadMessages = 3; // Matches demonstration count from design reference
     }
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -43,136 +43,91 @@ class GlassNavBar extends StatelessWidget {
     return Container(
       width: double.infinity,
       color: Colors.transparent,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        clipBehavior: Clip.none,
-        children: [
-          // Main Nav Bar Body (Black in Dark Mode, White in Light Mode)
-          Container(
-            height: 66.h + bottomPadding,
-            padding: EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding * 0.6 : 0),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
-              border: Border(
-                top: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF222222)
-                      : const Color(0xFFE2E8F0),
-                  width: 1.2,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.08),
-                  blurRadius: 18,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Tab 0: Home
-                _buildNavItem(
-                  context: context,
-                  index: 0,
-                  icon: Icons.home_rounded,
-                  label: 'Home',
-                  isSelected: selectedIndex == 0,
-                  isDark: isDark,
-                  onTap: () => onTabSelected(0),
-                ),
-
-                // Tab 1: Live
-                _buildNavItem(
-                  context: context,
-                  index: 1,
-                  icon: Icons.sensors_rounded, // ((●)) Antenna Broadcast Waves
-                  label: 'Live',
-                  isSelected: selectedIndex == 1,
-                  isDark: isDark,
-                  onTap: () => onTabSelected(1),
-                ),
-
-                // Spacer for Center Floating Action Button
-                SizedBox(width: 68.w),
-
-                // Tab 3: Chats
-                _buildNavItem(
-                  context: context,
-                  index: 3,
-                  icon: Icons.chat_bubble_rounded,
-                  label: 'Chats',
-                  isSelected: selectedIndex == 3,
-                  isDark: isDark,
-                  badgeCount: unreadMessages,
-                  onTap: () => onTabSelected(3),
-                ),
-
-                // Tab 4: Profile
-                _buildNavItem(
-                  context: context,
-                  index: 4,
-                  icon: Icons.person_rounded,
-                  label: 'Profile',
-                  isSelected: selectedIndex == 4,
-                  isDark: isDark,
-                  onTap: () => onTabSelected(4),
-                ),
-              ],
-            ),
+      padding: EdgeInsets.only(
+        left: 12.w,
+        right: 12.w,
+        bottom: bottomPadding > 0 ? bottomPadding * 0.5 : 8.h,
+      ),
+      child: Container(
+        height: 66.h,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF07080C) : const Color(0xFFFFFFFF),
+          borderRadius: BorderRadius.circular(26.r),
+          border: Border.all(
+            color: isDark
+                ? const Color(0xFFFF1493).withValues(alpha: 0.55)
+                : const Color(0xFFE2E8F0),
+            width: 1.4,
           ),
-
-          // Center Floating Create Button (+)
-          Positioned(
-            top: -16.h,
-            child: GestureDetector(
-              onTap: onCreatePressed,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                width: 56.w,
-                height: 56.w,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [
-                      AppColors.pink,
-                      Color(0xFFFF2A9D),
-                      AppColors.neonPink,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.pink.withValues(alpha: 0.65),
-                      blurRadius: 18,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 4),
-                    ),
-                    BoxShadow(
-                      color: AppColors.neonPink.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 0),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    width: 1.5,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.add_rounded,
-                    size: 32.w,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF1493).withValues(alpha: isDark ? 0.22 : 0.06),
+              blurRadius: 18,
+              spreadRadius: 1,
+              offset: const Offset(0, 2),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Tab 0: Home
+            _buildNavItem(
+              context: context,
+              index: 0,
+              icon: Icons.home_rounded,
+              label: 'Home',
+              isSelected: selectedIndex == 0,
+              isDark: isDark,
+              onTap: () => onTabSelected(0),
+            ),
+
+            // Tab 1: Live
+            _buildNavItem(
+              context: context,
+              index: 1,
+              icon: Icons.sensors_rounded, // ((●)) Antenna Broadcast Waves
+              label: 'Live',
+              isSelected: selectedIndex == 1,
+              isDark: isDark,
+              onTap: () => onTabSelected(1),
+            ),
+
+            // Tab 2: Games (Replacing Center Plus Button)
+            _buildNavItem(
+              context: context,
+              index: 2,
+              icon: Icons.sports_esports_rounded,
+              label: 'Games',
+              isSelected: selectedIndex == 2,
+              isDark: isDark,
+              onTap: () => onTabSelected(2),
+            ),
+
+            // Tab 3: Chats
+            _buildNavItem(
+              context: context,
+              index: 3,
+              icon: Icons.chat_bubble_rounded,
+              label: 'Chats',
+              isSelected: selectedIndex == 3,
+              isDark: isDark,
+              badgeCount: unreadMessages,
+              onTap: () => onTabSelected(3),
+            ),
+
+            // Tab 4: Profile
+            _buildNavItem(
+              context: context,
+              index: 4,
+              icon: Icons.person_rounded,
+              label: 'Profile',
+              isSelected: selectedIndex == 4,
+              isDark: isDark,
+              onTap: () => onTabSelected(4),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -253,13 +208,13 @@ class GlassNavBar extends StatelessWidget {
                   ),
               ],
             ),
-            SizedBox(height: 3.h),
+            SizedBox(height: 2.h),
 
             // Label Text
             Text(
               label,
               style: TextStyle(
-                fontSize: 11.sp,
+                fontSize: 10.5.sp,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? selectedColor : unselectedColor,
                 letterSpacing: 0.1,
@@ -270,7 +225,7 @@ class GlassNavBar extends StatelessWidget {
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
-              margin: EdgeInsets.only(top: 3.h),
+              margin: EdgeInsets.only(top: 2.h),
               width: isSelected ? 22.w : 0,
               height: 2.5.h,
               decoration: BoxDecoration(

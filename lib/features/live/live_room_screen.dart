@@ -3,26 +3,32 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:camera/camera.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/live_room_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/emoji_reaction_provider.dart';
+import '../../providers/live_gift_provider.dart';
 import '../../widgets/gift_dialog.dart';
+import '../../widgets/bring_my_friend_sheet.dart';
+import '../../widgets/icebreaker_sheet.dart';
+import '../../widgets/emoji_picker_sheet.dart';
+import '../../widgets/emoji_reaction_overlay.dart';
+import '../../widgets/tiktok_gift_overlay.dart';
 
 class LiveRoomScreen extends StatefulWidget {
   final LiveRoomModel room;
   final bool isHost;
 
-  const LiveRoomScreen({
-    super.key,
-    required this.room,
-    this.isHost = false,
-  });
+  const LiveRoomScreen({super.key, required this.room, this.isHost = false});
 
   @override
   State<LiveRoomScreen> createState() => _LiveRoomScreenState();
 }
 
-class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStateMixin {
+class _LiveRoomScreenState extends State<LiveRoomScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isFollowing = false;
@@ -31,6 +37,12 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
   int _viewerCount = 127;
   final List<_FloatingHeart> _floatingHearts = [];
   Timer? _heartStreamTimer;
+
+  // Camera fields for host live broadcasting
+  CameraController? _cameraController;
+  List<CameraDescription> _cameras = [];
+  int _selectedCameraIndex = 0;
+  bool _isCameraInitialized = false;
 
   // Exact live chat messages from Image 3 reference
   late List<_LiveChatMessage> _chatMessages;
@@ -49,6 +61,16 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
   @override
   void initState() {
     super.initState();
+    if (widget.isHost) {
+      _initLiveCamera();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<EmojiReactionProvider>().setActiveRoom(widget.room.id);
+        context.read<LiveGiftProvider>().setActiveRoom(widget.room.id);
+      }
+    });
 
     // Pulse animation for 3D Flame reaction
     _flameAnimController = AnimationController(
@@ -65,7 +87,8 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
       _LiveChatMessage(
         senderName: 'Assalamu Alaikum',
         message: '',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80',
         levelBadge: '💎 11',
         starBadge: '⭐ B',
         extraBadge: '❤️ ♍',
@@ -74,45 +97,52 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
       _LiveChatMessage(
         senderName: 'ID:1113870305',
         message: 'aswrwb akami fayyakeri',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&q=80',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&q=80',
         nameColor: const Color(0xFF00E5FF),
       ),
       _LiveChatMessage(
         senderName: 'سفر الجزیره',
         message: 'سلام علیکم .',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&q=80',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&q=80',
         levelBadge: '💎 1',
         isArabic: true,
       ),
       _LiveChatMessage(
         senderName: 'Zamzm Muhammad',
         message: '📍 Ad Diriyah, Saudi Arabia',
-        avatarUrl: 'https://images.unsplash.com/photo-1584999734482-05c3adac4f0c?w=120&q=80',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1584999734482-05c3adac4f0c?w=120&q=80',
         nameColor: const Color(0xFFFF4081),
         isHost: true,
       ),
       _LiveChatMessage(
         senderName: 'ID:1136516679',
         message: 'sent a like to the host. ❤️',
-        avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=120&q=80',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=120&q=80',
         nameColor: const Color(0xFF00E5FF),
       ),
       _LiveChatMessage(
         senderName: 'Meera',
         message: 'So calming ❤️',
-        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80',
         nameColor: const Color(0xFF64B5F6),
       ),
       _LiveChatMessage(
         senderName: 'Arjun',
         message: 'Your voice is magical ✨',
-        avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=120&q=80',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=120&q=80',
         nameColor: const Color(0xFFFFB74D),
       ),
       _LiveChatMessage(
         senderName: 'Rohit_09',
         message: 'MashaAllah beautiful ❤️',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80',
         nameColor: const Color(0xFF81C784),
       ),
     ];
@@ -122,6 +152,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
 
   @override
   void dispose() {
+    _cameraController?.dispose();
     _flameAnimController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
@@ -165,7 +196,10 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
 
-    final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final currentUser = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).currentUser;
 
     setState(() {
       _diamonds += 1;
@@ -195,6 +229,64 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
     });
   }
 
+  Future<void> _initLiveCamera() async {
+    try {
+      await Permission.camera.request();
+      _cameras = await availableCameras();
+      if (_cameras.isNotEmpty) {
+        int frontIndex = _cameras.indexWhere(
+          (c) => c.lensDirection == CameraLensDirection.front,
+        );
+        _selectedCameraIndex = frontIndex != -1 ? frontIndex : 0;
+        await _setupCameraController(_cameras[_selectedCameraIndex]);
+      }
+    } catch (e) {
+      debugPrint('[LiveRoom] Camera initialization error: $e');
+      if (mounted) setState(() => _isCameraInitialized = false);
+    }
+  }
+
+  Future<void> _setupCameraController(CameraDescription cameraDescription) async {
+    if (_cameraController != null) {
+      try {
+        await _cameraController!.dispose();
+      } catch (_) {}
+    }
+
+    _cameraController = CameraController(
+      cameraDescription,
+      ResolutionPreset.high,
+      enableAudio: false,
+    );
+
+    try {
+      await _cameraController!.initialize();
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('[LiveRoom] CameraController setup error: $e');
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = false;
+        });
+      }
+    }
+  }
+
+  void _switchCamera() async {
+    if (_cameras.length > 1) {
+      _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
+      setState(() {
+        _isCameraInitialized = false;
+      });
+      await _setupCameraController(_cameras[_selectedCameraIndex]);
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final String hostName = widget.room.host.name.isNotEmpty
@@ -215,22 +307,37 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
         fit: StackFit.expand,
         children: [
           // ── 1. Fullscreen Host Video / Image Background ─────────────────────
-          Image.network(
-            coverImage,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF2E0854), Color(0xFF0F051D), Colors.black],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+          if (widget.isHost &&
+              _isCameraInitialized &&
+              _cameraController != null &&
+              _cameraController!.value.isInitialized)
+            SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _cameraController!.value.previewSize?.height ?? 720,
+                  height: _cameraController!.value.previewSize?.width ?? 1280,
+                  child: CameraPreview(_cameraController!),
                 ),
               ),
-              child: Center(
-                child: Icon(Icons.person, color: Colors.white24, size: 80.w),
+            )
+          else
+            Image.network(
+              coverImage,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2E0854), Color(0xFF0F051D), Colors.black],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(Icons.person, color: Colors.white24, size: 80.w),
+                ),
               ),
             ),
-          ),
 
           // Ambient Dark Vignette for contrast
           Positioned.fill(
@@ -372,6 +479,12 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
             ),
           ),
 
+          // ── Live Animated Gifts Overlay ──────────────────────────────────────
+          TikTokGiftOverlay(roomId: widget.room.id),
+
+          // ── Live Animated Emojis & Reactions Overlay ─────────────────────────
+          EmojiReactionOverlay(roomId: widget.room.id),
+
           // ── 7. Bottom Action Bar ───────────────────────────────────────────
           SafeArea(
             child: Align(
@@ -395,159 +508,232 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
           Row(
             children: [
               // Host Pill (Avatar + Name + ID + Follow Button)
-              Container(
-                padding: EdgeInsets.only(left: 3.w, right: 4.w, top: 3.h, bottom: 3.h),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  borderRadius: BorderRadius.circular(22.r),
-                  border: Border.all(
-                    color: const Color(0xFFFF1493).withValues(alpha: 0.6),
-                    width: 1.2,
+              Flexible(
+                fit: FlexFit.loose,
+                child: Container(
+                  padding: EdgeInsets.only(
+                    left: 3.w,
+                    right: 4.w,
+                    top: 2.5.h,
+                    bottom: 2.5.h,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Host Avatar with Pink Ring
-                    Container(
-                      width: 32.w,
-                      height: 32.w,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [Color(0xFFFF1493), Color(0xFF8A2BE2)],
-                        ),
-                      ),
-                      child: ClipOval(
-                        child: Image.network(
-                          widget.room.host.avatarUrl.isNotEmpty
-                              ? widget.room.host.avatarUrl
-                              : 'https://images.unsplash.com/photo-1584999734482-05c3adac4f0c?w=120&q=80',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: Colors.white, size: 16),
-                        ),
-                      ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(22.r),
+                    border: Border.all(
+                      color: const Color(0xFFFF1493).withValues(alpha: 0.6),
+                      width: 1.2,
                     ),
-                    SizedBox(width: 6.w),
-
-                    // Name + ID
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          hostName.length > 9 ? '${hostName.substring(0, 8)}...' : hostName,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11.5.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'ID:$hostId',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 8.5.sp,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(width: 8.w),
-
-                    // Round Pink "+" Follow Button
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isFollowing = !_isFollowing;
-                          _viewerCount += _isFollowing ? 1 : -1;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(_isFollowing ? 'Followed $hostName! ❤️' : 'Unfollowed'),
-                            duration: const Duration(seconds: 1),
-                            backgroundColor: AppColors.pink,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 24.w,
-                        height: 24.w,
-                        decoration: BoxDecoration(
-                          color: _isFollowing ? const Color(0xFF00E676) : const Color(0xFFFF1493),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Host Avatar with Pink Ring
+                      Container(
+                        width: 28.w,
+                        height: 28.w,
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Color(0xFFFF1493), Color(0xFF8A2BE2)],
+                          ),
                         ),
-                        child: Center(
-                          child: Icon(
-                            _isFollowing ? Icons.check : Icons.add,
-                            color: Colors.white,
-                            size: 16.w,
+                        child: ClipOval(
+                          child: Image.network(
+                            widget.room.host.avatarUrl.isNotEmpty
+                                ? widget.room.host.avatarUrl
+                                : 'https://images.unsplash.com/photo-1584999734482-05c3adac4f0c?w=120&q=80',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 15,
+                                ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 5.w),
+
+                      // Name + ID
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              hostName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              widget.room.isFriendOfFriend &&
+                                      widget.room.mutualFriendName != null
+                                  ? '👥 ${widget.room.mutualFriendName}'
+                                  : 'ID:$hostId',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: widget.room.isFriendOfFriend
+                                    ? const Color(0xFFE9D5FF)
+                                    : Colors.white70,
+                                fontSize: 8.sp,
+                                fontWeight: widget.room.isFriendOfFriend
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 5.w),
+
+                      // Round Pink "+" Follow Button
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isFollowing = !_isFollowing;
+                            _viewerCount += _isFollowing ? 1 : -1;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                _isFollowing
+                                    ? 'Followed $hostName! ❤️'
+                                    : 'Unfollowed',
+                              ),
+                              duration: const Duration(seconds: 1),
+                              backgroundColor: AppColors.pink,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 22.w,
+                          height: 22.w,
+                          decoration: BoxDecoration(
+                            color: _isFollowing
+                                ? const Color(0xFF00E676)
+                                : const Color(0xFFFF1493),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              _isFollowing ? Icons.check : Icons.add,
+                              color: Colors.white,
+                              size: 14.w,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
+              SizedBox(width: 4.w),
               const Spacer(),
 
-              // 4 Top Viewers Circles
+              // Right side items (Viewers + Count + Flip camera + Close)
               Row(
                 mainAxisSize: MainAxisSize.min,
-                children: _topViewers.map((url) {
-                  return Container(
-                    margin: EdgeInsets.only(left: 3.w),
-                    width: 26.w,
-                    height: 26.w,
+                children: [
+                  // Top Viewers Circles (up to 2 if host has flip camera, or 3 for viewers)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _topViewers.take(widget.isHost ? 2 : 3).map((url) {
+                      return Container(
+                        margin: EdgeInsets.only(left: 2.w),
+                        width: 22.w,
+                        height: 22.w,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white54, width: 1.0),
+                        ),
+                        child: ClipOval(
+                          child: Image.network(
+                            url,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.person,
+                                  color: Colors.white70,
+                                  size: 12,
+                                ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  SizedBox(width: 4.w),
+
+                  // Total Viewers Badge ("127")
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.5.h),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white54, width: 1.2),
+                      color: Colors.black.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
-                    child: ClipOval(
-                      child: Image.network(
-                        url,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: Colors.white70, size: 14),
+                    child: Text(
+                      '$_viewerCount',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
-              SizedBox(width: 6.w),
+                  ),
+                  SizedBox(width: 4.w),
 
-              // Total Viewers Badge ("127")
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Text(
-                  '$_viewerCount',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10.5.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              SizedBox(width: 6.w),
+                  // Host Camera Flip Button
+                  if (widget.isHost && _cameras.length > 1) ...[
+                    GestureDetector(
+                      onTap: _switchCamera,
+                      child: Container(
+                        width: 26.w,
+                        height: 26.w,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.cameraswitch_rounded,
+                            color: Colors.white,
+                            size: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                  ],
 
-              // Close "✕" Button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 28.w,
-                  height: 28.w,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    shape: BoxShape.circle,
+                  // Close "✕" Button
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 26.w,
+                      height: 26.w,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.close_rounded, color: Colors.white, size: 20),
-                  ),
-                ),
+                ],
               ),
             ],
           ),
@@ -634,7 +820,8 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                 child: Image.network(
                   msg.avatarUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: Colors.white, size: 12),
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.person, color: Colors.white, size: 12),
                 ),
               ),
             ),
@@ -650,7 +837,11 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                 ),
                 child: Text(
                   msg.levelBadge!,
-                  style: TextStyle(color: Colors.white, fontSize: 8.5.sp, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8.5.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               SizedBox(width: 3.w),
@@ -666,7 +857,11 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                 ),
                 child: Text(
                   msg.starBadge!,
-                  style: TextStyle(color: Colors.white, fontSize: 8.5.sp, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8.5.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               SizedBox(width: 3.w),
@@ -801,25 +996,28 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
           ),
           SizedBox(width: 4.w),
 
-          // Menu/Chat Icon (💬)
+          // Bring My Friend / Invite Icon (👥)
           _buildActionButton(
-            icon: Icons.chat_bubble_outline_rounded,
-            onTap: () {},
+            icon: Icons.person_add_rounded,
+            onTap: () {
+              BringMyFriendSheet.show(
+                context,
+                roomId: widget.room.id,
+                roomTitle: widget.room.title,
+              );
+            },
           ),
           SizedBox(width: 4.w),
 
-          // Gamepad Controller Icon (🎮)
+          // Gamepad Controller Icon (🎮 / 🧠 Icebreaker & Minigames)
           _buildActionButton(
             icon: Icons.sports_esports_rounded,
             color: const Color(0xFF64B5F6),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Live Minigames: PK, Wheel & Dice 🎮'),
-                  duration: Duration(seconds: 1),
-                  backgroundColor: AppColors.purple,
-                  behavior: SnackBarBehavior.floating,
-                ),
+              IcebreakerSheet.show(
+                context,
+                roomId: widget.room.id,
+                currentSpeakerName: widget.room.host.name,
               );
             },
           ),
@@ -884,7 +1082,11 @@ class _LiveRoomScreenState extends State<LiveRoomScreen> with TickerProviderStat
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Icon(Icons.send_rounded, color: Colors.white, size: 16.w),
+                child: Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 16.w,
+                ),
               ),
             ),
           ),

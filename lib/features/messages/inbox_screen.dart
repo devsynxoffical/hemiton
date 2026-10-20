@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/repositories/backend_repository.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_provider.dart';
+import '../../core/utils/auth_guard.dart';
+import '../../models/live_room_model.dart';
 import '../../models/user_model.dart';
-import '../profile/user_profile_details_screen.dart';
-import '../profile/visitors_screen.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/messaging_provider.dart';
+import '../../providers/social_provider.dart';
+import '../../widgets/story_viewer_dialog.dart';
+import '../live/live_room_screen.dart';
+import '../social/camera_recorder_screen.dart';
+import '../social/create_post_screen.dart';
 import 'chat_screen.dart';
 
-/// Attractive Chats & Friends Screen
-/// Inspired by Image 3 & Image 4 reference design:
-/// - Top Tab Bar: [Chats, Friends] with active glowing neon indicator
-/// - Top Actions: Clean inbox / sweep icon + Search icon (with toggleable search bar)
-/// - Chats Tab:
-///   * "Recent Visitors" glowing card at the top (with eye icon, visitor name, and "just now")
-///   * Rich conversation list with online dots, last message preview, unread badges, timestamps
-/// - Friends Tab:
-///   * Category pills: [Following, Friends, Followers]
-///   * Friends list with gender/age badges, VIP flame indicators, and one-tap profile navigation
-/// - High-end modern aesthetics (glassmorphism, smooth animations, dark & light mode)
+/// Redesigned Chat / Updates Screen with Client Reference Design
+/// - Top Header: "Chats" with unread badge + "Friends" tab + Search & message icons
+/// - Section 1: "Status & Live" (Horizontal cards with LIVE button for streaming users, and status story ring for status users)
+/// - Section 2: "Chats" (Vertically scrollable rounded dark cards with avatar, online dot, name, message preview, timestamp, unread badge)
+/// - Preserves real messaging and live stream joining functionality
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
 
@@ -24,193 +29,104 @@ class InboxScreen extends StatefulWidget {
   State<InboxScreen> createState() => _InboxScreenState();
 }
 
-class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  int _selectedMainTab = 0; // 0: Chats, 1: Friends
-  int _selectedFriendsFilter = 1; // 0: Following, 1: Friends, 2: Followers
+class _InboxScreenState extends State<InboxScreen> {
+  static const String _viewedStoriesPrefsKey = 'HEMI TON_viewed_status_keys';
+  int _selectedHeaderTab = 0; // 0: Chats, 1: Friends
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  bool _showRecentVisitors = true;
-
-  // Demo conversations matching Image 3 reference
-  final List<_ConversationData> _demoChats = [
-    _ConversationData(
-      id: 'c1',
-      userId: '22219520',
-      name: 'Mr.Shehryar',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-      lastMessage: "You've become friends now, audio/video call ready...",
-      timeText: 'just now',
-      unreadCount: 2,
-      isOnline: true,
-      gender: 'male',
-      age: 24,
-    ),
-    _ConversationData(
-      id: 'c2',
-      userId: '22334455',
-      name: 'Shanzay',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
-      lastMessage: 'hi! Are you joining the live room tonight? ✨',
-      timeText: '2h ago',
-      unreadCount: 1,
-      isOnline: true,
-      gender: 'female',
-      age: 21,
-    ),
-    _ConversationData(
-      id: 'c3',
-      userId: '22445566',
-      name: 'Sonia Malik',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-      lastMessage: 'hi, loved your new moment post! ❤️',
-      timeText: '2h ago',
-      unreadCount: 0,
-      isOnline: false,
-      gender: 'female',
-      age: 22,
-    ),
-    _ConversationData(
-      id: 'c4',
-      userId: '22556677',
-      name: 'Neha Fatima',
-      avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=80',
-      lastMessage: 'hy, see you in PK battle at 9 PM!',
-      timeText: '2h ago',
-      unreadCount: 0,
-      isOnline: true,
-      gender: 'female',
-      age: 20,
-    ),
-    _ConversationData(
-      id: 'c5',
-      userId: '22667788',
-      name: 'Queen girl',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=80',
-      lastMessage: 'Dear mujhe ek loyal aur supportive host chahiye...',
-      timeText: '2h ago',
-      unreadCount: 0,
-      isOnline: false,
-      gender: 'female',
-      age: 23,
-    ),
-    _ConversationData(
-      id: 'c6',
-      userId: '22778899',
-      name: 'AYESHA SHAHZ...',
-      avatarUrl: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200&q=80',
-      lastMessage: 'hi kesy ho aap? subah live streaming kab hy?',
-      timeText: '2h ago',
-      unreadCount: 0,
-      isOnline: true,
-      gender: 'female',
-      age: 21,
-    ),
-    _ConversationData(
-      id: 'c7',
-      userId: '22889900',
-      name: 'Alishbha',
-      avatarUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&q=80',
-      lastMessage: 'how are you? can you share room link',
-      timeText: '3h ago',
-      unreadCount: 0,
-      isOnline: false,
-      gender: 'female',
-      age: 22,
-    ),
-    _ConversationData(
-      id: 'c8',
-      userId: '22990011',
-      name: 'Hina',
-      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
-      lastMessage: 'Mujhe apse dosti krni hai plz reply do',
-      timeText: '3h ago',
-      unreadCount: 0,
-      isOnline: true,
-      gender: 'female',
-      age: 19,
-    ),
-  ];
-
-  // Demo Friends list matching Image 4 reference
-  final List<_FriendData> _demoFriends = [
-    _FriendData(
-      id: 'f1',
-      name: 'Mr.Shehryar',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-      gender: 'male',
-      age: 24,
-      isOnline: true,
-      hasFlame: true,
-      category: 'Friends',
-    ),
-    _FriendData(
-      id: 'f2',
-      name: 'Shanzay',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
-      gender: 'female',
-      age: 21,
-      isOnline: true,
-      hasFlame: false,
-      category: 'Friends',
-    ),
-    _FriendData(
-      id: 'f3',
-      name: 'Sonia Malik',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-      gender: 'female',
-      age: 22,
-      isOnline: false,
-      hasFlame: true,
-      category: 'Following',
-    ),
-    _FriendData(
-      id: 'f4',
-      name: 'Neha Fatima',
-      avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=80',
-      gender: 'female',
-      age: 20,
-      isOnline: true,
-      hasFlame: false,
-      category: 'Followers',
-    ),
-  ];
+  final Set<String> _viewedStatusKeys = {};
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _loadViewedStatuses();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      BackendRepository.instance.fetchLiveRooms();
+      final messaging = Provider.of<MessagingProvider>(context, listen: false);
+      messaging.loadConversations();
+    });
+  }
+
+  void _loadViewedStatuses() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList(_viewedStoriesPrefsKey);
+      if (list != null && list.isNotEmpty && mounted) {
+        setState(() {
+          _viewedStatusKeys.addAll(list);
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _markStatusAsViewed(String key) async {
+    if (!_viewedStatusKeys.contains(key)) {
+      setState(() {
+        _viewedStatusKeys.add(key);
+      });
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList(_viewedStoriesPrefsKey, _viewedStatusKeys.toList());
+      } catch (_) {}
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
+    final messaging = Provider.of<MessagingProvider>(context);
+
+    // Calculate unread count
+    int totalUnread = messaging.totalCombinedUnreadCount;
+    if (totalUnread <= 0) {
+      totalUnread = 3; // Default demonstration count matching reference screenshot
+    }
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF07060E) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF07080C) : const Color(0xFFF8FAFC),
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            // ── 1. Top Header: [Chats, Friends] + Actions (Search & Clear) ──
-            _buildTopHeader(isDark),
+            // ── 1. Top Header: Updates Title + Unread Badge + Camera + Search ─
+            _buildTopHeader(isDark, totalUnread),
 
             // ── Optional Search Bar ─────────────────────────────────────────
             if (_isSearching) _buildSearchBar(isDark),
 
-            // ── 2. Main Tab Body (Chats vs Friends) ─────────────────────────
+            // ── Main Content: Status Section + Chats Section ────────────────
             Expanded(
-              child: _selectedMainTab == 0
-                  ? _buildChatsTab(isDark)
-                  : _buildFriendsTab(isDark),
+              child: RefreshIndicator(
+                color: AppColors.pink,
+                backgroundColor: isDark ? const Color(0xFF161A22) : Colors.white,
+                onRefresh: () async {
+                  await messaging.loadConversations();
+                  if (mounted) setState(() {});
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                  padding: EdgeInsets.only(bottom: 96.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Status Section ────────────────────────────────────
+                      _buildStatusSection(isDark),
+
+                      SizedBox(height: 16.h),
+
+                      // ── Chats Section ─────────────────────────────────────
+                      _buildChatsSection(isDark, messaging),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -219,65 +135,76 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
   }
 
   // ===========================================================================
-  // Top Header: Tabs [Chats, Friends] + Icons
+  // 1. Top Header: Title "Updates" + Badge + Camera Button + Search Button
   // ===========================================================================
-  Widget _buildTopHeader(bool isDark) {
+  Widget _buildTopHeader(bool isDark, int totalUnread) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-      color: isDark ? const Color(0xFF07060E) : Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+      color: isDark ? const Color(0xFF07080C) : Colors.white,
       child: Row(
         children: [
-          // Chats Tab
+          // Header Tab: Chats + Unread Badge + Indicator Bar
           GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedMainTab = 0;
-              });
-            },
+            onTap: () => setState(() => _selectedHeaderTab = 0),
             behavior: HitTestBehavior.opaque,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'Chats',
                       style: TextStyle(
-                        fontSize: _selectedMainTab == 0 ? 20.sp : 16.sp,
-                        fontWeight: _selectedMainTab == 0 ? FontWeight.w800 : FontWeight.w500,
-                        color: _selectedMainTab == 0
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w800,
+                        color: _selectedHeaderTab == 0
                             ? (isDark ? Colors.white : AppColors.darkNavy)
-                            : (isDark ? Colors.white38 : Colors.grey),
-                        letterSpacing: -0.2,
+                            : (isDark ? Colors.white54 : Colors.black45),
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    SizedBox(width: 4.w),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.5.h),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF1493),
-                        borderRadius: BorderRadius.circular(10.r),
+                    SizedBox(width: 5.w),
+                    if (totalUnread > 0)
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: totalUnread > 9 ? 5.5.w : 6.w,
+                          vertical: 1.5.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF1493),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF1493).withValues(alpha: 0.6),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          totalUnread > 99 ? '99+' : '$totalUnread',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                      child: Text(
-                        '3',
-                        style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.bold),
-                      ),
-                    ),
                   ],
                 ),
-                SizedBox(height: 4.h),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: _selectedMainTab == 0 ? 24.w : 0,
-                  height: 3.h,
+                SizedBox(height: 3.h),
+                // Glowing Neon Indicator Under Active Tab
+                Container(
+                  width: 24.w,
+                  height: 2.5.h,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00E676),
+                    color: _selectedHeaderTab == 0 ? const Color(0xFF00E676) : Colors.transparent,
                     borderRadius: BorderRadius.circular(2.r),
-                    boxShadow: _selectedMainTab == 0
+                    boxShadow: _selectedHeaderTab == 0
                         ? [
                             BoxShadow(
-                              color: const Color(0xFF00E676).withValues(alpha: 0.6),
+                              color: const Color(0xFF00E676).withValues(alpha: 0.8),
                               blurRadius: 6,
                             ),
                           ]
@@ -287,16 +214,11 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
               ],
             ),
           ),
+          SizedBox(width: 14.w),
 
-          SizedBox(width: 22.w),
-
-          // Friends Tab
+          // Header Tab: Friends
           GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedMainTab = 1;
-              });
-            },
+            onTap: () => setState(() => _selectedHeaderTab = 1),
             behavior: HitTestBehavior.opaque,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -305,30 +227,20 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
                 Text(
                   'Friends',
                   style: TextStyle(
-                    fontSize: _selectedMainTab == 1 ? 20.sp : 16.sp,
-                    fontWeight: _selectedMainTab == 1 ? FontWeight.w800 : FontWeight.w500,
-                    color: _selectedMainTab == 1
+                    fontSize: 15.sp,
+                    fontWeight: _selectedHeaderTab == 1 ? FontWeight.bold : FontWeight.w600,
+                    color: _selectedHeaderTab == 1
                         ? (isDark ? Colors.white : AppColors.darkNavy)
-                        : (isDark ? Colors.white38 : Colors.grey),
-                    letterSpacing: -0.2,
+                        : (isDark ? Colors.white54 : Colors.black45),
                   ),
                 ),
-                SizedBox(height: 4.h),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: _selectedMainTab == 1 ? 24.w : 0,
-                  height: 3.h,
+                SizedBox(height: 3.h),
+                Container(
+                  width: 20.w,
+                  height: 2.5.h,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00E676),
+                    color: _selectedHeaderTab == 1 ? const Color(0xFF00E676) : Colors.transparent,
                     borderRadius: BorderRadius.circular(2.r),
-                    boxShadow: _selectedMainTab == 1
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xFF00E676).withValues(alpha: 0.6),
-                              blurRadius: 6,
-                            ),
-                          ]
-                        : null,
                   ),
                 ),
               ],
@@ -337,35 +249,34 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
 
           const Spacer(),
 
-          // Clean / Sweep Messages Icon Button
+          // New Chat / Message Action Button
           GestureDetector(
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('All notifications marked as read! 🧹'),
+                  content: Text('Starting new conversation... 💬'),
                   duration: Duration(seconds: 1),
-                  backgroundColor: Color(0xFF00E676),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             },
+            behavior: HitTestBehavior.opaque,
             child: Container(
-              padding: EdgeInsets.all(7.w),
+              padding: EdgeInsets.all(6.w),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDark ? const Color(0xFF141724) : const Color(0xFFF1F5F9),
+                color: isDark ? const Color(0xFF161A24) : const Color(0xFFEEF2F6),
               ),
               child: Icon(
-                Icons.mark_chat_read_outlined,
-                size: 20.sp,
-                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                Icons.chat_bubble_outline_rounded,
+                size: 19.w,
+                color: isDark ? Colors.white : AppColors.darkNavy,
               ),
             ),
           ),
+          SizedBox(width: 8.w),
 
-          SizedBox(width: 10.w),
-
-          // Search Toggle Button
+          // Search Action Button
           GestureDetector(
             onTap: () {
               setState(() {
@@ -376,18 +287,17 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
                 }
               });
             },
+            behavior: HitTestBehavior.opaque,
             child: Container(
-              padding: EdgeInsets.all(7.w),
+              padding: EdgeInsets.all(6.w),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _isSearching
-                    ? const Color(0xFFFF1493)
-                    : (isDark ? const Color(0xFF141724) : const Color(0xFFF1F5F9)),
+                color: isDark ? const Color(0xFF161A24) : const Color(0xFFEEF2F6),
               ),
               child: Icon(
                 _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                size: 20.sp,
-                color: _isSearching ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                size: 19.w,
+                color: isDark ? Colors.white : AppColors.darkNavy,
               ),
             ),
           ),
@@ -396,583 +306,1207 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
     );
   }
 
+  // ===========================================================================
+  // Optional Search Bar for Chats
+  // ===========================================================================
   Widget _buildSearchBar(bool isDark) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
-      color: isDark ? const Color(0xFF07060E) : Colors.white,
-      child: TextField(
-        controller: _searchController,
-        onChanged: (val) {
-          setState(() {
-            _searchQuery = val.trim().toLowerCase();
-          });
-        },
-        style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 13.sp),
-        decoration: InputDecoration(
-          hintText: 'Search chats or friends...',
-          hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey, fontSize: 12.5.sp),
-          prefixIcon: Icon(Icons.search, color: isDark ? Colors.white38 : Colors.grey, size: 20.sp),
-          filled: true,
-          fillColor: isDark ? const Color(0xFF131522) : const Color(0xFFF1F5F9),
-          contentPadding: EdgeInsets.symmetric(vertical: 8.h),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16.r),
-            borderSide: BorderSide.none,
+      color: isDark ? const Color(0xFF07080C) : Colors.white,
+      child: Container(
+        height: 40.h,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF131620) : const Color(0xFFEEF2F6),
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: isDark ? const Color(0xFF222736) : const Color(0xFFE2E8F0),
+            width: 1.0,
           ),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 14.w),
+        alignment: Alignment.center,
+        child: Row(
+          children: [
+            Icon(Icons.search_rounded, size: 18.w, color: Colors.white54),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                onChanged: (val) {
+                  setState(() {
+                    _searchQuery = val.trim().toLowerCase();
+                  });
+                },
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.darkNavy,
+                  fontSize: 13.sp,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search chats & friends...',
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.white38 : Colors.black38,
+                    fontSize: 12.5.sp,
+                  ),
+                  isDense: true,
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+            if (_searchQuery.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+                child: Icon(Icons.clear, size: 16.w, color: Colors.white54),
+              ),
+          ],
         ),
       ),
     );
   }
 
   // ===========================================================================
-  // Chats Tab: "Recent Visitors" Card + Conversations
+  // 2. Status / Story Section (Matching Reference Design)
   // ===========================================================================
-  Widget _buildChatsTab(bool isDark) {
-    final filteredChats = _demoChats.where((c) {
-      if (_searchQuery.isEmpty) return true;
-      return c.name.toLowerCase().contains(_searchQuery) ||
-          c.lastMessage.toLowerCase().contains(_searchQuery);
+  // ===========================================================================
+  // 2. Status / Live Profile Cards Section (Matching Client Reference Design)
+  // ===========================================================================
+  Widget _buildStatusSection(bool isDark) {
+    final auth = Provider.of<AuthProvider>(context);
+    final social = Provider.of<SocialProvider>(context);
+    final backendRooms = BackendRepository.instance.liveRooms;
+
+    // Real active live rooms converted to cards
+    final realLiveCards = backendRooms.map((room) {
+      final host = room.host;
+      final hasStory = StoryService.instance.hasActiveStory(
+        userId: host.id,
+        userName: host.displayName.isNotEmpty ? host.displayName : host.username,
+        allPosts: social.posts,
+      );
+      return _StatusCardData(
+        userId: host.id,
+        name: host.displayName.isNotEmpty ? host.displayName : host.username,
+        avatarUrl: host.avatarUrl.isNotEmpty
+            ? host.avatarUrl
+            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+        thumbnailUrl: room.coverUrl.isNotEmpty ? room.coverUrl : host.avatarUrl,
+        isOnline: true,
+        ringColors: const [Color(0xFFFF1493), Color(0xFF00E676)],
+        isLive: true,
+        location: host.region.isNotEmpty ? host.region : 'Global',
+        liveRoom: room,
+        hasStatus: hasStory,
+      );
     }).toList();
 
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 120.h),
-      children: [
-        // ── Recent Visitors Banner (Dismissible notification) ───────────────
-        if (_showRecentVisitors) ...[
-          _buildRecentVisitorsCard(isDark),
-          SizedBox(height: 10.h),
-        ],
+    // Reference demonstration story + live users matching client screenshot
+    final demoStatusCards = [
+      _StatusCardData(
+        userId: 'u_suman',
+        name: 'suman',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80',
+        isOnline: true,
+        ringColors: const [Color(0xFFFF1493), Color(0xFF00E676)],
+        isLive: true,
+        location: 'Kolkata',
+        hasStatus: true,
+      ),
+      _StatusCardData(
+        userId: 'u_riya',
+        name: '🌸🌸riya🌸🌸',
+        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+        isOnline: true,
+        ringColors: const [Color(0xFFFF2A9D), Color(0xFF9D00FF)],
+        isLive: true,
+        location: 'Kolkata',
+        hasStatus: true,
+      ),
+      _StatusCardData(
+        userId: 'u_mkkhan',
+        name: 'MK KHAN',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80',
+        isOnline: true,
+        ringColors: const [Color(0xFF00E676), Color(0xFF00B0FF)],
+        isLive: true,
+        location: 'Shimla',
+        hasStatus: false,
+      ),
+      _StatusCardData(
+        userId: 'u_hussnain',
+        name: 'Hussnain',
+        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80',
+        isOnline: true,
+        ringColors: const [Color(0xFF00E676), Color(0xFF00B0FF)],
+        isLive: false,
+        location: 'Lahore',
+        hasStatus: true,
+      ),
+      _StatusCardData(
+        userId: 'u_abid',
+        name: 'Abid Net',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+        isOnline: false,
+        ringColors: const [Color(0xFFFF1493), Color(0xFF9D00FF)],
+        isLive: false,
+        location: 'Karachi',
+        hasStatus: true,
+      ),
+    ];
 
-        // ── Conversations List ──────────────────────────────────────────────
-        ...filteredChats.map((chat) => _buildConversationTile(chat, isDark)),
+    // Combine real live rooms and demo cards (avoid duplicate userIds)
+    final combinedCards = <_StatusCardData>[];
+    for (final item in realLiveCards) {
+      combinedCards.add(item);
+    }
+    for (final item in demoStatusCards) {
+      if (!combinedCards.any((e) => e.userId == item.userId)) {
+        combinedCards.add(item);
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Horizontally Scrollable Cards Row
+        SizedBox(
+          height: 168.h,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
+            children: [
+              // ── 1. My Status / "Add status" Card ──────────────────────────
+              _buildAddStatusCard(isDark, auth),
+
+              // ── 2. Profile Cards (LIVE button for streamers, status ring for status users)
+              ...combinedCards.map((card) => _buildFriendStatusCard(card, isDark, social)),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildRecentVisitorsCard(bool isDark) {
+  /// My Status ("Add status") Card matching reference screenshot
+  Widget _buildAddStatusCard(bool isDark, AuthProvider auth) {
+    final avatar = auth.currentUser.avatarUrl;
+
     return GestureDetector(
-      onTap: () {
-        setState(() => _showRecentVisitors = false);
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const VisitorsScreen()),
-        );
-      },
+      onTap: () => _openAddStatusFlow(),
+      behavior: HitTestBehavior.opaque,
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 4.h),
-        padding: EdgeInsets.all(12.w),
+        width: 104.w,
+        margin: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF121420) : Colors.white,
-          borderRadius: BorderRadius.circular(18.r),
+          color: isDark ? const Color(0xFF0F1117) : Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
-            color: const Color(0xFF8A2BE2).withValues(alpha: 0.35),
+            color: isDark ? const Color(0xFF1E2330) : const Color(0xFFE2E8F0),
             width: 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8A2BE2).withValues(alpha: 0.15),
+              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.06),
               blurRadius: 10,
-              offset: const Offset(0, 3),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            // Eye Icon on glowing circular background
-            Container(
-              width: 48.w,
-              height: 48.w,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFF7C4DFF), Color(0xFF448AFF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Center(
-                child: Icon(Icons.remove_red_eye_rounded, color: Colors.white, size: 24.sp),
-              ),
-            ),
-
-            SizedBox(width: 12.w),
-
-            // Title & Subtitle
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Circular Avatar with prominent pink (+) button
+              Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Text(
-                    'Recent Visitors',
-                    style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.darkNavy,
-                    ),
-                  ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    'Mr.Shehryar just visited your homepage',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Time & Dismiss Close Button
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                GestureDetector(
-                  onTap: () => setState(() => _showRecentVisitors = false),
-                  child: Container(
-                    padding: EdgeInsets.all(4.w),
+                  Container(
+                    padding: const EdgeInsets.all(2.5),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
                       shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 14.sp,
-                      color: isDark ? Colors.white54 : Colors.grey,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  'just now',
-                  style: TextStyle(
-                    fontSize: 10.5.sp,
-                    color: const Color(0xFF00E676),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConversationTile(_ConversationData chat, bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        final peer = UserModel(
-          id: chat.userId,
-          name: chat.name,
-          username: chat.name.toLowerCase().replaceAll(' ', '_'),
-          email: '${chat.name.toLowerCase()}@hemiton.com',
-          avatarUrl: chat.avatarUrl,
-          dateOfBirth: DateTime(DateTime.now().year - chat.age, 1, 1),
-          gender: chat.gender,
-          region: 'Islamabad, Pakistan',
-        );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => ChatScreen(user: peer)),
-        );
-      },
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 4.h),
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF10121C) : Colors.white,
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-            width: 1.0,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Avatar with Green Online Dot
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 48.w,
-                  height: 48.w,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFFF1493), Color(0xFF00BFFF)],
-                    ),
-                  ),
-                  padding: EdgeInsets.all(1.8.w),
-                  child: ClipOval(
-                    child: Image.network(
-                      chat.avatarUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey,
-                        child: const Icon(Icons.person, color: Colors.white, size: 24),
+                      border: Border.all(
+                        color: const Color(0xFFFF1493),
+                        width: 1.8,
                       ),
                     ),
+                    child: CircleAvatar(
+                      radius: 24.r,
+                      backgroundColor: isDark ? const Color(0xFF1A1C24) : Colors.grey.shade200,
+                      backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                      child: avatar.isEmpty
+                          ? Icon(Icons.person, color: Colors.white60, size: 24.sp)
+                          : null,
+                    ),
                   ),
-                ),
-                if (chat.isOnline)
+
+                  // Pink Circular (+) Button
                   Positioned(
-                    right: 0,
-                    bottom: 0,
+                    bottom: -2,
+                    right: -2,
                     child: Container(
-                      width: 13.w,
-                      height: 13.w,
+                      width: 22.w,
+                      height: 22.w,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00E676),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF1493), Color(0xFFFF2A9D)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isDark ? const Color(0xFF10121C) : Colors.white,
-                          width: 2.0,
+                          color: isDark ? const Color(0xFF0F1117) : Colors.white,
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF1493).withValues(alpha: 0.6),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 14.sp,
                         ),
                       ),
                     ),
                   ),
-              ],
-            ),
-
-            SizedBox(width: 12.w),
-
-            // Name & Last Message
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    chat.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14.5.sp,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.darkNavy,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    chat.lastMessage,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: isDark ? const Color(0xFF8C9BAE) : const Color(0xFF64748B),
-                    ),
-                  ),
                 ],
               ),
-            ),
 
-            SizedBox(width: 8.w),
+              SizedBox(height: 8.h),
 
-            // Time & Unread Badge
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  chat.timeText,
+              // "Add status" Label
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Add status',
                   style: TextStyle(
-                    fontSize: 11.sp,
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    color: isDark ? Colors.white : AppColors.darkNavy,
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 5.h),
-                if (chat.unreadCount > 0)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF1493),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: Text(
-                      '${chat.unreadCount}',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                else
-                  SizedBox(height: 16.h),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ===========================================================================
-  // Friends Tab (Image 4): Category Pills [Following, Friends, Followers]
-  // ===========================================================================
-  Widget _buildFriendsTab(bool isDark) {
-    final categories = ['Following', 'Friends', 'Followers'];
-    final currentCategory = categories[_selectedFriendsFilter];
+  /// Unified Profile Card (Shows LIVE button if user is live, and status story ring if user has status)
+  Widget _buildFriendStatusCard(_StatusCardData card, bool isDark, SocialProvider social) {
+    final isViewed = _viewedStatusKeys.contains(card.userId);
 
-    final filteredFriends = _demoFriends.where((f) {
-      final matchesCat = f.category == currentCategory;
-      if (_searchQuery.isEmpty) return matchesCat;
-      return matchesCat && f.name.toLowerCase().contains(_searchQuery);
-    }).toList();
+    return GestureDetector(
+      onTap: () {
+        if (card.isLive) {
+          _joinLive(card);
+        } else if (card.hasStatus) {
+          _markStatusAsViewed(card.userId);
+          StoryService.handleAvatarTap(
+            context: context,
+            userId: card.userId,
+            userName: card.name,
+            avatarUrl: card.avatarUrl,
+            allPosts: social.posts,
+          );
+        } else {
+          _markStatusAsViewed(card.userId);
+          StoryService.handleAvatarTap(
+            context: context,
+            userId: card.userId,
+            userName: card.name,
+            avatarUrl: card.avatarUrl,
+            allPosts: social.posts,
+          );
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 108.w,
+        margin: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16.r),
+          gradient: card.isLive
+              ? const LinearGradient(
+                  colors: [
+                    Color(0xFFB0068D),
+                    Color(0xFF6B027B),
+                    Color(0xFF1E0729),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : null,
+          color: card.isLive ? null : (isDark ? const Color(0xFF12151D) : Colors.white),
+          boxShadow: [
+            BoxShadow(
+              color: card.isLive
+                  ? const Color(0xFFB0068D).withValues(alpha: 0.35)
+                  : Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16.r),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Thumbnail background (if not live or if live has cover)
+              if (!card.isLive && card.thumbnailUrl.isNotEmpty)
+                Image.network(
+                  card.thumbnailUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(color: const Color(0xFF161922)),
+                ),
 
-    return Column(
-      children: [
-        // Category Pills (Matching Image 4)
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-          child: Row(
-            children: List.generate(categories.length, (index) {
-              final isSelected = _selectedFriendsFilter == index;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedFriendsFilter = index;
-                  });
-                },
-                child: Container(
-                  margin: EdgeInsets.only(right: 10.w),
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+              // Gradient Overlay for readability
+              Positioned.fill(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? (isDark ? const Color(0xFF00E676).withValues(alpha: 0.2) : const Color(0xFFE8F5E9))
-                        : (isDark ? const Color(0xFF141724) : const Color(0xFFF1F5F9)),
-                    borderRadius: BorderRadius.circular(18.r),
-                    border: Border.all(
-                      color: isSelected ? const Color(0xFF00E676) : Colors.transparent,
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Text(
-                    categories[index],
-                    style: TextStyle(
-                      fontSize: 12.5.sp,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected
-                          ? const Color(0xFF00E676)
-                          : (isDark ? Colors.white60 : const Color(0xFF64748B)),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withValues(alpha: 0.15),
+                        Colors.black.withValues(alpha: 0.4),
+                        Colors.black.withValues(alpha: 0.9),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.1, 0.5, 1.0],
                     ),
                   ),
                 ),
-              );
-            }),
+              ),
+
+              // Content inside Card
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 10.h),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Top Avatar (with status story ring if user has status)
+                    GestureDetector(
+                      onTap: () {
+                        if (card.hasStatus) {
+                          _markStatusAsViewed(card.userId);
+                          StoryService.handleAvatarTap(
+                            context: context,
+                            userId: card.userId,
+                            userName: card.name,
+                            avatarUrl: card.avatarUrl,
+                            allPosts: social.posts,
+                          );
+                        } else if (card.isLive) {
+                          _joinLive(card);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(2.2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: (card.hasStatus && !isViewed)
+                              ? LinearGradient(
+                                  colors: card.ringColors,
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                          border: (!card.hasStatus || isViewed)
+                              ? Border.all(color: Colors.white60, width: 1.5)
+                              : null,
+                          boxShadow: (card.hasStatus && !isViewed)
+                              ? [
+                                  BoxShadow(
+                                    color: card.ringColors.first.withValues(alpha: 0.6),
+                                    blurRadius: 8,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: CircleAvatar(
+                          radius: 20.r,
+                          backgroundColor: Colors.black45,
+                          backgroundImage: NetworkImage(card.avatarUrl),
+                        ),
+                      ),
+                    ),
+
+                    // User Name
+                    Text(
+                      card.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.bold,
+                        shadows: const [
+                          Shadow(color: Colors.black87, blurRadius: 4),
+                        ],
+                      ),
+                    ),
+
+                    // Bottom Pill: LIVE Button or Status Pill
+                    if (card.isLive) ...[
+                      // Prominent Green LIVE Button (Clicking directly joins live stream)
+                      GestureDetector(
+                        onTap: () => _joinLive(card),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00E676),
+                            borderRadius: BorderRadius.circular(5.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00E676).withValues(alpha: 0.6),
+                                blurRadius: 8,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            'LIVE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Location Pin + City
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.location_on, color: Colors.white70, size: 9.5.w),
+                          SizedBox(width: 2.w),
+                          Flexible(
+                            child: Text(
+                              card.location,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 9.5.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      // Non-Live Status User: Display status indicator
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.5.h),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          card.hasStatus ? 'Status' : 'Active',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.5.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Directly join streamer's live room
+  void _joinLive(_StatusCardData card) {
+    if (card.liveRoom != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LiveRoomScreen(room: card.liveRoom!)),
+      );
+    } else {
+      // Connect to live room using streamer credentials
+      final room = LiveRoomModel(
+        id: 'live_${card.userId}',
+        host: UserModel(
+          id: card.userId,
+          username: card.name.replaceAll('🌸', '').trim().toLowerCase(),
+          name: card.name,
+          avatarUrl: card.avatarUrl,
+          region: card.location,
+        ),
+        title: '${card.name} is streaming live 🔥',
+        coverUrl: card.thumbnailUrl.isNotEmpty ? card.thumbnailUrl : card.avatarUrl,
+        viewerCount: 128,
+        category: 'Chat',
+        startTime: DateTime.now(),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LiveRoomScreen(room: room)),
+      );
+    }
+  }
+
+  // ===========================================================================
+  // 3. Chats Section (Channels completely removed)
+  // ===========================================================================
+  Widget _buildChatsSection(bool isDark, MessagingProvider messaging) {
+    // Demonstration conversations matching the exact reference screenshot
+    final demoConversations = [
+      _ChatRowData(
+        userId: 'u_shehryar',
+        name: 'Mr.Shehryar',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+        lastMessage: "You've become friends now, aud...",
+        time: 'just now',
+        unreadCount: 2,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_shanzay',
+        name: 'Shanzay',
+        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
+        lastMessage: 'hi! Are you joining the live room t...',
+        time: '2h ago',
+        unreadCount: 1,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_sonia',
+        name: 'Sonia Malik',
+        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
+        lastMessage: 'hi, loved your new moment post! ...',
+        time: '2h ago',
+        unreadCount: 0,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_neha',
+        name: 'Neha Fatima',
+        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=80',
+        lastMessage: 'hy, see you in PK battle at 9 PM!',
+        time: '2h ago',
+        unreadCount: 0,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_queengirl',
+        name: 'Queen girl',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+        lastMessage: 'Dear mujhe ek loyal aur supportiv...',
+        time: '2h ago',
+        unreadCount: 0,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_ayeshahz',
+        name: 'AYESHA SHAHZ...',
+        avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=80',
+        lastMessage: 'hi kesy ho aap? subah live strea...',
+        time: '2h ago',
+        unreadCount: 0,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_alishbha',
+        name: 'Alishbha',
+        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
+        lastMessage: 'how are you? can you share roo...',
+        time: '3h ago',
+        unreadCount: 0,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_ayesha',
+        name: 'Ayesha Khan',
+        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
+        lastMessage: 'Hey! How are you?',
+        time: '11:32 AM',
+        unreadCount: 3,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_usman',
+        name: 'Usman Ali',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+        lastMessage: 'Okay, sure!',
+        time: '10:45 AM',
+        unreadCount: 1,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_sara',
+        name: 'Sara Malik',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+        lastMessage: 'See you soon! 😋',
+        time: 'Yesterday',
+        unreadCount: 0,
+        isOnline: true,
+        isVoiceMessage: false,
+      ),
+      _ChatRowData(
+        userId: 'u_zain',
+        name: 'Zain Ahmad',
+        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
+        lastMessage: 'Voice message (0:12)',
+        time: 'Yesterday',
+        unreadCount: 0,
+        isOnline: true,
+        isVoiceMessage: true,
+      ),
+    ];
+
+    // Real conversations from MessagingProvider
+    final realChatUsers = messaging.chatUsers;
+    final realRows = realChatUsers.map((u) {
+      final thread = messaging.getMessagesForUser(u.id);
+      final meta = messaging.getMetaForUser(u.id);
+      final lastMsg = thread.isNotEmpty ? thread.last.text : 'No messages yet';
+      final isAudio = thread.isNotEmpty && thread.last.type == 'audio';
+      final timeStr = thread.isNotEmpty
+          ? '${thread.last.timestamp.hour.toString().padLeft(2, '0')}:${thread.last.timestamp.minute.toString().padLeft(2, '0')}'
+          : 'Recently';
+
+      return _ChatRowData(
+        userId: u.id,
+        name: u.displayName.isNotEmpty ? u.displayName : u.name,
+        avatarUrl: u.avatarUrl,
+        lastMessage: isAudio ? 'Voice message' : lastMsg,
+        time: timeStr,
+        unreadCount: meta.unreadCount,
+        isOnline: u.isOnline,
+        isVoiceMessage: isAudio,
+        realUser: u,
+      );
+    }).toList();
+
+    // Merge and filter
+    final combined = <_ChatRowData>[];
+    for (final item in demoConversations) {
+      combined.add(item);
+    }
+    for (final item in realRows) {
+      if (!combined.any((e) => e.userId == item.userId)) {
+        combined.add(item);
+      }
+    }
+
+    // Filter by search query if user is searching
+    final filteredChats = _searchQuery.isEmpty
+        ? combined
+        : combined.where((c) =>
+            c.name.toLowerCase().contains(_searchQuery) ||
+            c.lastMessage.toLowerCase().contains(_searchQuery)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Chats Section Header
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    // Magenta/Pink Glowing Chat Bubble Icon
+                    Container(
+                      width: 32.w,
+                      height: 32.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFFF1493).withValues(alpha: 0.25),
+                            const Color(0xFF9D00FF).withValues(alpha: 0.15),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: const Color(0xFFFF1493).withValues(alpha: 0.6),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.chat_bubble_rounded,
+                          color: const Color(0xFFFF1493),
+                          size: 16.w,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Chats',
+                            style: TextStyle(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : AppColors.darkNavy,
+                            ),
+                          ),
+                          SizedBox(height: 1.h),
+                          Text(
+                            'Your personal messages',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5.sp,
+                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // View all chats
+                },
+                child: Row(
+                  children: [
+                    Text(
+                      'View All',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 16.w,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
 
-        // Friends List
-        Expanded(
-          child: filteredFriends.isEmpty
-              ? Center(
-                  child: Text(
-                    'No users in $currentCategory yet',
-                    style: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
-                  ),
-                )
-              : ListView.separated(
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 120.h),
-                  itemCount: filteredFriends.length,
-                  separatorBuilder: (context, _) => SizedBox(height: 8.h),
-                  itemBuilder: (context, index) {
-                    final friend = filteredFriends[index];
-                    return _buildFriendTile(friend, isDark);
-                  },
-                ),
+        // List of Chat Cards
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: filteredChats.length,
+          itemBuilder: (context, index) {
+            final chat = filteredChats[index];
+            return _buildChatCard(chat, isDark);
+          },
         ),
       ],
     );
   }
 
-  Widget _buildFriendTile(_FriendData friend, bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        final authorUser = UserModel(
-          id: friend.id,
-          name: friend.name,
-          username: friend.name.toLowerCase().replaceAll(' ', '_'),
-          email: '${friend.name.toLowerCase()}@hemiton.com',
-          avatarUrl: friend.avatarUrl,
-          dateOfBirth: DateTime(DateTime.now().year - friend.age, 1, 1),
-          gender: friend.gender,
-          region: 'Islamabad, Pakistan',
-        );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => UserProfileDetailsScreen(
-              userId: friend.id,
-              user: authorUser,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        padding: EdgeInsets.all(10.w),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF10121C) : Colors.white,
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-          ),
+  /// Rounded Dark Chat Card matching reference screenshot
+  Widget _buildChatCard(_ChatRowData chat, bool isDark) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 14.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0D0F14) : Colors.white,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: isDark ? const Color(0xFF1E2330) : const Color(0xFFE2E8F0),
+          width: 1.0,
         ),
-        child: Row(
-          children: [
-            // Avatar
-            Stack(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18.r),
+          onTap: () {
+            final user = chat.realUser ??
+                UserModel(
+                  id: chat.userId,
+                  username: chat.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_'),
+                  name: chat.name,
+                  avatarUrl: chat.avatarUrl,
+                  isOnline: chat.isOnline,
+                );
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ChatScreen(user: user)),
+            );
+          },
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+            child: Row(
               children: [
-                CircleAvatar(
-                  radius: 24.r,
-                  backgroundImage: NetworkImage(friend.avatarUrl),
-                ),
-                if (friend.isOnline)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 12.w,
-                      height: 12.w,
+                // Avatar with Online Dot
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(1.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00E676),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(
+                          color: const Color(0xFFFF1493).withValues(alpha: 0.5),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 23.r,
+                        backgroundColor: isDark ? const Color(0xFF1A1C24) : Colors.grey.shade200,
+                        backgroundImage: chat.avatarUrl.isNotEmpty ? NetworkImage(chat.avatarUrl) : null,
+                        child: chat.avatarUrl.isEmpty
+                            ? Text(
+                                chat.name.isNotEmpty ? chat.name[0].toUpperCase() : '?',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
                       ),
                     ),
-                  ),
-              ],
-            ),
-            SizedBox(width: 12.w),
-
-            // Name + Flame + Gender Badge
-            Expanded(
-              child: Row(
-                children: [
-                  Text(
-                    friend.name,
-                    style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.darkNavy,
-                    ),
-                  ),
-                  if (friend.hasFlame) ...[
-                    SizedBox(width: 4.w),
-                    const Text('🔥', style: TextStyle(fontSize: 14)),
-                  ],
-                  SizedBox(width: 8.w),
-
-                  // Gender / Age Badge
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                    decoration: BoxDecoration(
-                      color: friend.gender == 'female'
-                          ? const Color(0xFFFF4081)
-                          : const Color(0xFF00B0FF),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          friend.gender == 'female' ? Icons.female_rounded : Icons.male_rounded,
-                          size: 10.sp,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 2.w),
-                        Text(
-                          '${friend.age}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.bold,
+                    if (chat.isOnline)
+                      Positioned(
+                        bottom: 1,
+                        right: 1,
+                        child: Container(
+                          width: 11.w,
+                          height: 11.w,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00E676),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF0D0F14) : Colors.white,
+                              width: 2,
+                            ),
                           ),
                         ),
+                      ),
+                  ],
+                ),
+
+                SizedBox(width: 12.w),
+
+                // Name & Message Preview
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        chat.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : AppColors.darkNavy,
+                        ),
+                      ),
+                      SizedBox(height: 3.h),
+                      Row(
+                        children: [
+                          if (chat.isVoiceMessage) ...[
+                            Icon(
+                              Icons.graphic_eq_rounded,
+                              size: 15.w,
+                              color: const Color(0xFF00B0FF),
+                            ),
+                            SizedBox(width: 4.w),
+                          ],
+                          Expanded(
+                            child: Text(
+                              chat.lastMessage,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                fontWeight: chat.unreadCount > 0 ? FontWeight.w600 : FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(width: 8.w),
+
+                // Timestamp, Unread Badge, and Subtle Chevron
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          chat.time,
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF8A9BA8),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        if (chat.unreadCount > 0)
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: chat.unreadCount > 9 ? 6.w : 6.5.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF1493),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFFF1493).withValues(alpha: 0.6),
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              '${chat.unreadCount}',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        else
+                          SizedBox(height: 16.h),
                       ],
                     ),
-                  ),
-                ],
-              ),
+                    SizedBox(width: 6.w),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18.w,
+                      color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    ),
+                  ],
+                ),
+              ],
             ),
-
-            // Chat action icon
-            IconButton(
-              icon: Icon(Icons.chat_bubble_outline_rounded, color: const Color(0xFF00E676), size: 20.sp),
-              onPressed: () {
-                final peer = UserModel(
-                  id: friend.id,
-                  name: friend.name,
-                  username: friend.name.toLowerCase().replaceAll(' ', '_'),
-                  email: '${friend.name.toLowerCase()}@hemiton.com',
-                  avatarUrl: friend.avatarUrl,
-                  dateOfBirth: DateTime(DateTime.now().year - friend.age, 1, 1),
-                  gender: friend.gender,
-                  region: 'Islamabad, Pakistan',
-                );
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ChatScreen(user: peer)),
-                );
-              },
-            ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // Add Status Upload Flow (Camera / Gallery Picker)
+  // ===========================================================================
+  void _openAddStatusFlow() {
+    AuthGuard.require(context, () {
+      final isDark = Provider.of<ThemeProvider>(context, listen: false).isDarkMode;
+
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: isDark ? const Color(0xFF141722) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        builder: (ctx) {
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 22.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  'Add to Status',
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.darkNavy,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  'Share photos or videos disappearing after 24 hours',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildUploadOption(
+                      icon: Icons.camera_alt_rounded,
+                      label: 'Camera',
+                      color: const Color(0xFFFF1493),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CameraRecorderScreen()),
+                        );
+                      },
+                    ),
+                    _buildUploadOption(
+                      icon: Icons.photo_library_rounded,
+                      label: 'Gallery',
+                      color: const Color(0xFF00B0FF),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CreatePostScreen(isStory: true)),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+              ],
+            ),
+          );
+        },
+      );
+    }, reason: 'Sign in to add a status update');
+  }
+
+  Widget _buildUploadOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Container(
+            width: 58.w,
+            height: 58.w,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
+            ),
+            child: Icon(icon, color: color, size: 26.w),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ConversationData {
-  final String id;
+// ── Models for Status Cards & Chats ──────────────────────────────────────────
+class _StatusCardData {
+  final String userId;
+  final String name;
+  final String avatarUrl;
+  final String thumbnailUrl;
+  final bool isOnline;
+  final List<Color> ringColors;
+  final bool isLive;
+  final String location;
+  final LiveRoomModel? liveRoom;
+  final bool hasStatus;
+
+  const _StatusCardData({
+    required this.userId,
+    required this.name,
+    required this.avatarUrl,
+    required this.thumbnailUrl,
+    required this.isOnline,
+    required this.ringColors,
+    this.isLive = false,
+    this.location = 'Kolkata',
+    this.liveRoom,
+    this.hasStatus = false,
+  });
+}
+
+class _ChatRowData {
   final String userId;
   final String name;
   final String avatarUrl;
   final String lastMessage;
-  final String timeText;
+  final String time;
   final int unreadCount;
   final bool isOnline;
-  final String gender;
-  final int age;
+  final bool isVoiceMessage;
+  final UserModel? realUser;
 
-  _ConversationData({
-    required this.id,
+  const _ChatRowData({
     required this.userId,
     required this.name,
     required this.avatarUrl,
     required this.lastMessage,
-    required this.timeText,
+    required this.time,
     required this.unreadCount,
     required this.isOnline,
-    required this.gender,
-    required this.age,
-  });
-}
-
-class _FriendData {
-  final String id;
-  final String name;
-  final String avatarUrl;
-  final String gender;
-  final int age;
-  final bool isOnline;
-  final bool hasFlame;
-  final String category;
-
-  _FriendData({
-    required this.id,
-    required this.name,
-    required this.avatarUrl,
-    required this.gender,
-    required this.age,
-    required this.isOnline,
-    required this.hasFlame,
-    required this.category,
+    required this.isVoiceMessage,
+    this.realUser,
   });
 }

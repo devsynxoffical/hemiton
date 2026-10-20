@@ -5,6 +5,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/theme_provider.dart';
 import '../core/utils/auth_guard.dart';
 import '../widgets/glass_nav_bar.dart';
+import 'games/game_lobby_screen.dart';
 import 'home/home_screen.dart';
 import 'social/camera_recorder_screen.dart';
 import 'social/upload_video_screen.dart';
@@ -41,10 +42,7 @@ class _MainLayoutState extends State<MainLayout> {
     });
   }
 
-
-
   void _onTabSelected(int index) {
-    if (index == 2) return; // centre button handled separately
     if (index == 3) {
       AuthGuard.require(context, () {
         setState(() {
@@ -257,7 +255,7 @@ class _MainLayoutState extends State<MainLayout> {
           children: [
             const HomeScreen(),
             const LiveExploreScreen(),
-            const SizedBox.shrink(), // Create Gap — never actually shown
+            const GameLobbyScreen(),
             const InboxScreen(),
             const ProfileScreen(),
           ],

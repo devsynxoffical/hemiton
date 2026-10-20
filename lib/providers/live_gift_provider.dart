@@ -31,7 +31,7 @@ class LiveGiftProvider extends ChangeNotifier {
   final Set<String> _processedTransactionIds = {};
   final Set<String> _activeSendingIdempotencyKeys = {};
 
-  List<GiftModel> _catalogGifts = [];
+  List<GiftModel> _catalogGifts = List.from(GiftModel.defaultCatalog);
   List<GiftModel> get catalogGifts =>
       _catalogGifts.isNotEmpty ? List.unmodifiable(_catalogGifts) : GiftModel.defaultCatalog;
 

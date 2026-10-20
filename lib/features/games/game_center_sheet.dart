@@ -1,22 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../widgets/hangout_games_sheet.dart';
 import 'game_screen.dart';
 
 class GameCenterSheet extends StatelessWidget {
-  const GameCenterSheet({super.key});
+  final String? roomId;
+  final String? roomTitle;
 
-  static void show(BuildContext context) {
+  const GameCenterSheet({super.key, this.roomId, this.roomTitle});
+
+  static void show(BuildContext context, {String? roomId, String? roomTitle}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const GameCenterSheet(),
+      builder: (_) => GameCenterSheet(roomId: roomId, roomTitle: roomTitle),
     );
   }
 
-  void _openGame(BuildContext context, String gameId, String gameName) {
+  void _openGame(
+    BuildContext context,
+    String gameId,
+    String gameName, {
+    bool isHangoutMultiplayer = false,
+  }) {
     HapticFeedback.selectionClick();
     Navigator.pop(context);
+    if (isHangoutMultiplayer) {
+      HangoutGamesSheet.show(
+        context,
+        roomId: roomId ?? 'room_active_hangout',
+        roomTitle: roomTitle ?? 'Live Party Room',
+      );
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -32,6 +49,15 @@ class GameCenterSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final games = [
+      {
+        'id': 'hangout_games',
+        'name': 'Hangout Battle',
+        'subtitle': 'Multiplayer Trivia',
+        'icon': '🧠',
+        'color': const Color(0xFFFF007A),
+        'gradient': [const Color(0xFF380835), const Color(0xFF8A2BE2)],
+        'isHangoutMultiplayer': true,
+      },
       {
         'id': 'fishing',
         'name': 'Fishing',
@@ -143,7 +169,12 @@ class GameCenterSheet extends StatelessWidget {
                 final color = game['color'] as Color;
 
                 return GestureDetector(
-                  onTap: () => _openGame(context, game['id'] as String, game['name'] as String),
+                  onTap: () => _openGame(
+                    context,
+                    game['id'] as String,
+                    game['name'] as String,
+                    isHangoutMultiplayer: game['isHangoutMultiplayer'] == true,
+                  ),
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(

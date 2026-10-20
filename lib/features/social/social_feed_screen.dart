@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +18,7 @@ import 'camera_recorder_screen.dart';
 import '../../core/services/room_share_service.dart';
 import '../../providers/messaging_provider.dart';
 import '../search/search_screen.dart';
+import '../../widgets/social_circle_sheet.dart';
 
 class SocialFeedScreen extends StatefulWidget {
   final bool isScreenActive;
@@ -137,6 +138,17 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> with SingleTickerPr
               ],
             ),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.groups_rounded, color: AppColors.primary),
+                tooltip: 'Social Circles',
+                onPressed: () {
+                  SocialCircleSheet.show(
+                    context,
+                    currentUserId: auth.currentUser.id,
+                    currentUserName: auth.currentUser.name,
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.search_rounded, color: AppColors.primary),
                 onPressed: () {
@@ -1038,6 +1050,14 @@ class _FullStoryViewerDialogState extends State<_FullStoryViewerDialog>
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(24),
                                 borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: const BorderSide(color: AppColors.pink, width: 1.5),
                               ),
                             ),
                           ),

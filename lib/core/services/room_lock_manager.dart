@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/live_room_model.dart';
@@ -8,10 +8,60 @@ import '../../models/user_model.dart';
 // Item 07: Room Lock Manager & Access Enforcement
 // ─────────────────────────────────────────────────────────────────────────────
 
+enum RoomPrivacyLevel {
+  public,
+  friendsOnly,
+  password,
+  inviteOnly,
+}
+
+extension RoomPrivacyLevelX on RoomPrivacyLevel {
+  String get label {
+    switch (this) {
+      case RoomPrivacyLevel.public:
+        return 'Public';
+      case RoomPrivacyLevel.friendsOnly:
+        return 'Friends Only';
+      case RoomPrivacyLevel.password:
+        return 'Password Protected';
+      case RoomPrivacyLevel.inviteOnly:
+        return 'Invite Only';
+    }
+  }
+
+  String get badgeText {
+    switch (this) {
+      case RoomPrivacyLevel.public:
+        return '';
+      case RoomPrivacyLevel.friendsOnly:
+        return 'Friends';
+      case RoomPrivacyLevel.password:
+        return 'Password';
+      case RoomPrivacyLevel.inviteOnly:
+        return 'Invite Only';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case RoomPrivacyLevel.public:
+        return Icons.public_rounded;
+      case RoomPrivacyLevel.friendsOnly:
+        return Icons.people_alt_rounded;
+      case RoomPrivacyLevel.password:
+        return Icons.lock_rounded;
+      case RoomPrivacyLevel.inviteOnly:
+        return Icons.mail_lock_rounded;
+    }
+  }
+}
+
 class RoomLockState {
   bool isLocked;
   String lockMode; // 'PIN' or 'Approval'
   String pinCode;
+  RoomPrivacyLevel privacyLevel;
+  bool allowFriendBypass;
   final Set<String> admittedUserIds;
   final Set<String> pendingApprovalUserIds;
 
@@ -19,6 +69,8 @@ class RoomLockState {
     this.isLocked = false,
     this.lockMode = 'PIN',
     this.pinCode = '1234',
+    this.privacyLevel = RoomPrivacyLevel.public,
+    this.allowFriendBypass = true,
     Set<String>? admittedUserIds,
     Set<String>? pendingApprovalUserIds,
   })  : admittedUserIds = admittedUserIds ?? {},
@@ -28,13 +80,26 @@ class RoomLockState {
         'isLocked': isLocked,
         'lockMode': lockMode,
         'pinCode': pinCode,
+        'privacyLevel': privacyLevel.name,
+        'allowFriendBypass': allowFriendBypass,
       };
 
   factory RoomLockState.fromJson(Map<String, dynamic> json) {
+    final privName = json['privacyLevel']?.toString();
+    final priv = RoomPrivacyLevel.values.firstWhere(
+      (e) => e.name == privName,
+      orElse: () => json['isLocked'] == true
+          ? (json['lockMode'] == 'Approval'
+              ? RoomPrivacyLevel.inviteOnly
+              : RoomPrivacyLevel.password)
+          : RoomPrivacyLevel.public,
+    );
     return RoomLockState(
       isLocked: json['isLocked'] == true,
       lockMode: json['lockMode']?.toString() ?? 'PIN',
       pinCode: json['pinCode']?.toString() ?? '1234',
+      privacyLevel: priv,
+      allowFriendBypass: json['allowFriendBypass'] != false,
     );
   }
 }
@@ -103,18 +168,40 @@ class RoomLockManager extends ChangeNotifier {
     return _states[roomId]?.pendingApprovalUserIds.contains(userId) ?? false;
   }
 
+  RoomPrivacyLevel getRoomPrivacyLevel(String roomId) {
+    return _states[roomId]?.privacyLevel ?? RoomPrivacyLevel.public;
+  }
+
+  bool doesAllowFriendBypass(String roomId) {
+    return _states[roomId]?.allowFriendBypass ?? true;
+  }
+
   Future<void> saveLockSettings({
     required String roomId,
     required bool isLocked,
     required String mode,
     required String pin,
+    RoomPrivacyLevel? privacyLevel,
+    bool? allowFriendBypass,
   }) async {
     final state = getRoomState(roomId);
     state.isLocked = isLocked;
     state.lockMode = mode;
     state.pinCode = pin.trim().isEmpty ? '1234' : pin.trim();
+    if (privacyLevel != null) {
+      state.privacyLevel = privacyLevel;
+    } else {
+      state.privacyLevel = isLocked
+          ? (mode == 'Approval'
+              ? RoomPrivacyLevel.inviteOnly
+              : RoomPrivacyLevel.password)
+          : RoomPrivacyLevel.public;
+    }
+    if (allowFriendBypass != null) {
+      state.allowFriendBypass = allowFriendBypass;
+    }
 
-    if (!isLocked) {
+    if (!isLocked && state.privacyLevel == RoomPrivacyLevel.public) {
       state.admittedUserIds.clear();
       state.pendingApprovalUserIds.clear();
     }
@@ -130,12 +217,27 @@ class RoomLockManager extends ChangeNotifier {
     } catch (_) {}
   }
 
-  bool canUserBypassLock({required LiveRoomModel room, required UserModel user}) {
+  bool canUserBypassLock({
+    required LiveRoomModel room,
+    required UserModel user,
+    bool isFriend = false,
+  }) {
     if (user.id.isEmpty) return false;
     // Host / Creator always has access
     if (user.id == room.host.id || user.id == room.creatorUserId) return true;
     // Admin role has access
     if (user.role == UserRole.admin) return true;
+
+    // Feature 6: Friend bypass check
+    final state = getRoomState(room.id);
+    final isMutualOrFriend = isFriend || room.isFriendOfFriend;
+    if (state.allowFriendBypass && isMutualOrFriend) {
+      return true;
+    }
+    if (state.privacyLevel == RoomPrivacyLevel.friendsOnly && isMutualOrFriend) {
+      return true;
+    }
+
     return false;
   }
 

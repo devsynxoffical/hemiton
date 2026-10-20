@@ -106,14 +106,29 @@ class _AnimatedEmojiReactionState extends State<AnimatedEmojiReaction> with Sing
                 child: Transform.rotate(
                   angle: _rotationAnimation.value,
                   child: IgnorePointer(
-                    child: Text(
-                      widget.emoji,
-                      style: TextStyle(
-                        fontSize: widget.emojiSize,
-                        height: 1.0,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
+                    child: widget.emoji.startsWith('assets/')
+                        ? Image.asset(
+                            widget.emoji,
+                            width: widget.emojiSize * 1.6,
+                            height: widget.emojiSize * 1.6,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Text(
+                              '✨',
+                              style: TextStyle(
+                                fontSize: widget.emojiSize,
+                                height: 1.0,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            widget.emoji,
+                            style: TextStyle(
+                              fontSize: widget.emojiSize,
+                              height: 1.0,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
                   ),
                 ),
               ),

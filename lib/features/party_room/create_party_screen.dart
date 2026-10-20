@@ -368,6 +368,7 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
         roomType: _roomType,
         category: _selectedCategory,
         isPrivate: _privacy != 'Public',
+        hostUser: currentUser,
       );
     } catch (e) {
       debugPrint('[CreateParty] Backend createRoom error: $e');
@@ -418,7 +419,7 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => isVideo
-              ? LiveRoomScreen(room: roomToJoin)
+              ? LiveRoomScreen(room: roomToJoin, isHost: true)
               : LivePartyRoomScreen(room: roomToJoin),
         ),
       );

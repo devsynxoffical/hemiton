@@ -73,6 +73,7 @@ class BackendRepository extends ChangeNotifier {
 
   final List<ShortVideoModel> _shortVideos = [];
   final List<LiveRoomModel> _liveRooms = [];
+  final List<LiveRoomModel> _friendOfFriendLiveRooms = [];
   final List<PostModel> _posts = [];
   final List<AppNotificationModel> _notifications = [];
   final List<TransactionModel> _transactions = [];
@@ -82,8 +83,11 @@ class BackendRepository extends ChangeNotifier {
 
   List<ShortVideoModel> get shortVideos => List.unmodifiable(_shortVideos);
   List<LiveRoomModel> get liveRooms => List.unmodifiable(_liveRooms);
+  List<LiveRoomModel> get friendOfFriendLiveRooms =>
+      List.unmodifiable(_friendOfFriendLiveRooms);
   List<PostModel> get posts => List.unmodifiable(_posts);
-  List<AppNotificationModel> get notifications => List.unmodifiable(_notifications);
+  List<AppNotificationModel> get notifications =>
+      List.unmodifiable(_notifications);
   List<TransactionModel> get transactions => List.unmodifiable(_transactions);
   List<GiftModel> get gifts => List.unmodifiable(_gifts);
   List<MessageModel> get messages => List.unmodifiable(_messages);
@@ -94,9 +98,12 @@ class BackendRepository extends ChangeNotifier {
       (u) => u.id == userId,
       orElse: () => UserModel(
         id: userId,
-        name: userId.length > 5 ? 'User ${userId.substring(userId.length - 4)}' : userId,
+        name: userId.length > 5
+            ? 'User ${userId.substring(userId.length - 4)}'
+            : userId,
         username: 'user_$userId',
-        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
         followers: 0,
         following: 0,
       ),
@@ -168,7 +175,9 @@ class BackendRepository extends ChangeNotifier {
 
   List<LiveRoomModel> getMyRooms(String userId) {
     if (userId.isEmpty) return [];
-    return _liveRooms.where((r) => r.host.id == userId || r.creatorUserId == userId).toList();
+    return _liveRooms
+        .where((r) => r.host.id == userId || r.creatorUserId == userId)
+        .toList();
   }
 
   List<LiveRoomModel> getPartyRooms() {
@@ -190,9 +199,15 @@ class BackendRepository extends ChangeNotifier {
   }
 
   /// Real Backend Room Discovery Integration
-  Future<List<LiveRoomModel>> fetchLiveRooms({String? category, int limit = 50}) async {
+  Future<List<LiveRoomModel>> fetchLiveRooms({
+    String? category,
+    int limit = 50,
+  }) async {
     try {
-      final remoteRooms = await RoomRepository.instance.getActiveRooms(category: category, limit: limit);
+      final remoteRooms = await RoomRepository.instance.getActiveRooms(
+        category: category,
+        limit: limit,
+      );
       final seenIds = <String>{};
       final uniqueRooms = <LiveRoomModel>[];
       for (final r in remoteRooms) {
@@ -207,6 +222,39 @@ class BackendRepository extends ChangeNotifier {
       return _liveRooms;
     } catch (_) {
       return _liveRooms;
+    }
+  }
+
+  /// Feature 1: Fetch Friend-of-Friend live rooms
+  Future<List<LiveRoomModel>> fetchFriendOfFriendLiveRooms({
+    int limit = 50,
+  }) async {
+    try {
+      final remoteFoFRooms = await RoomRepository.instance
+          .getFriendOfFriendRooms(limit: limit);
+      if (remoteFoFRooms.isNotEmpty) {
+        _friendOfFriendLiveRooms.clear();
+        _friendOfFriendLiveRooms.addAll(remoteFoFRooms);
+      } else {
+        // Fallback or demo friend-of-friend live streams: enrich active rooms
+        _friendOfFriendLiveRooms.clear();
+        _friendOfFriendLiveRooms.addAll(
+          _liveRooms
+              .map(
+                (r) => r.copyWith(
+                  isFriendOfFriend: true,
+                  mutualFriendName: r.host.name.isNotEmpty
+                      ? r.host.name
+                      : 'Sonia',
+                ),
+              )
+              .toList(),
+        );
+      }
+      notifyListeners();
+      return _friendOfFriendLiveRooms;
+    } catch (_) {
+      return _friendOfFriendLiveRooms;
     }
   }
 

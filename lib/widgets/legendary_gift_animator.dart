@@ -150,10 +150,12 @@ class _LegendaryGiftAnimatorState extends State<LegendaryGiftAnimator>
                             ),
                           ],
                         ),
-                        child: Text(
-                          widget.event.giftIcon,
-                          style: const TextStyle(fontSize: 100),
-                        ),
+                        child: widget.event.giftIcon.startsWith('assets/')
+                            ? Image.asset(widget.event.giftIcon, width: 140, height: 140, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Text('🎁', style: TextStyle(fontSize: 100)))
+                            : Text(
+                                widget.event.giftIcon,
+                                style: const TextStyle(fontSize: 100),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 12),
