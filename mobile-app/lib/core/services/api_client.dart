@@ -34,7 +34,7 @@ class ApiClient {
   static const String _refreshTokenKey = 'HEMI TON_refresh_token';
 
   // Default Base URL points to live Railway backend
-  String _baseUrl = 'https://zeparty-backend-production.up.railway.app/api';
+  String _baseUrl = 'https://hemi-ton-backend-production.up.railway.app/api';
 
   Completer<String?>? _refreshCompleter;
 

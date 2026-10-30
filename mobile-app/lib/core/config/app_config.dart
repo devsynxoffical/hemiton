@@ -13,13 +13,13 @@ class AppConfig {
   static String _apiBaseUrl = railwayApiUrl;
 
   /// Disconnect backend calls for offline/standalone UI mode
-  static bool isBackendDisconnected = true;
+  static bool isBackendDisconnected = false;
 
   static AppEnvironment get environment => _environment;
   static String get apiBaseUrl => _apiBaseUrl;
 
   /// Live Railway Backend URL (production)
-  static const String railwayApiUrl = 'https://zeparty-backend-production.up.railway.app/api';
+  static const String railwayApiUrl = 'https://hemi-ton-backend-production.up.railway.app/api';
 
   /// Staging API Base URL
   static const String stagingApiUrl = railwayApiUrl;
