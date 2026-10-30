@@ -508,30 +508,33 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F111A) : Colors.white,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateLiveAndPostOptions(context, isDark, isFemale),
-        backgroundColor: Colors.transparent,
-        elevation: 6,
-        child: Container(
-          width: 52.w,
-          height: 52.w,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF1493), Color(0xFF8A2BE2)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF1493).withValues(alpha: 0.5),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: 74.h),
+        child: FloatingActionButton(
+          onPressed: () => _showCreateLiveAndPostOptions(context, isDark, isFemale),
+          backgroundColor: Colors.transparent,
+          elevation: 6,
+          child: Container(
+            width: 52.w,
+            height: 52.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF1493), Color(0xFF8A2BE2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-            ],
-          ),
-          child: const Center(
-            child: Icon(Icons.add_rounded, color: Colors.white, size: 28),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF1493).withValues(alpha: 0.5),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(Icons.add_rounded, color: Colors.white, size: 28),
+            ),
           ),
         ),
       ),
@@ -901,7 +904,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
                   SizedBox(height: 12.h),
 
-                  // ── 4 Clickable Stats: Friends, Followers, Following, Likes ─
+                  // ── 4 Clickable Stats: Visitors, Followers, Following, Likes ─
                   Container(
                     padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 8.w),
                     decoration: BoxDecoration(
@@ -914,10 +917,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       children: [
                         _buildClickableStatItem(
                           '532',
-                          'Friends',
-                          Icons.people_rounded,
+                          'Visitors',
+                          Icons.visibility_rounded,
                           const Color(0xFF8E24AA),
-                          () => UserListSheet.show(context, 'Friends', userId: user.id),
+                          () => UserListSheet.show(context, 'Visitors', userId: user.id),
                         ),
                         _buildClickableStatItem(
                           '128',
@@ -1108,10 +1111,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildDropdownItem(
-                        icon: Icons.people_outline_rounded,
-                        label: 'Friends',
+                        icon: Icons.visibility_outlined,
+                        label: 'Visitors',
                         color: const Color(0xFF00E676),
-                        onTap: () => UserListSheet.show(context, 'Friends'),
+                        onTap: () => UserListSheet.show(context, 'Visitors'),
                       ),
                       _buildDropdownItem(
                         icon: Icons.edit_note_rounded,

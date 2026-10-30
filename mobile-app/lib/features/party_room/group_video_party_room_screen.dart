@@ -16,6 +16,7 @@ import '../../widgets/emoji_picker_sheet.dart';
 import '../../widgets/bring_my_friend_sheet.dart';
 import '../../widgets/hangout_games_sheet.dart';
 import '../../widgets/profile_frame_picker_sheet.dart';
+import '../../widgets/live_toolbar_icons.dart';
 import '../messages/inbox_screen.dart';
 import '../profile/modules/outfit_screen.dart';
 
@@ -905,31 +906,26 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFF070913).withValues(alpha: 0.92),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 0.8),
-        ),
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
       ),
       child: SafeArea(
         top: false,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // ── 1. Capsule Text Field with integrated Emoji section (Expands on focus/click, revealing Send icon) ──
             Expanded(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                height: 42.h,
+                height: 38.h,
                 padding: EdgeInsets.only(left: 14.w, right: 6.w),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E2235).withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(24.r),
+                  color: const Color(0xFF222634).withValues(alpha: 0.78),
+                  borderRadius: BorderRadius.circular(22.r),
                   border: Border.all(
-                    color: _isInputExpanded
-                        ? const Color(0xFF2979FF).withValues(alpha: 0.8)
-                        : Colors.white.withValues(alpha: 0.16),
-                    width: 1.0,
+                    color: Colors.white.withValues(alpha: 0.08),
+                    width: 0.8,
                   ),
                 ),
                 child: Row(
@@ -938,13 +934,13 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                       child: TextField(
                         controller: _commentController,
                         focusNode: _commentFocusNode,
-                        cursorColor: const Color(0xFF2979FF),
-                        style: GoogleFonts.poppins(color: Colors.white, fontSize: 13.sp),
+                        cursorColor: Colors.white,
+                        style: GoogleFonts.poppins(color: Colors.white, fontSize: 12.5.sp),
                         decoration: InputDecoration(
                           hintText: 'Type a message...',
                           hintStyle: GoogleFonts.poppins(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 12.5.sp,
+                            color: Colors.white.withValues(alpha: 0.65),
+                            fontSize: 12.sp,
                           ),
                           filled: false,
                           fillColor: Colors.transparent,
@@ -978,9 +974,9 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 4.w),
                         child: Icon(
-                          Icons.sentiment_satisfied_alt_outlined,
-                          color: Colors.white70,
-                          size: 22.sp,
+                          Icons.sentiment_satisfied_alt_rounded,
+                          color: Colors.white.withValues(alpha: 0.88),
+                          size: 20.sp,
                         ),
                       ),
                     ),
@@ -994,18 +990,18 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                           _commentFocusNode.unfocus();
                         },
                         child: Container(
-                          width: 30.w,
-                          height: 30.w,
+                          width: 28.w,
+                          height: 28.w,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
-                              colors: [Color(0xFF2979FF), Color(0xFF00E5FF)],
+                              colors: [Color(0xFF007AFF), Color(0xFF00C6FF)],
                             ),
                           ),
                           child: Icon(
                             Icons.send_rounded,
                             color: Colors.white,
-                            size: 15.sp,
+                            size: 14.sp,
                           ),
                         ),
                       ),
@@ -1017,7 +1013,7 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
 
             // If input is expanded, user is focused on typing - collapse other action icons or show tight icons
             if (!_isInputExpanded) ...[
-              SizedBox(width: 7.w),
+              SizedBox(width: 6.w),
 
               // ── 2. Blue Circular Mic Icon Button ──
               GestureDetector(
@@ -1033,42 +1029,29 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                       content: Text(_isMicMuted ? 'Microphone Muted 🔇' : 'Microphone Unmuted 🎙️'),
                       duration: const Duration(seconds: 1),
                       behavior: SnackBarBehavior.floating,
-                      backgroundColor: const Color(0xFF2979FF),
+                      backgroundColor: const Color(0xFF007AFF),
                     ),
                   );
                 },
                 child: Container(
-                  width: 36.w,
-                  height: 36.w,
+                  width: 29.w,
+                  height: 29.w,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: _isMicMuted
-                          ? [const Color(0xFFFF1744), const Color(0xFFD50000)]
-                          : [const Color(0xFF2979FF), const Color(0xFF1565C0)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (_isMicMuted ? const Color(0xFFFF1744) : const Color(0xFF2979FF)).withValues(alpha: 0.4),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: _isMicMuted ? const Color(0xFFFF1744) : const Color(0xFF007AFF),
                   ),
                   child: Center(
                     child: Icon(
                       _isMicMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
                       color: Colors.white,
-                      size: 20.sp,
+                      size: 16.5.sp,
                     ),
                   ),
                 ),
               ),
-              SizedBox(width: 7.w),
+              SizedBox(width: 6.w),
 
-              // ── 3. Outside Chat Icon: White circular bubble with lines, Green dot if outside unread msg else Red ──
+              // ── 3. Outside Chat Icon: White speech bubble with two lines & Green/Red dot ──
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -1076,49 +1059,11 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                     MaterialPageRoute(builder: (_) => const InboxScreen()),
                   );
                 },
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 34.w,
-                      height: 34.w,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.chat_bubble_rounded,
-                          color: const Color(0xFF1E2235),
-                          size: 19.sp,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: -1,
-                      right: -1,
-                      child: Container(
-                        width: 10.w,
-                        height: 10.w,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: hasUnread ? const Color(0xFF00E676) : const Color(0xFFFF1744),
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                child: NextChatBubbleIcon(hasUnread: hasUnread, size: 27),
               ),
-              SizedBox(width: 7.w),
+              SizedBox(width: 6.w),
 
-              // ── 4. Games Gamepad Icon (White controller with crown) ──
+              // ── 4. Games Gamepad Icon (White controller with golden crown, no circle) ──
               GestureDetector(
                 onTap: () {
                   HangoutGamesSheet.show(
@@ -1127,60 +1072,20 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                     roomTitle: widget.room.title,
                   );
                 },
-                child: Container(
-                  width: 34.w,
-                  height: 34.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                  ),
-                  child: Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      clipBehavior: Clip.none,
-                      children: [
-                        Icon(
-                          Icons.sports_esports_rounded,
-                          color: Colors.white,
-                          size: 21.sp,
-                        ),
-                        Positioned(
-                          top: -6.h,
-                          child: const Text('👑', style: TextStyle(fontSize: 10)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                child: const GamesCrownIcon(size: 28),
               ),
-              SizedBox(width: 7.w),
+              SizedBox(width: 6.w),
 
-              // ── 5. Frame Laurel / Crown Icon (Outfit & Frame equipping shop) ──
+              // ── 5. Frame Laurel Wreath Icon (Golden laurel wreath ring, no circle) ──
               GestureDetector(
                 onTap: () {
                   ProfileFramePickerSheet.show(context);
                 },
-                child: Container(
-                  width: 34.w,
-                  height: 34.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
-                    border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.4)),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.military_tech_rounded,
-                      color: const Color(0xFFFFB300),
-                      size: 22.sp,
-                    ),
-                  ),
-                ),
+                child: const GoldenLaurelWreathIcon(size: 27),
               ),
-              SizedBox(width: 7.w),
+              SizedBox(width: 6.w),
 
-              // ── 6. Gift Icon (Hot pink box with gold ribbon 🎁) ──
+              // ── 6. Gift Icon (Hot pink gift box with gold ribbon, no circle) ──
               GestureDetector(
                 onTap: () {
                   showModalBottomSheet(
@@ -1190,20 +1095,11 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                     builder: (_) => GiftDialog(streamerName: widget.room.title),
                   );
                 },
-                child: Container(
-                  width: 34.w,
-                  height: 34.w,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Text('🎁', style: TextStyle(fontSize: 22)),
-                  ),
-                ),
+                child: const PinkGiftBoxIcon(size: 26),
               ),
-              SizedBox(width: 7.w),
+              SizedBox(width: 6.w),
 
-              // ── 7. Share Icon (White paper airplane ✈️ / telegram arrow) ──
+              // ── 7. Share Icon (White paper airplane, no circle) ──
               GestureDetector(
                 onTap: () {
                   BringMyFriendSheet.show(
@@ -1212,25 +1108,7 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                     roomTitle: widget.room.title,
                   );
                 },
-                child: Container(
-                  width: 34.w,
-                  height: 34.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                  ),
-                  child: Center(
-                    child: Transform.rotate(
-                      angle: -0.2,
-                      child: Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 19.sp,
-                      ),
-                    ),
-                  ),
-                ),
+                child: const PaperPlaneShareIcon(size: 24),
               ),
             ] else ...[
               // Collapsed cancel focus button when expanded

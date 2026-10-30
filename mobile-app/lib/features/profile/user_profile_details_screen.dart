@@ -593,7 +593,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
 
                   SizedBox(height: 12.h),
 
-                  // ── 4 Clickable Stats: Friends, Followers, Following, Likes ─
+                  // ── 4 Clickable Stats: Visitors, Followers, Following, Likes ─
                   Container(
                     padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 8.w),
                     decoration: BoxDecoration(
@@ -606,10 +606,10 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                       children: [
                         _buildClickableStatItem(
                           '532',
-                          'Friends',
-                          Icons.people_rounded,
+                          'Visitors',
+                          Icons.visibility_rounded,
                           const Color(0xFF8E24AA),
-                          () => UserListSheet.show(context, 'Friends', userId: targetUser.id),
+                          () => UserListSheet.show(context, 'Visitors', userId: targetUser.id),
                         ),
                         _buildClickableStatItem(
                           '128',
@@ -870,10 +870,10 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SVIPCenterScreen())),
                     ),
                     _buildDropdownItem(
-                      icon: Icons.people_outline_rounded,
-                      label: 'Friends',
+                      icon: Icons.visibility_outlined,
+                      label: 'Visitors',
                       color: const Color(0xFF00E5FF),
-                      onTap: () => UserListSheet.show(context, 'Friends'),
+                      onTap: () => UserListSheet.show(context, 'Visitors'),
                     ),
                     _buildDropdownItem(
                       icon: Icons.edit_note_rounded,
@@ -883,10 +883,10 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                     ),
                   ] else ...[
                     _buildDropdownItem(
-                      icon: Icons.people_outline_rounded,
-                      label: 'Mutual Friends',
+                      icon: Icons.visibility_outlined,
+                      label: 'Visitors',
                       color: const Color(0xFF00E5FF),
-                      onTap: () => UserListSheet.show(context, 'Friends', userId: widget.userId),
+                      onTap: () => UserListSheet.show(context, 'Visitors', userId: widget.userId),
                     ),
                     _buildDropdownItem(
                       icon: Icons.share_rounded,

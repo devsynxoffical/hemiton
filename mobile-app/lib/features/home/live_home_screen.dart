@@ -2492,7 +2492,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
 
     return Positioned(
       key: const ValueKey('live_floating_create_button'),
-      bottom: 24.h,
+      bottom: 88.h,
       right: 16.w,
       child: Material(
         color: Colors.transparent,
