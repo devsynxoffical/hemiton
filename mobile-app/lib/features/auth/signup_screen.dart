@@ -144,7 +144,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
       navigator.pushAndRemoveUntil(
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 400),
-          pageBuilder: (context, anim1, anim2) => const MainLayout(),
+          pageBuilder: (context, anim1, anim2) => const ProfileSetupScreen(),
           transitionsBuilder: (context, anim, secondaryAnim, child) =>
               FadeTransition(opacity: anim, child: child),
         ),

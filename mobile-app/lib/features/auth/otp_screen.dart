@@ -6,6 +6,7 @@ import '../../widgets/design/gold_button.dart';
 import '../../widgets/app_logo.dart';
 import '../../providers/auth_provider.dart';
 import '../main_layout.dart';
+import 'profile_setup_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phoneNumber;
@@ -60,11 +61,19 @@ class _OtpScreenState extends State<OtpScreen> {
 
     if (mounted) {
       if (success) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (c) => const MainLayout()),
-          (route) => false,
-        );
+        if (auth.isNewUser || !auth.currentUser.profileCompleted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (c) => const ProfileSetupScreen()),
+            (route) => false,
+          );
+        } else {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (c) => const MainLayout()),
+            (route) => false,
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

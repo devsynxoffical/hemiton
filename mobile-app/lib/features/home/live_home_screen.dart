@@ -2481,15 +2481,6 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
       return const SizedBox.shrink();
     }
 
-    String label = 'Go Live';
-    if (_selectedMode == 0) {
-      label = 'Daily Live';
-    } else if (_selectedMode == 1) {
-      label = 'Group Live';
-    } else {
-      label = 'Video Live';
-    }
-
     return Positioned(
       key: const ValueKey('live_floating_create_button'),
       bottom: 88.h,
@@ -2498,10 +2489,12 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _handleCreateAction(currentUser),
-          borderRadius: BorderRadius.circular(28.r),
+          customBorder: const CircleBorder(),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+            width: 52.w,
+            height: 52.w,
             decoration: BoxDecoration(
+              shape: BoxShape.circle,
               gradient: const LinearGradient(
                 colors: [
                   Color(0xFFFF007F), // Neon Rose
@@ -2511,7 +2504,6 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(28.r),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFFFF007F).withValues(alpha: 0.55),
@@ -2522,28 +2514,15 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
               ],
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.35),
-                width: 1.2,
+                width: 1.5,
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 20.sp,
-                ),
-                SizedBox(width: 6.w),
-                Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
+            child: Center(
+              child: Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: 28.sp,
+              ),
             ),
           ),
         ),
@@ -2552,53 +2531,112 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
   }
 
   void _handleCreateAction(UserModel currentUser) {
-    if (_selectedMode == 0) {
-      // 1. Daily Live Tab: Exclusively for female accounts
-      final isFemale = currentUser.gender.trim().toLowerCase() == 'female';
-      if (!isFemale) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Daily Live creation is exclusively available for verified female creators.',
-              style: GoogleFonts.poppins(color: Colors.white),
-            ),
-            backgroundColor: const Color(0xFFFF007F),
+    final isFemale = currentUser.gender.trim().toLowerCase() == 'female';
+
+    if (_selectedMode == 0 && !isFemale) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Daily Live creation is exclusively available for verified female creators.',
+            style: GoogleFonts.poppins(color: Colors.white),
           ),
-        );
-        return;
-      }
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CreateLiveRoomScreen(initialAudioMode: false, isDailyLive: true),
+          backgroundColor: const Color(0xFFFF007F),
         ),
       );
+      return;
+    }
+
+    String popupTitle = 'Create Live Stream';
+    String popupSubtitle = 'Choose your live broadcast format';
+    if (_selectedMode == 0) {
+      popupTitle = 'Create Daily Live';
+      popupSubtitle = 'Exclusive Daily Live for female creators';
     } else if (_selectedMode == 1) {
-      // 2. Group Live Tab: For both male & female -> Audio Group Live or Video Group Live
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: const Color(0xFF16122C),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-          side: const BorderSide(color: Color(0xFF8A2BE2), width: 1.2),
-        ),
-        builder: (ctx) => SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
+      popupTitle = 'Create Group Live';
+      popupSubtitle = 'Choose Audio or Video Group Live stage';
+    } else {
+      popupTitle = 'Create Video & Audio Live';
+      popupSubtitle = 'Choose Video or Audio broadcast mode';
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF16122C),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        side: const BorderSide(color: Color(0xFF8A2BE2), width: 1.2),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
+              ),
+              SizedBox(height: 14.h),
+              Text(
+                popupTitle,
+                style: GoogleFonts.poppins(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                popupSubtitle,
+                style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12.sp),
+              ),
+              SizedBox(height: 16.h),
+              if (_selectedMode == 0) ...[
+                // 1. Daily Live Tab (Female Only): Video or Audio Daily Live
+                ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(10.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF007F).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.videocam_rounded, color: Color(0xFFFF007F)),
+                  ),
+                  title: Text('Daily Video Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                  subtitle: Text('Go live on camera in Daily Live feed', style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12.sp)),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CreateLiveRoomScreen(initialAudioMode: false, isDailyLive: true),
+                      ),
+                    );
+                  },
                 ),
-                SizedBox(height: 14.h),
-                Text(
-                  'Create Group Live',
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.bold),
+                Divider(color: Colors.white12, height: 16.h),
+                ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(10.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.mic_rounded, color: Color(0xFF00E5FF)),
+                  ),
+                  title: Text('Daily Audio Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                  subtitle: Text('Start voice-only Daily Live broadcast', style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12.sp)),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CreateLiveRoomScreen(initialAudioMode: true, isDailyLive: true),
+                      ),
+                    );
+                  },
                 ),
-                SizedBox(height: 16.h),
+              ] else if (_selectedMode == 1) ...[
+                // 2. Group Live Tab (Both Male & Female): Audio Group Live or Video Group Live
                 ListTile(
                   leading: Container(
                     padding: EdgeInsets.all(10.w),
@@ -2608,7 +2646,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                     ),
                     child: const Icon(Icons.mic_rounded, color: Color(0xFF00E5FF)),
                   ),
-                  title: Text('Audio Party Stage', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                  title: Text('Audio Group Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
                   subtitle: Text('8-10 Audio seats with live gifts & chat', style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12.sp)),
                   trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
                   onTap: () {
@@ -2631,7 +2669,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                     ),
                     child: const Icon(Icons.videocam_rounded, color: Color(0xFFFF007F)),
                   ),
-                  title: Text('Group Video Stage', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                  title: Text('Video Group Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
                   subtitle: Text('8-10 Multi-camera video live boxes', style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12.sp)),
                   trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
                   onTap: () {
@@ -2644,21 +2682,60 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                     );
                   },
                 ),
-                SizedBox(height: 10.h),
+              ] else ...[
+                // 3. Video Live Tab (Both Male & Female): Video Live or Audio Live
+                ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(10.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF007F).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.videocam_rounded, color: Color(0xFFFF007F)),
+                  ),
+                  title: Text('Video Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                  subtitle: Text('Start solo HD camera live broadcast', style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12.sp)),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CreateLiveRoomScreen(initialAudioMode: false, isDailyLive: false),
+                      ),
+                    );
+                  },
+                ),
+                Divider(color: Colors.white12, height: 16.h),
+                ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(10.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.mic_rounded, color: Color(0xFF00E5FF)),
+                  ),
+                  title: Text('Audio Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                  subtitle: Text('Start voice-only live broadcast', style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12.sp)),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CreateLiveRoomScreen(initialAudioMode: true, isDailyLive: false),
+                      ),
+                    );
+                  },
+                ),
               ],
-            ),
+              SizedBox(height: 10.h),
+            ],
           ),
         ),
-      );
-    } else {
-      // 3. Video Live Tab: For both male & female -> Solo/Broadcast Video Live
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CreateLiveRoomScreen(initialAudioMode: false, isDailyLive: false),
-        ),
-      );
-    }
+      ),
+    );
   }
 
   // ===========================================================================

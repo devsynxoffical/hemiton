@@ -765,7 +765,7 @@ class AuthProvider extends ChangeNotifier {
         avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80',
         coins: 1000,
         diamonds: 100,
-        profileCompleted: true,
+        profileCompleted: false,
         isOnline: true,
       );
 
@@ -814,7 +814,7 @@ class AuthProvider extends ChangeNotifier {
           diamonds: 100,
           isSignup: true,
         );
-        _currentUser = authRes.user;
+        _currentUser = authRes.user.copyWith(profileCompleted: false);
       } catch (syncErr) {
         debugPrint('[AuthProvider] Backend sync error in email signup: $syncErr');
         if (syncErr is ApiException && (syncErr.statusCode == 403 || syncErr.statusCode == 400)) {
@@ -836,7 +836,7 @@ class AuthProvider extends ChangeNotifier {
           avatarUrl: firebaseUser?.photoURL ?? '',
           coins: 1000,
           diamonds: 100,
-          profileCompleted: true,
+          profileCompleted: false,
           isOnline: true,
         );
       }
@@ -1159,11 +1159,16 @@ class AuthProvider extends ChangeNotifier {
     required String username,
     required String gender,
     required DateTime dateOfBirth,
+    String? name,
+    String? region,
     String? avatarUrl,
     String? bio,
   }) async {
     _isLoading = true;
     notifyListeners();
+
+    final finalName = (name != null && name.trim().isNotEmpty) ? name.trim() : username.trim();
+    final finalRegion = (region != null && region.trim().isNotEmpty) ? region.trim() : currentUser.region;
 
     try {
       String? remoteAvatarUrl = avatarUrl;
@@ -1182,8 +1187,10 @@ class AuthProvider extends ChangeNotifier {
       if (_isAuthenticated && await _authRepository.hasSavedToken()) {
         final updated = await _authRepository.updateProfile(
           username: username.trim(),
-          displayName: username.trim(),
+          name: finalName,
+          displayName: finalName,
           gender: gender,
+          region: finalRegion,
           birthDate: dateOfBirth,
           avatarUrl: remoteAvatarUrl,
           bio: bio,
@@ -1191,13 +1198,18 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = updated.copyWith(
           profileCompleted: true,
           username: username.trim(),
-          name: username.trim(),
+          name: finalName,
+          gender: gender,
+          region: finalRegion,
+          dateOfBirth: dateOfBirth,
+          bio: (bio != null && bio.trim().isNotEmpty) ? bio.trim() : updated.bio,
         );
       } else {
         _currentUser = currentUser.copyWith(
           username: username.trim(),
-          name: username.trim(),
+          name: finalName,
           gender: gender,
+          region: finalRegion,
           dateOfBirth: dateOfBirth,
           avatarUrl: remoteAvatarUrl ?? currentUser.avatarUrl,
           bio: (bio != null && bio.trim().isNotEmpty) ? bio.trim() : currentUser.bio,
@@ -1211,6 +1223,16 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      _currentUser = currentUser.copyWith(
+        username: username.trim(),
+        name: finalName,
+        gender: gender,
+        region: finalRegion,
+        dateOfBirth: dateOfBirth,
+        avatarUrl: avatarUrl ?? currentUser.avatarUrl,
+        bio: (bio != null && bio.trim().isNotEmpty) ? bio.trim() : currentUser.bio,
+        profileCompleted: true,
+      );
       _isLoading = false;
       if (_currentUser != null) {
         await _saveUserLocalSession(_currentUser!);

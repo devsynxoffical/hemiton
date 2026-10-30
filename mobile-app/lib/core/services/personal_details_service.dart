@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/user_model.dart';
@@ -9,18 +10,42 @@ class UserPersonalDetails {
   final String occupation;
   final String location;
   final String hometown;
+  final bool isHometownLocked;
   final List<String> traits;
   final List<String> hobbies;
 
   const UserPersonalDetails({
-    required this.height,
-    required this.weight,
-    required this.occupation,
+    this.height = '173cm',
+    this.weight = '60-65KG',
+    this.occupation = 'Small Business',
     required this.location,
     required this.hometown,
-    required this.traits,
-    required this.hobbies,
+    this.isHometownLocked = false,
+    this.traits = const ['Romantic', 'Adventurous', 'Fun'],
+    this.hobbies = const ['Music 🎵', 'Gaming 🎮', 'Travel ✈️'],
   });
+
+  UserPersonalDetails copyWith({
+    String? height,
+    String? weight,
+    String? occupation,
+    String? location,
+    String? hometown,
+    bool? isHometownLocked,
+    List<String>? traits,
+    List<String>? hobbies,
+  }) {
+    return UserPersonalDetails(
+      height: height ?? this.height,
+      weight: weight ?? this.weight,
+      occupation: occupation ?? this.occupation,
+      location: location ?? this.location,
+      hometown: hometown ?? this.hometown,
+      isHometownLocked: isHometownLocked ?? this.isHometownLocked,
+      traits: traits ?? this.traits,
+      hobbies: hobbies ?? this.hobbies,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'height': height,
@@ -28,6 +53,7 @@ class UserPersonalDetails {
         'occupation': occupation,
         'location': location,
         'hometown': hometown,
+        'isHometownLocked': isHometownLocked,
         'traits': traits,
         'hobbies': hobbies,
       };
@@ -36,8 +62,9 @@ class UserPersonalDetails {
         height: json['height'] as String? ?? '173cm',
         weight: json['weight'] as String? ?? '60-65KG',
         occupation: json['occupation'] as String? ?? 'Small Business',
-        location: json['location'] as String? ?? 'Islamabad',
-        hometown: json['hometown'] as String? ?? 'Islamabad',
+        location: json['location'] as String? ?? 'Islamabad, Pakistan',
+        hometown: json['hometown'] as String? ?? '',
+        isHometownLocked: json['isHometownLocked'] == true,
         traits: (json['traits'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
             ['Romantic', 'Adventurous', 'Fun'],
         hobbies: (json['hobbies'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
@@ -82,89 +109,55 @@ class PersonalDetailsService {
       debugPrint('Error loading personal details: $e');
     }
 
-    // Dynamic fallback according to the user's name/gender
     final details = _generateDynamicFallback(user);
     _cache[user.id] = details;
     return details;
   }
 
+  /// Auto-detects the user's current city & country based on IP geolocation or device timezone/region
+  Future<String> detectCurrentLocation() async {
+    try {
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 3),
+        receiveTimeout: const Duration(seconds: 3),
+      ));
+      final res = await dio.get('http://ip-api.com/json/?fields=status,country,city');
+      if (res.statusCode == 200 && res.data is Map) {
+        final data = res.data as Map;
+        if (data['status'] == 'success') {
+          final city = (data['city']?.toString() ?? '').trim();
+          final country = (data['country']?.toString() ?? '').trim();
+          if (city.isNotEmpty && country.isNotEmpty) {
+            return '$city, $country';
+          }
+          if (country.isNotEmpty) {
+            return country;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Fallback based on device timezone offset
+    final offsetHours = DateTime.now().timeZoneOffset.inHours;
+    if (offsetHours == 5) return 'Islamabad, Pakistan';
+    if (offsetHours == 4) return 'Dubai, UAE';
+    if (offsetHours == 3) return 'Riyadh, Saudi Arabia';
+    if (offsetHours == 5 || DateTime.now().timeZoneOffset.inMinutes == 330) return 'New Delhi, India';
+    if (offsetHours == 0 || offsetHours == 1) return 'London, United Kingdom';
+    if (offsetHours <= -4 && offsetHours >= -8) return 'New York, United States';
+    return 'Islamabad, Pakistan';
+  }
+
   UserPersonalDetails _generateDynamicFallback(UserModel user) {
-    final nameLower = user.name.toLowerCase();
-    final isFemale = user.gender.toLowerCase() == 'female' ||
-        nameLower.contains('anam') ||
-        nameLower.contains('shanzay') ||
-        nameLower.contains('sonia') ||
-        nameLower.contains('neha') ||
-        nameLower.contains('queen') ||
-        nameLower.contains('ayesha') ||
-        nameLower.contains('alishbha') ||
-        nameLower.contains('hina');
+    final cleanRegion = user.region.replaceAll(RegExp(r'[\u{1F1E6}-\u{1F1FF}]{2}', unicode: true), '').trim();
+    final loc = (cleanRegion.isNotEmpty && cleanRegion.toLowerCase() != 'global')
+        ? cleanRegion
+        : 'Islamabad, Pakistan';
 
-    final loc = user.region.isNotEmpty ? user.region.split(',').first.trim() : 'Islamabad';
-
-    if (isFemale) {
-      if (nameLower.contains('anam')) {
-        return UserPersonalDetails(
-          height: '165cm',
-          weight: '48-52KG',
-          occupation: 'UI Designer & Host',
-          location: loc,
-          hometown: 'Lahore',
-          traits: ['Creative', 'Romantic', 'Friendly'],
-          hobbies: ['Photography', 'Music 🎵', 'Fashion 👠'],
-        );
-      } else if (nameLower.contains('shanzay')) {
-        return UserPersonalDetails(
-          height: '168cm',
-          weight: '50-54KG',
-          occupation: 'Fashion Model',
-          location: loc,
-          hometown: 'Karachi',
-          traits: ['Energetic', 'Fun', 'Adventurous'],
-          hobbies: ['Dancing 💃', 'Travel ✈️', 'Fitness 🏋️'],
-        );
-      } else if (nameLower.contains('sonia')) {
-        return UserPersonalDetails(
-          height: '162cm',
-          weight: '50-53KG',
-          occupation: 'Digital Creator',
-          location: loc,
-          hometown: 'Islamabad',
-          traits: ['Sweet', 'Romantic', 'Patient'],
-          hobbies: ['Reading 📚', 'Cooking 🍳', 'Music 🎵'],
-        );
-      } else {
-        return UserPersonalDetails(
-          height: '164cm',
-          weight: '50-55KG',
-          occupation: 'Streamer & Creator',
-          location: loc,
-          hometown: loc,
-          traits: ['Romantic', 'Charming', 'Fun'],
-          hobbies: ['Chatting 💬', 'Singing 🎤', 'Travel ✈️'],
-        );
-      }
-    } else {
-      if (nameLower.contains('shehryar')) {
-        return UserPersonalDetails(
-          height: '175cm',
-          weight: '55-60KG',
-          occupation: 'Developer',
-          location: loc,
-          hometown: 'Islamabad',
-          traits: ['Romantic', 'Patient', 'Adventurous', 'Ambitious'],
-          hobbies: ['Coding 💻', 'Gaming 🎮', 'Travel ✈️'],
-        );
-      }
-      return UserPersonalDetails(
-        height: '173cm',
-        weight: '60-65KG',
-        occupation: 'Small Business',
-        location: loc,
-        hometown: loc,
-        traits: ['Romantic', 'Adventurous', 'Fun'],
-        hobbies: ['Music 🎵', 'Gaming 🎮', 'Travel ✈️'],
-      );
-    }
+    return UserPersonalDetails(
+      location: loc,
+      hometown: '',
+      isHometownLocked: false,
+    );
   }
 }
