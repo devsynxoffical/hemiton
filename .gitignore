@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Miscellaneous
 *.class
 *.log
@@ -43,3 +44,79 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+=======
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+.dart_tool/
+**/.dart_tool/
+*.tar
+*.tar.gz
+*.zip
+.gradle_cache/
+.idea/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Excluded by request: Docs, Plans, Readmes, Markdown, Word Docs & Text
+docs/
+**/docs/
+*.md
+**/*.md
+README*
+**/README*
+readme*
+**/readme*
+*.docx
+**/*.docx
+*.pdf
+**/*.pdf
+*.txt
+**/*.txt
+temp_mobile/
+mobile/
+**/mobile/
+mobile app/
+**/mobile app/
+scratch/
+**/scratch/
+
+# Excluded by request: Python helper scripts
+*.py
+**/*.py
+
+# Excluded by request: Scripts & test runners
+scripts/
+**/scripts/
+backend/scripts/
+tests/
+**/tests/
+test/
+**/test/
+test_*.js
+**/test_*.js
+run_all_tests.js
+**/run_all_tests.js
+run_all_test_suites.js
+**/run_all_test_suites.js
+check_*.js
+**/check_*.js
+quick_test.js
+**/quick_test.js
+verify_*.js
+**/verify_*.js
+>>>>>>> e045cef1f8b1fd7fe738fe6bfc6362554d7b226e

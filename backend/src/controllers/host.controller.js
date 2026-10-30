@@ -1,0 +1,339 @@
+import hostRepository from '../repositories/host.repository.js';
+import hostService from '../services/host.service.js';
+import hostingEligibilityService from '../services/hostingEligibility.service.js';
+import {
+  applyHostSchema,
+  reviewHostApplicationSchema,
+  updateHostStatusSchema,
+  queryHostsSchema,
+} from '../validators/host.validator.js';
+
+export async function applyHost(req, res, next) {
+  try {
+    const validatedData = applyHostSchema.parse(req.body);
+    const userId = req.auth.userId;
+    const ipAddress = req.ip || req.headers['x-forwarded-for'];
+
+    const application = await hostService.applyForHost({
+      userId,
+      ...validatedData,
+      ipAddress,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Host verification application submitted successfully',
+      data: application,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getMyHostProfile(req, res, next) {
+  try {
+    const userId = req.auth.userId;
+    const host = await hostService.getHostProfileByUserId(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Host profile retrieved successfully',
+      data: host,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getMyHostApplication(req, res, next) {
+  try {
+    const userId = req.auth.userId;
+    const application = await hostService.getMyHostApplication(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Host application retrieved successfully',
+      data: application,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getHosts(req, res, next) {
+  try {
+    const validatedQuery = queryHostsSchema.parse(req.query);
+    const result = await hostRepository.findHostProfiles(validatedQuery);
+
+    const serializedHosts = result.hosts.map((h) => ({
+      ...h,
+      totalDiamondsEarnedMonth: h.totalDiamondsEarnedMonth ? h.totalDiamondsEarnedMonth.toString() : '0',
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Hosts list retrieved successfully',
+      data: serializedHosts,
+      pagination: result.pagination,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getHostById(req, res, next) {
+  try {
+    const { id } = req.params;
+    const host = await hostService.getHostDetails(id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Host details retrieved successfully',
+      data: host,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getHostApplications(req, res, next) {
+  try {
+    const { page, limit, status, hostType } = req.query;
+    const result = await hostRepository.findApplications({
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+      status,
+      hostType,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Host applications retrieved successfully',
+      data: result.applications,
+      pagination: result.pagination,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function reviewHostApplication(req, res, next) {
+  try {
+    const { id } = req.params;
+    const validatedData = reviewHostApplicationSchema.parse(req.body);
+    const adminId = req.auth.userId;
+    const adminName = req.admin?.name || 'Administrator';
+    const ipAddress = req.ip || req.headers['x-forwarded-for'];
+
+    const result = await hostService.reviewHostApplication(id, {
+      ...validatedData,
+      adminId,
+      adminName,
+      ipAddress,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Host application ${validatedData.status.toLowerCase()} successfully`,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateHostStatus(req, res, next) {
+  try {
+    const { id } = req.params;
+    const validatedData = updateHostStatusSchema.parse(req.body);
+    const adminId = req.auth.userId;
+    const adminName = req.admin?.name || 'Administrator';
+    const ipAddress = req.ip || req.headers['x-forwarded-for'];
+
+    const host = await hostService.updateHostProfileStatus(id, {
+      ...validatedData,
+      adminId,
+      adminName,
+      ipAddress,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Host status updated successfully',
+      data: {
+        ...host,
+        totalDiamondsEarnedMonth: host.totalDiamondsEarnedMonth ? host.totalDiamondsEarnedMonth.toString() : '0',
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getHostIncomeDashboard(req, res, next) {
+  try {
+    const userId = req.auth.userId;
+    const result = await hostService.getHostIncomeDashboard(userId);
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function becomeLiveHost(req, res, next) {
+  try {
+    const userId = req.auth.userId;
+    const ipAddress = req.ip || req.headers['x-forwarded-for'];
+    const result = await hostService.becomeLiveHost(userId, req.body, { ipAddress });
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getAgencyHostPolicyTable(req, res, next) {
+  try {
+    const result = await hostService.getAgencyHostPolicyTable();
+    return res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getLiveHostPolicyTable(req, res, next) {
+  try {
+    const result = await hostService.getLiveHostPolicyTable();
+    return res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function removeHostRole(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body || {};
+    const adminId = req.auth?.adminId || req.auth?.userId || 'ADMIN';
+    const adminName = req.auth?.name || req.auth?.username || 'Administrator';
+
+    const result = await hostService.removeHostRole({
+      hostProfileId: id,
+      adminId,
+      adminName,
+      reason,
+      ipAddress: req.ip,
+    });
+
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function recordBroadcastHeartbeat(req, res, next) {
+  try {
+    const hostUserId = req.auth.userId;
+    const { roomId } = req.body;
+    const result = await hostService.recordBroadcastHeartbeat({ roomId, hostUserId });
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getHostAttendance(req, res, next) {
+  try {
+    const hostUserId = req.auth.userId;
+    const result = await hostService.getHostAttendanceSummary(hostUserId);
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function rejectSimulation(req, res, next) {
+  try {
+    hostService.rejectSimulation();
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getHostingEligibility(req, res, next) {
+  try {
+    const userId = req.auth.userId;
+    const eligibility = await hostingEligibilityService.getHostingEligibilityOverview(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Hosting eligibility retrieved successfully',
+      data: eligibility,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function applyLiveHost(req, res, next) {
+  try {
+    const userId = req.auth.userId;
+    const ipAddress = req.ip || req.headers['x-forwarded-for'];
+    const {
+      name,
+      displayName,
+      hostType = 'LIVE_HOST',
+      idCardFrontUrl,
+      idCardBackUrl,
+      videoSampleUrl,
+    } = req.body || {};
+
+    const application = await hostService.applyForHost({
+      userId,
+      hostType: hostType === 'AUDIO_HOST' ? 'AUDIO_HOST' : 'LIVE_HOST',
+      idCardFrontUrl: idCardFrontUrl || 'https://assets.zeparty.app/verifications/id_front.jpg',
+      idCardBackUrl: idCardBackUrl || 'https://assets.zeparty.app/verifications/id_back.jpg',
+      videoSampleUrl: videoSampleUrl || 'https://assets.zeparty.app/verifications/selfie_liveness.mp4',
+      ipAddress,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Live Host application submitted successfully',
+      data: application,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export default {
+  applyHost,
+  applyLiveHost,
+  getHostingEligibility,
+  getMyHostProfile,
+  getMyHostApplication,
+  getHosts,
+  getHostById,
+  getHostApplications,
+  reviewHostApplication,
+  updateHostStatus,
+  getHostIncomeDashboard,
+  becomeLiveHost,
+  getAgencyHostPolicyTable,
+  getLiveHostPolicyTable,
+  removeHostRole,
+  recordBroadcastHeartbeat,
+  getHostAttendance,
+  rejectSimulation,
+};
+
+
