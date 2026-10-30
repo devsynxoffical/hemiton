@@ -1,0 +1,554 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../theme/app_colors.dart';
+import '../../features/party_room/live_party_room_screen.dart';
+import '../../features/live/live_room_screen.dart';
+import '../../models/live_room_model.dart';
+import '../../models/user_model.dart';
+import '../../widgets/short_share_sheet.dart';
+import '../../providers/social_provider.dart';
+
+/// Unified Deep Link & Share Service across Live Rooms, Party Rooms, Shorts & Feeds
+class RoomShareService {
+  RoomShareService._();
+
+  static String generateRoomLink(String roomId) {
+    return 'https://HEMI TON.app/room/$roomId';
+  }
+
+  static String generateShortLink(String shortId) {
+    return 'https://HEMI TON.app/short/$shortId';
+  }
+
+  static String generatePostLink(String postId) {
+    return 'https://HEMI TON.app/post/$postId';
+  }
+
+  static String generateCoHostLink(String roomId) {
+    return 'https://HEMI TON.app/live/cohost/$roomId';
+  }
+
+  /// Copies text to clipboard and shows share snackbar
+  static Future<void> shareText(BuildContext context, String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Share link copied to clipboard!'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Share Co-Host Invitation Link to split screen and co-host live stream
+  static Future<void> shareCoHostInvite(
+    BuildContext context, {
+    required String roomId,
+    String? roomTitle,
+  }) async {
+    final link = generateCoHostLink(roomId);
+    await Clipboard.setData(ClipboardData(text: link));
+
+    if (!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.getCard(isDark),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(colors: [Color(0xFF00E5FF), Color(0xFF00B0FF)]),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.person_add_alt_1_rounded, color: Colors.black, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Invite Co-Host to Screen',
+                      style: TextStyle(
+                        color: AppColors.getTextPrimary(isDark),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Share this link with a friend or creator to join your live video broadcast as a Co-Host. Once on screen, you can battle in PK anytime!',
+                style: TextStyle(color: AppColors.getTextSecondary(isDark), fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+
+              // Generated Link Box
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link_rounded, color: Color(0xFF00E5FF), size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        link,
+                        style: TextStyle(
+                          color: AppColors.getTextPrimary(isDark),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy_rounded, color: Color(0xFF00E5FF), size: 20),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: link));
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(
+                            content: Text('✅ Co-Host invite link copied to clipboard!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildShareOption(
+                    ctx,
+                    icon: Icons.chat_bubble_rounded,
+                    label: 'WhatsApp',
+                    color: const Color(0xFF25D366),
+                    onTap: () => _copyAndNotify(ctx, link, 'Co-Host invite link copied! Send via WhatsApp.'),
+                  ),
+                  _buildShareOption(
+                    ctx,
+                    icon: Icons.send_rounded,
+                    label: 'Telegram',
+                    color: const Color(0xFF0088CC),
+                    onTap: () => _copyAndNotify(ctx, link, 'Co-Host invite link copied! Send via Telegram.'),
+                  ),
+                  _buildShareOption(
+                    ctx,
+                    icon: Icons.link_rounded,
+                    label: 'Copy Link',
+                    color: const Color(0xFF00E5FF),
+                    onTap: () => _copyAndNotify(ctx, link, 'Link copied! Send to anyone to Co-Host.'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Show unified Share Sheet with Deep Link & Join capability
+  static Future<void> shareRoom(
+    BuildContext context, {
+    required String roomId,
+    String? roomTitle,
+    bool isParty = false,
+  }) async {
+    final link = generateRoomLink(roomId);
+    await Clipboard.setData(ClipboardData(text: link));
+
+    if (!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.getCard(isDark),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.share_rounded, color: AppColors.primary, size: 24),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      roomTitle != null && roomTitle.isNotEmpty
+                          ? 'Share "$roomTitle"'
+                          : 'Share Room & Invite Friends',
+                      style: TextStyle(
+                        color: AppColors.getTextPrimary(isDark),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Generated Link Box
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link_rounded, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        link,
+                        style: TextStyle(
+                          color: AppColors.getTextPrimary(isDark),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy_rounded, color: AppColors.primary, size: 20),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: link));
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(
+                            content: Text('✅ Room join link copied to clipboard!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Quick Actions Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildShareOption(
+                    ctx,
+                    icon: Icons.chat_bubble_rounded,
+                    label: 'WhatsApp',
+                    color: const Color(0xFF25D366),
+                    onTap: () => _copyAndNotify(ctx, link, 'WhatsApp link copied! Paste in WhatsApp chat.'),
+                  ),
+                  _buildShareOption(
+                    ctx,
+                    icon: Icons.send_rounded,
+                    label: 'Telegram',
+                    color: const Color(0xFF0088CC),
+                    onTap: () => _copyAndNotify(ctx, link, 'Telegram link copied! Paste in Telegram chat.'),
+                  ),
+                  _buildShareOption(
+                    ctx,
+                    icon: Icons.link_rounded,
+                    label: 'Copy Link',
+                    color: AppColors.primary,
+                    onTap: () => _copyAndNotify(ctx, link, 'Link copied! Send to anyone to join.'),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Test Direct Join Link Action
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.getPrimary(isDark),
+                    foregroundColor: AppColors.onPrimary(isDark: isDark),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    final targetRoom = LiveRoomModel(
+                      id: roomId,
+                      title: roomTitle ?? (isParty ? 'Party Room' : 'Live Stream'),
+                      host: const UserModel(id: 'host_user', username: 'host', name: 'Host User', avatarUrl: ''),
+                      coverUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80',
+                      viewerCount: 1,
+                      category: isParty ? 'Party' : 'Music',
+                      startTime: DateTime.now(),
+                    );
+
+                    if (isParty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LivePartyRoomScreen(room: targetRoom),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LiveRoomScreen(room: targetRoom),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.login_rounded, size: 20),
+                  label: const Text('Test Join via Share Link 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Share Short Video with deep link and in-app friends list
+  static Future<void> shareShort(
+    BuildContext context, {
+    required String shortId,
+    String? title,
+  }) async {
+    final link = generateShortLink(shortId);
+    await Clipboard.setData(ClipboardData(text: link));
+
+    if (!context.mounted) return;
+    await ShortShareSheet.show(context, shortId: shortId, title: title);
+  }
+
+  /// Share Social Post with deep link
+  static Future<void> sharePost(
+    BuildContext context, {
+    required String postId,
+    String? title,
+  }) async {
+    final link = generatePostLink(postId);
+
+    if (!context.mounted) return;
+    _showShareDialog(
+      context,
+      title: title ?? 'Social Post',
+      link: link,
+      onShareSuccess: () {
+        try {
+          if (context.mounted) {
+            context.read<SocialProvider>().sharePost(postId);
+          }
+        } catch (_) {}
+      },
+    );
+  }
+
+  static void _showShareDialog(
+    BuildContext context, {
+    required String title,
+    required String link,
+    VoidCallback? onShareSuccess,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.getCard(isDark),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.share_rounded, color: AppColors.primary, size: 24),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Share $title',
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDark),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.link_rounded, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      link,
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy_rounded, color: AppColors.primary, size: 20),
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: link));
+                      onShareSuccess?.call();
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Share link copied to clipboard!'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildShareOption(
+                  ctx,
+                  icon: Icons.chat_bubble_rounded,
+                  label: 'WhatsApp',
+                  color: const Color(0xFF25D366),
+                  onTap: () {
+                    onShareSuccess?.call();
+                    _copyAndNotify(ctx, link, 'WhatsApp share link copied! Paste in WhatsApp chat.');
+                  },
+                ),
+                _buildShareOption(
+                  ctx,
+                  icon: Icons.send_rounded,
+                  label: 'Telegram',
+                  color: const Color(0xFF0088CC),
+                  onTap: () {
+                    onShareSuccess?.call();
+                    _copyAndNotify(ctx, link, 'Telegram share link copied! Paste in Telegram chat.');
+                  },
+                ),
+                _buildShareOption(
+                  ctx,
+                  icon: Icons.link_rounded,
+                  label: 'Copy Link',
+                  color: AppColors.primary,
+                  onTap: () {
+                    onShareSuccess?.call();
+                    _copyAndNotify(ctx, link, 'Link copied! Send to anyone to watch.');
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildShareOption(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: color.withValues(alpha: 0.15),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  static void _copyAndNotify(BuildContext context, String link, String message) {
+    Clipboard.setData(ClipboardData(text: link));
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('✅ $message'), duration: const Duration(seconds: 3)),
+    );
+  }
+}

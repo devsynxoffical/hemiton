@@ -1,0 +1,672 @@
+enum UserRole { user, host, seller, agency, bd, admin }
+
+class UserModel {
+  final String id;
+  final String username;
+  final String name;
+  final String? email;
+  final String? phone;
+  final String avatarUrl;
+  final String? coverUrl;
+  final String bio;
+  final String gender;
+  final String region;
+  final DateTime? dateOfBirth;
+  final bool profileCompleted;
+  final int followers;
+  final int following;
+  final int diamonds;
+  final int coins;
+  final double rCoins;
+  final bool isVip;
+  final String vipLevel;
+  final bool isHost;
+  final bool isAgency;
+  final bool isSeller;
+  final bool isBd;
+  final String? agencyName;
+  final int sellerBalance;
+  final bool isOnline;
+  final bool isLive;
+  final String? liveRoomId;
+  final String avatarFrame;
+  final String badge;
+  final String referralCode;
+  final int referralCount;
+  final UserRole role;
+  
+  // Host Application
+  final String hostApplicationStatus; // 'none', 'pending', 'approved', 'rejected', 're_verify'
+  final String? hostRejectionReason;
+
+  // Levels
+  final int wealthLevel;
+  final int wealthXp;
+  final int charmLevel;
+  final int charmXp;
+  final int gameLevel;
+  final int gameXp;
+  final int accountLevel;
+  final int accountXp;
+
+  // Relationship (CP)
+  final String? cpPartnerId;
+  final int cpPoints;
+  final List<String> pendingCpRequests;
+
+  // Noble Title (Addendum 32)
+  final String? nobleTitle;
+  
+  // Custom assigned visual titles (Requirement 10)
+  final List<String> customTitles;
+  final String status;
+  final int likesReceived;
+  final bool isCountryLocked;
+  final bool isPrivate;
+  final DateTime? lastActiveAt;
+
+  bool get isInRoom => (isLive && liveRoomId != null && liveRoomId!.isNotEmpty) || (status == 'IN_ROOM');
+  String? get currentRoomId => liveRoomId;
+  bool get online => isOnline;
+  Map<String, dynamic>? get currentRoom => (liveRoomId != null && liveRoomId!.isNotEmpty) ? {'id': liveRoomId} : null;
+
+  String get presenceStatus {
+    if (isInRoom) return 'IN_ROOM';
+    if (isOnline) return 'ONLINE';
+    return 'OFFLINE';
+  }
+
+  String get lastActiveText {
+    if (isInRoom) return 'In Room';
+    if (isOnline) return 'Online';
+    if (lastActiveAt != null) {
+      final diff = DateTime.now().difference(lastActiveAt!);
+      if (diff.inMinutes < 1) return 'Active just now';
+      if (diff.inMinutes < 60) return 'Active ${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return 'Active ${diff.inHours}h ago';
+      if (diff.inDays < 30) return 'Active ${diff.inDays}d ago';
+    }
+    return 'Offline';
+  }
+
+  int get svipLevel {
+    final search = '$vipLevel ${nobleTitle ?? ''} $badge'.toLowerCase();
+    if (search.contains('svip')) {
+      final numMatch = RegExp(r'svip\s*(\d+)').firstMatch(search);
+      if (numMatch != null) {
+        return int.tryParse(numMatch.group(1)!) ?? 1;
+      }
+      final numStr = vipLevel.replaceAll(RegExp(r'[^0-9]'), '');
+      if (numStr.isNotEmpty) {
+        return int.tryParse(numStr) ?? 1;
+      }
+      return 1;
+    }
+    return 0;
+  }
+
+
+  static const UserModel empty = UserModel(
+    id: '',
+    username: '',
+    name: 'Guest',
+    avatarUrl: '',
+    bio: '',
+    followers: 0,
+    following: 0,
+    diamonds: 0,
+    coins: 0,
+    rCoins: 0.0,
+    isVip: false,
+    vipLevel: 'None',
+    isHost: false,
+    isAgency: false,
+    isSeller: false,
+    isBd: false,
+    sellerBalance: 0,
+    isOnline: false,
+    isLive: false,
+    avatarFrame: '',
+    badge: '',
+    referralCode: '',
+    referralCount: 0,
+    role: UserRole.user,
+    hostApplicationStatus: 'none',
+    wealthLevel: 0,
+    wealthXp: 0,
+    charmLevel: 0,
+    charmXp: 0,
+    gameLevel: 0,
+    gameXp: 0,
+    accountLevel: 0,
+    accountXp: 0,
+    profileCompleted: false,
+    likesReceived: 0,
+    isCountryLocked: false,
+    isPrivate: false,
+    lastActiveAt: null,
+    customTitles: [],
+  );
+
+  const UserModel({
+    required this.id,
+    required this.username,
+    required this.name,
+    this.email,
+    this.phone,
+    required this.avatarUrl,
+    this.coverUrl,
+    this.bio = '',
+    this.gender = 'Not Specified',
+    this.region = '🇵🇰 Pakistan',
+    this.dateOfBirth,
+    this.profileCompleted = true,
+    this.followers = 0,
+    this.following = 0,
+    this.diamonds = 0,
+    this.coins = 0,
+    this.rCoins = 0.0,
+    this.isVip = false,
+    this.vipLevel = 'None',
+    this.isHost = false,
+    this.isAgency = false,
+    this.isSeller = false,
+    this.isBd = false,
+    this.agencyName,
+    this.sellerBalance = 0,
+    this.isOnline = false,
+    this.isLive = false,
+    this.liveRoomId,
+    this.avatarFrame = '',
+    this.badge = '',
+    this.referralCode = '',
+    this.referralCount = 0,
+    this.role = UserRole.user,
+    this.hostApplicationStatus = 'none',
+    this.hostRejectionReason,
+    this.wealthLevel = 0,
+    this.wealthXp = 0,
+    this.charmLevel = 0,
+    this.charmXp = 0,
+    this.gameLevel = 0,
+    this.gameXp = 0,
+    this.accountLevel = 0,
+    this.accountXp = 0,
+    this.cpPartnerId,
+    this.cpPoints = 0,
+    this.pendingCpRequests = const [],
+    this.nobleTitle,
+    this.status = 'ACTIVE',
+    this.likesReceived = 0,
+    this.isCountryLocked = false,
+    this.isPrivate = false,
+    this.lastActiveAt,
+    this.customTitles = const [],
+  });
+
+  /// Automatically calculate exact age from date of birth securely
+  int get age {
+    if (dateOfBirth == null) return 21; // Safe fallback when profile DOB is loading
+    final today = DateTime.now();
+    int calculatedAge = today.year - dateOfBirth!.year;
+    if (today.month < dateOfBirth!.month ||
+        (today.month == dateOfBirth!.month && today.day < dateOfBirth!.day)) {
+      calculatedAge--;
+    }
+    return calculatedAge > 0 ? calculatedAge : 0;
+  }
+
+  /// 18+ requirement for restricted live streaming features
+  bool get isAgeEligible => age >= 18;
+
+  /// Live Host access check
+  bool get hasLiveHostAccess {
+    final status = hostApplicationStatus.toLowerCase().trim();
+    return isHost ||
+        status == 'approved' ||
+        status == 'active' ||
+        role == UserRole.admin ||
+        role == UserRole.host;
+  }
+
+  /// Effective display name
+  String get displayName {
+    if (name.isNotEmpty && name != 'null' && name != 'undefined' && !name.contains('@') && !name.startsWith('user_') && !name.startsWith('google_')) {
+      return name;
+    }
+    return id.isNotEmpty ? 'User $id' : 'HEMI TON Member';
+  }
+
+  /// Effective cover image URL fallback
+  String get effectiveCoverUrl => (coverUrl != null && coverUrl!.isNotEmpty) ? coverUrl! : avatarUrl;
+
+  /// Effective level getter (defaults to accountLevel or fallback)
+  int get level => accountLevel > 0 ? accountLevel : 12;
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    final profile = json['profile'] is Map<String, dynamic> ? json['profile'] as Map<String, dynamic> : {};
+    final wallet = json['wallet'] is Map<String, dynamic> ? json['wallet'] as Map<String, dynamic> : {};
+    final hostProfile = json['hostProfile'] is Map<String, dynamic> ? json['hostProfile'] as Map<String, dynamic> : null;
+
+    final id = json['id']?.toString() ?? json['_id']?.toString() ?? '';
+    final email = json['email']?.toString();
+
+    final rawUsername = (json['username']?.toString() ?? '').trim();
+    final rawDisplayName = (profile['displayName']?.toString() ?? '').trim();
+    final rawName = (json['name']?.toString() ?? '').trim();
+    final rawDisplayNameFallback = (json['displayName']?.toString() ?? '').trim();
+
+    String username = rawUsername.isNotEmpty
+        ? rawUsername
+        : (id.isNotEmpty ? 'user_$id' : 'user');
+
+    String name = rawDisplayName.isNotEmpty
+        ? rawDisplayName
+        : (rawDisplayNameFallback.isNotEmpty
+            ? rawDisplayNameFallback
+            : (rawName.isNotEmpty && !rawName.contains('@')
+                ? rawName
+                : (id.isNotEmpty ? 'User $id' : 'HEMI TON Member')));
+
+    final phone = json['phone']?.toString();
+    final avatarUrl = profile['avatarUrl']?.toString() ?? json['avatarUrl']?.toString() ?? profile['avatar']?.toString() ?? json['avatar']?.toString() ?? '';
+    final bio = profile['bio']?.toString() ?? json['bio']?.toString() ?? '';
+    final gender = profile['gender']?.toString() ?? json['gender']?.toString() ?? 'Not Specified';
+    final region = profile['region']?.toString() ?? profile['countryCode']?.toString() ?? json['region']?.toString() ?? 'Global';
+    
+    DateTime? dob;
+    if (json['dob'] != null) {
+      dob = DateTime.tryParse(json['dob'].toString());
+    } else if (profile['birthDate'] != null) {
+      dob = DateTime.tryParse(profile['birthDate'].toString());
+    } else if (json['dateOfBirth'] != null) {
+      dob = DateTime.tryParse(json['dateOfBirth'].toString());
+    }
+
+    final coins = int.tryParse(wallet['coinBalance']?.toString() ?? '') ?? (json['coins'] is int ? json['coins'] as int : 0);
+    final diamonds = int.tryParse(wallet['diamondBalance']?.toString() ?? '') ?? (json['diamonds'] is int ? json['diamonds'] as int : 0);
+    final sellerBalance = int.tryParse(wallet['sellerBalanceCoins']?.toString() ?? '') ?? (json['sellerBalance'] is int ? json['sellerBalance'] as int : 0);
+    final followers = profile['followersCount'] is int ? profile['followersCount'] as int : (json['followers'] is int ? json['followers'] as int : 0);
+    final following = profile['followingCount'] is int ? profile['followingCount'] as int : (json['following'] is int ? json['following'] as int : 0);
+
+    final rawRole = json['role']?.toString().toLowerCase();
+    final userType = json['userType']?.toString().toUpperCase();
+    final hostRawStatus = (hostProfile?['hostStatus'] ?? hostProfile?['status'] ?? json['hostStatus'] ?? json['hostApplicationStatus'])?.toString().toUpperCase();
+    final bool isHostStatusActive = hostRawStatus == 'ACTIVE' || hostRawStatus == 'APPROVED';
+    final bool isUserTypeHost = userType == 'HOST' || json['isHost'] == true || rawRole == 'host';
+
+    UserRole role = UserRole.user;
+    if (isUserTypeHost || isHostStatusActive || (hostProfile != null && hostRawStatus != 'REJECTED')) role = UserRole.host;
+    if (userType == 'SELLER' || rawRole == 'seller') role = UserRole.seller;
+    if (userType == 'AGENCY' || rawRole == 'agency') role = UserRole.agency;
+    if (userType == 'BD' || rawRole == 'bd') role = UserRole.bd;
+    if (userType == 'ADMIN' || rawRole == 'admin') role = UserRole.admin;
+
+    final bool effectiveIsHost = isHostStatusActive || isUserTypeHost || role == UserRole.host;
+
+    // Detect Coins Seller from authoritative fields, secondary roles, permissions, or assigned badges
+    final List<dynamic> rawRolesList = (json['roles'] is List) ? json['roles'] as List : [];
+    final bool hasSellerInRoles = rawRolesList.any((r) {
+      final s = r.toString().toUpperCase();
+      return s == 'SELLER' || s == 'COINS_SELLER' || s == 'COIN_SELLER' || s == 'MERCHANT_SELLER';
+    });
+    final rawBadgeStr = (json['badge']?.toString() ?? '').toLowerCase();
+    final List<dynamic> rawBadgesList = (json['badges'] is List) ? json['badges'] as List : [];
+    final bool hasSellerBadge = rawBadgeStr.contains('seller') ||
+        rawBadgeStr.contains('coins_saller') ||
+        rawBadgesList.any((b) => b.toString().toLowerCase().contains('seller'));
+    final List<dynamic> rawTitlesList = (json['customTitles'] is List) ? json['customTitles'] as List : [];
+    final bool hasSellerTitle = rawTitlesList.any((t) => t.toString().toLowerCase().contains('seller'));
+
+    final bool isSellerActive = json['isSeller'] == true ||
+        json['isCoinsSeller'] == true ||
+        json['hasSellerPortal'] == true ||
+        userType == 'SELLER' ||
+        rawRole == 'seller' ||
+        hasSellerInRoles ||
+        hasSellerBadge ||
+        hasSellerTitle ||
+        role == UserRole.seller ||
+        sellerBalance > 0;
+    String hostAppStatus = 'none';
+    if (hostRawStatus != null && hostRawStatus.isNotEmpty) {
+      hostAppStatus = hostRawStatus.toLowerCase();
+    } else if (json['hostApplicationStatus'] != null) {
+      hostAppStatus = json['hostApplicationStatus'].toString().toLowerCase();
+    } else if (effectiveIsHost) {
+      hostAppStatus = 'approved';
+    }
+
+    final int wealthLevel = profile['wealthLevel'] is int ? profile['wealthLevel'] as int : (json['wealthLevel'] is int ? json['wealthLevel'] as int : 0);
+    final int charmLevel = profile['charmLevel'] is int ? profile['charmLevel'] as int : (json['charmLevel'] is int ? json['charmLevel'] as int : 0);
+    final int accountLevel = profile['level'] is int ? profile['level'] as int : (json['accountLevel'] is int ? json['accountLevel'] as int : 0);
+    final bool isVipUser = json['isVip'] == true || (wealthLevel > 10);
+
+    return UserModel(
+      id: id,
+      username: username,
+      name: name,
+      email: email,
+      phone: phone,
+      avatarUrl: avatarUrl,
+      coverUrl: json['coverUrl']?.toString(),
+      bio: bio,
+      gender: gender,
+      region: region,
+      dateOfBirth: dob,
+      profileCompleted: json['profileCompleted'] == true ||
+          (profile['displayName'] != null && profile['displayName'].toString().trim().isNotEmpty) ||
+          (name.isNotEmpty && name != 'Guest') ||
+          (username.isNotEmpty && !username.startsWith('user_')),
+      followers: followers,
+      following: following,
+      diamonds: diamonds,
+      coins: coins,
+      rCoins: (json['rCoins'] as num?)?.toDouble() ?? 0.0,
+      isVip: isVipUser,
+      vipLevel: isVipUser ? (json['vipLevel']?.toString() ?? 'VIP 1') : 'None',
+      isHost: effectiveIsHost,
+      isAgency: role == UserRole.agency,
+      isSeller: isSellerActive,
+      isBd: role == UserRole.bd,
+      agencyName: json['agencyName']?.toString(),
+      sellerBalance: sellerBalance,
+      isOnline: json['presenceStatus']?.toString().toUpperCase() == 'ONLINE' ||
+          json['presenceStatus']?.toString().toUpperCase() == 'IN_ROOM' ||
+          json['isOnline'] == true ||
+          json['online'] == true ||
+          json['isInRoom'] == true ||
+          (json['isLive'] == true && (json['liveRoomId'] != null || json['currentRoomId'] != null)),
+      isLive: json['presenceStatus']?.toString().toUpperCase() == 'IN_ROOM' ||
+          json['isLive'] == true ||
+          json['isInRoom'] == true ||
+          (json['liveRoomId'] != null && json['liveRoomId'].toString().isNotEmpty) ||
+          (json['currentRoomId'] != null && json['currentRoomId'].toString().isNotEmpty) ||
+          (json['currentRoom'] != null && json['currentRoom'] is Map && (json['currentRoom']['id'] != null || json['currentRoom']['roomId'] != null)),
+      liveRoomId: json['liveRoomId']?.toString() ??
+          json['currentRoomId']?.toString() ??
+          json['roomId']?.toString() ??
+          (json['currentRoom'] is Map ? (json['currentRoom']['id']?.toString() ?? json['currentRoom']['roomId']?.toString()) : null),
+      avatarFrame: json['avatarFrame']?.toString() ?? '',
+      badge: json['badge']?.toString() ?? '',
+      referralCode: json['referralCode']?.toString() ?? 'ZEP$id',
+      referralCount: json['referralCount'] is int ? json['referralCount'] as int : 0,
+      role: role,
+      hostApplicationStatus: hostAppStatus,
+      hostRejectionReason: hostProfile?['rejectionReason']?.toString() ?? json['hostRejectionReason']?.toString(),
+      wealthLevel: wealthLevel,
+      wealthXp: profile['experience'] is int ? profile['experience'] as int : (json['wealthXp'] is int ? json['wealthXp'] as int : 0),
+      charmLevel: charmLevel,
+      charmXp: json['charmXp'] is int ? json['charmXp'] as int : 0,
+      gameLevel: json['gameLevel'] is int ? json['gameLevel'] as int : 0,
+      gameXp: json['gameXp'] is int ? json['gameXp'] as int : 0,
+      accountLevel: accountLevel,
+      accountXp: json['accountXp'] is int ? json['accountXp'] as int : 0,
+      cpPartnerId: json['cpPartnerId']?.toString(),
+      nobleTitle: json['nobleTitle']?.toString(),
+      status: json['status']?.toString() ?? 'ACTIVE',
+      likesReceived: profile['likesReceived'] is int
+          ? profile['likesReceived'] as int
+          : (json['likesReceived'] is int
+              ? json['likesReceived'] as int
+              : (json['likesCount'] is int ? json['likesCount'] as int : 0)),
+      isCountryLocked: json['isCountryLocked'] == true || profile['isCountryLocked'] == true,
+      isPrivate: json['isPrivate'] == true || profile['isPrivate'] == true,
+      lastActiveAt: json['lastActiveAt'] != null
+          ? DateTime.tryParse(json['lastActiveAt'].toString())
+          : (json['lastSeen'] != null
+              ? DateTime.tryParse(json['lastSeen'].toString())
+              : (json['lastSeenAt'] != null
+                  ? DateTime.tryParse(json['lastSeenAt'].toString())
+                  : (json['lastLoginAt'] != null
+                      ? DateTime.tryParse(json['lastLoginAt'].toString())
+                      : (profile['lastActiveAt'] != null
+                          ? DateTime.tryParse(profile['lastActiveAt'].toString())
+                          : null)))),
+      customTitles: json['customTitles'] != null ? List<String>.from(json['customTitles']) : [],
+    );
+  }
+
+  /// Extracts or computes country flag for display on user ID and profile
+  String get countryFlag {
+    if (region.isEmpty) return '🇵🇰';
+
+    // 1. Extract emoji flag directly if present in region string
+    final emojiRegExp = RegExp(r'[\u{1F1E6}-\u{1F1FF}]{2}', unicode: true);
+    final match = emojiRegExp.firstMatch(region);
+    if (match != null) return match.group(0)!;
+
+    final lower = region.toLowerCase().trim();
+    if (lower.contains('pakistan') || lower == 'pk') return '🇵🇰';
+    if (lower.contains('united states') || lower.contains('usa') || lower == 'us') return '🇺🇸';
+    if (lower.contains('united kingdom') || lower.contains('uk') || lower == 'gb') return '🇬🇧';
+    if (lower.contains('saudi') || lower == 'sa') return '🇸🇦';
+    if (lower.contains('emirates') || lower.contains('uae') || lower == 'ae') return '🇦🇪';
+    if (lower.contains('india') || lower == 'in') return '🇮🇳';
+    if (lower.contains('bangladesh') || lower == 'bd') return '🇧🇩';
+    if (lower.contains('canada') || lower == 'ca') return '🇨🇦';
+    if (lower.contains('australia') || lower == 'au') return '🇦🇺';
+    if (lower.contains('germany') || lower == 'de') return '🇩🇪';
+    if (lower.contains('france') || lower == 'fr') return '🇫🇷';
+    if (lower.contains('turkey') || lower == 'tr') return '🇹🇷';
+    if (lower.contains('egypt') || lower == 'eg') return '🇪🇬';
+    if (lower.contains('indonesia') || lower == 'id') return '🇮🇩';
+    if (lower.contains('malaysia') || lower == 'my') return '🇲🇾';
+    if (lower.contains('philippines') || lower == 'ph') return '🇵🇭';
+    if (lower.contains('japan') || lower == 'jp') return '🇯🇵';
+    if (lower.contains('korea') || lower == 'kr') return '🇰🇷';
+    if (lower.contains('china') || lower == 'cn') return '🇨🇳';
+    if (lower.contains('qatar') || lower == 'qa') return '🇶🇦';
+    if (lower.contains('kuwait') || lower == 'kw') return '🇰🇼';
+    if (lower.contains('oman') || lower == 'om') return '🇴🇲';
+    if (lower.contains('bahrain') || lower == 'bh') return '🇧🇭';
+
+    return '🇵🇰';
+  }
+
+  /// Clean country name without flag emoji prefix
+  String get cleanCountryName {
+    return region.replaceAll(RegExp(r'[\u{1F1E6}-\u{1F1FF}]{2}', unicode: true), '').trim();
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // LEVEL PROGRESSION (Requirement 16)
+  // Each level requires 10,000 diamonds.  XP is per-level spend (resets on
+  // level-up), so computed level = XP ÷ 10,000 (integer division).
+  // Lv. 0 → < 10,000 XP   |   Lv. 1 → 10,000 – 19,999   |   etc.
+  // ──────────────────────────────────────────────────────────────────────────
+  static const int _xpPerLevel = 10000;
+
+  /// Computed wealth level from cumulative wealthXp
+  int get computedWealthLevel => wealthXp ~/ _xpPerLevel;
+
+  /// XP progress within the current wealth level
+  int get wealthLevelXp => wealthXp % _xpPerLevel;
+
+  /// Computed charm level from cumulative charmXp
+  int get computedCharmLevel => charmXp ~/ _xpPerLevel;
+
+  /// XP progress within the current charm level
+  int get charmLevelXp => charmXp % _xpPerLevel;
+
+  /// Computed game level from cumulative gameXp
+  int get computedGameLevel => gameXp ~/ _xpPerLevel;
+
+  /// XP progress within the current game level
+  int get gameLevelXp => gameXp % _xpPerLevel;
+
+  /// Computed account level from cumulative accountXp
+  int get computedAccountLevel => accountXp ~/ _xpPerLevel;
+
+  /// XP progress within the current account level
+  int get accountLevelXp => accountXp % _xpPerLevel;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'username': username,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'avatarUrl': avatarUrl,
+      'coverUrl': coverUrl,
+      'bio': bio,
+      'gender': gender,
+      'region': region,
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'profileCompleted': profileCompleted,
+      'followers': followers,
+      'following': following,
+      'diamonds': diamonds,
+      'coins': coins,
+      'rCoins': rCoins,
+      'isVip': isVip,
+      'vipLevel': vipLevel,
+      'isHost': isHost,
+      'isAgency': isAgency,
+      'isSeller': isSeller,
+      'isBd': isBd,
+      'agencyName': agencyName,
+      'sellerBalance': sellerBalance,
+      'isOnline': isOnline,
+      'online': isOnline,
+      'isLive': isLive,
+      'isInRoom': isInRoom,
+      'presenceStatus': presenceStatus,
+      'liveRoomId': liveRoomId,
+      'currentRoomId': currentRoomId,
+      'currentRoom': currentRoom,
+      'avatarFrame': avatarFrame,
+      'badge': badge,
+      'referralCode': referralCode,
+      'referralCount': referralCount,
+      'role': role.name,
+      'userType': role.name.toUpperCase(),
+      'hostApplicationStatus': hostApplicationStatus,
+      'hostRejectionReason': hostRejectionReason,
+      'wealthLevel': wealthLevel,
+      'wealthXp': wealthXp,
+      'charmLevel': charmLevel,
+      'charmXp': charmXp,
+      'gameLevel': gameLevel,
+      'gameXp': gameXp,
+      'accountLevel': accountLevel,
+      'accountXp': accountXp,
+      'likesReceived': likesReceived,
+      'isCountryLocked': isCountryLocked,
+      'isPrivate': isPrivate,
+      'customTitles': customTitles,
+    };
+  }
+
+  UserModel copyWith({
+    String? id,
+    String? username,
+    String? name,
+    String? email,
+    String? phone,
+    String? avatarUrl,
+    String? coverUrl,
+    String? bio,
+    String? gender,
+    String? region,
+    DateTime? dateOfBirth,
+    bool? profileCompleted,
+    int? followers,
+    int? following,
+    int? diamonds,
+    int? coins,
+    double? rCoins,
+    bool? isVip,
+    String? vipLevel,
+    bool? isHost,
+    bool? isAgency,
+    bool? isSeller,
+    bool? isBd,
+    String? agencyName,
+    int? sellerBalance,
+    bool? isOnline,
+    bool? isLive,
+    String? liveRoomId,
+    String? avatarFrame,
+    String? badge,
+    String? referralCode,
+    int? referralCount,
+    UserRole? role,
+    String? hostApplicationStatus,
+    String? hostRejectionReason,
+    int? wealthLevel,
+    int? wealthXp,
+    int? charmLevel,
+    int? charmXp,
+    int? gameLevel,
+    int? gameXp,
+    int? accountLevel,
+    int? accountXp,
+    String? cpPartnerId,
+    int? cpPoints,
+    List<String>? pendingCpRequests,
+    String? nobleTitle,
+    String? status,
+    int? likesReceived,
+    bool? isCountryLocked,
+    bool? isPrivate,
+    List<String>? customTitles,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      coverUrl: coverUrl ?? this.coverUrl,
+      bio: bio ?? this.bio,
+      gender: gender ?? this.gender,
+      region: region ?? this.region,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      profileCompleted: profileCompleted ?? this.profileCompleted,
+      followers: followers ?? this.followers,
+      following: following ?? this.following,
+      diamonds: diamonds ?? this.diamonds,
+      coins: coins ?? this.coins,
+      rCoins: rCoins ?? this.rCoins,
+      isVip: isVip ?? this.isVip,
+      vipLevel: vipLevel ?? this.vipLevel,
+      isHost: isHost ?? this.isHost,
+      isAgency: isAgency ?? this.isAgency,
+      isSeller: isSeller ?? this.isSeller,
+      isBd: isBd ?? this.isBd,
+      agencyName: agencyName ?? this.agencyName,
+      sellerBalance: sellerBalance ?? this.sellerBalance,
+      isOnline: isOnline ?? this.isOnline,
+      isLive: liveRoomId != null ? true : (isLive ?? this.isLive),
+      liveRoomId: liveRoomId ?? this.liveRoomId,
+      avatarFrame: avatarFrame ?? this.avatarFrame,
+      badge: badge ?? this.badge,
+      referralCode: referralCode ?? this.referralCode,
+      referralCount: referralCount ?? this.referralCount,
+      role: role ?? this.role,
+      hostApplicationStatus: hostApplicationStatus ?? this.hostApplicationStatus,
+      hostRejectionReason: hostRejectionReason ?? this.hostRejectionReason,
+      wealthLevel: wealthLevel ?? this.wealthLevel,
+      wealthXp: wealthXp ?? this.wealthXp,
+      charmLevel: charmLevel ?? this.charmLevel,
+      charmXp: charmXp ?? this.charmXp,
+      gameLevel: gameLevel ?? this.gameLevel,
+      gameXp: gameXp ?? this.gameXp,
+      accountLevel: accountLevel ?? this.accountLevel,
+      accountXp: accountXp ?? this.accountXp,
+      cpPartnerId: cpPartnerId ?? this.cpPartnerId,
+      cpPoints: cpPoints ?? this.cpPoints,
+      pendingCpRequests: pendingCpRequests ?? this.pendingCpRequests,
+      nobleTitle: nobleTitle ?? this.nobleTitle,
+      status: status ?? this.status,
+      likesReceived: likesReceived ?? this.likesReceived,
+      isCountryLocked: isCountryLocked ?? this.isCountryLocked,
+      isPrivate: isPrivate ?? this.isPrivate,
+      customTitles: customTitles ?? this.customTitles,
+    );
+  }
+}
+

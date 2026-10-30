@@ -1,0 +1,122 @@
+<<<<<<< HEAD
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+=======
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+.dart_tool/
+**/.dart_tool/
+*.tar
+*.tar.gz
+*.zip
+.gradle_cache/
+.idea/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Excluded by request: Docs, Plans, Readmes, Markdown, Word Docs & Text
+docs/
+**/docs/
+*.md
+**/*.md
+README*
+**/README*
+readme*
+**/readme*
+*.docx
+**/*.docx
+*.pdf
+**/*.pdf
+*.txt
+**/*.txt
+temp_mobile/
+mobile/
+**/mobile/
+mobile app/
+**/mobile app/
+scratch/
+**/scratch/
+
+# Excluded by request: Python helper scripts
+*.py
+**/*.py
+
+# Excluded by request: Scripts & test runners
+scripts/
+**/scripts/
+backend/scripts/
+tests/
+**/tests/
+test/
+**/test/
+test_*.js
+**/test_*.js
+run_all_tests.js
+**/run_all_tests.js
+run_all_test_suites.js
+**/run_all_test_suites.js
+check_*.js
+**/check_*.js
+quick_test.js
+**/quick_test.js
+verify_*.js
+**/verify_*.js
+>>>>>>> e045cef1f8b1fd7fe738fe6bfc6362554d7b226e
