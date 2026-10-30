@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -10,9 +11,12 @@ import '../../models/live_room_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/emoji_reaction_provider.dart';
 import '../../providers/live_gift_provider.dart';
+import '../../providers/messaging_provider.dart';
 import '../../widgets/gift_dialog.dart';
 import '../../widgets/emoji_picker_sheet.dart';
 import '../../widgets/bring_my_friend_sheet.dart';
+import '../../widgets/hangout_games_sheet.dart';
+import '../../widgets/profile_frame_picker_sheet.dart';
 import '../../widgets/icebreaker_sheet.dart';
 import '../../widgets/emoji_reaction_overlay.dart';
 import '../../widgets/tiktok_gift_overlay.dart';
@@ -20,6 +24,8 @@ import '../../core/repositories/room_repository.dart';
 import '../../providers/room_overlay_provider.dart';
 import '../../models/user_model.dart';
 import '../profile/user_profile_details_screen.dart';
+import '../profile/modules/outfit_screen.dart';
+import '../messages/inbox_screen.dart';
 import '../leaderboard/leaderboard_screen.dart';
 
 class LiveRoomScreen extends StatefulWidget {
@@ -35,9 +41,11 @@ class LiveRoomScreen extends StatefulWidget {
 class _LiveRoomScreenState extends State<LiveRoomScreen>
     with TickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
+  final FocusNode _commentFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   bool _isFollowing = false;
   bool _isMuted = false;
+  bool _isInputExpanded = false;
   int _viewerCount = 2400;
   final List<_FloatingHeart> _floatingHearts = [];
   Timer? _heartStreamTimer;
@@ -129,6 +137,14 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
       _initLiveCamera();
     }
 
+    _commentFocusNode.addListener(() {
+      if (mounted) {
+        setState(() {
+          _isInputExpanded = _commentFocusNode.hasFocus;
+        });
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<EmojiReactionProvider>().setActiveRoom(widget.room.id);
@@ -189,6 +205,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
   void dispose() {
     _cameraController?.dispose();
     _commentController.dispose();
+    _commentFocusNode.dispose();
     _scrollController.dispose();
     _heartStreamTimer?.cancel();
     for (final t in _heartTimers) {
@@ -255,7 +272,10 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
         ),
       );
       _commentController.clear();
+      _isInputExpanded = false;
     });
+
+    _commentFocusNode.unfocus();
 
     // Auto scroll to bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -427,7 +447,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
           Positioned(
             left: 12.w,
             right: 75.w,
-            bottom: MediaQuery.of(context).padding.bottom + 112.h,
+            bottom: MediaQuery.of(context).padding.bottom + 58.h,
             child: SizedBox(
               height: 210.h,
               child: ShaderMask(
@@ -463,24 +483,14 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
           // ── Live Animated Emojis & Reactions Overlay ─────────────────────────
           EmojiReactionOverlay(roomId: widget.room.id),
 
-          // ── 5 & 6. Bottom Controls: Input Row + Bottom Action Bar (Non-overlapping) ──
+          // ── 5. Bottom Interactive Toolbar (7 Items matching reference image exactly) ──
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: SafeArea(
               top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w),
-                    child: _buildInputRow(),
-                  ),
-                  SizedBox(height: 6.h),
-                  _buildBottomActionBar(),
-                ],
-              ),
+              child: _buildBottomControlBar(),
             ),
           ),
         ],
@@ -635,6 +645,30 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Flip Camera Button for Host
+              if (widget.isHost && _cameras.length > 1) ...[
+                GestureDetector(
+                  onTap: _switchCamera,
+                  child: Container(
+                    width: 32.w,
+                    height: 32.w,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white24, width: 0.8),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.flip_camera_ios_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+              ],
+
               // Picture-in-Picture / overlay floating window
               GestureDetector(
                 onTap: _minimizeToOverlay,
@@ -808,305 +842,364 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
     );
   }
 
-  // ── Input Row (Image 1 Type a message... + Beauty + Camera) ─────────────────
-  Widget _buildInputRow() {
-    return Row(
-      children: [
-        // Rounded Capsule "Type a message..." (No black background, clean translucent glass)
-        Expanded(
-          child: Container(
-            height: 40.h,
-            padding: EdgeInsets.symmetric(horizontal: 14.w),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(22.r),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.35),
-                width: 1.0,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    cursorColor: const Color(0xFFFF1493),
-                    style: TextStyle(color: Colors.white, fontSize: 13.sp),
-                    decoration: InputDecoration(
-                      hintText: 'Type a message...',
-                      hintStyle: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 12.sp,
-                      ),
-                      filled: false,
-                      fillColor: Colors.transparent,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 8.h),
-                    ),
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    EmojiPickerSheet.show(
-                      context,
-                      roomId: widget.room.id,
-                      onEmojiSelected: (emoji) {
-                        if (mounted) {
-                          setState(() {
-                            _commentController.text += emoji;
-                          });
-                        }
-                      },
-                      onReactionSelected: (reactionAsset, symbol) {
-                        final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
-                        context.read<EmojiReactionProvider>().sendReaction(
-                          roomId: widget.room.id,
-                          senderId: user.id,
-                          emoji: reactionAsset,
-                          senderName: user.name,
-                        );
-                      },
-                    );
-                  },
-                  child: const Text('😊', style: TextStyle(fontSize: 17)),
-                ),
-                SizedBox(width: 8.w),
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    width: 28.w,
-                    height: 28.w,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFFF007F), Color(0xFFFF1493)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 14.sp,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(width: 8.w),
+  // ── Bottom Interactive Control Bar (7 items matching reference image exactly) ───
+  Widget _buildBottomControlBar() {
+    MessagingProvider? messaging;
+    try {
+      messaging = Provider.of<MessagingProvider?>(context, listen: true);
+    } catch (_) {}
+    final hasUnread = (messaging?.totalCombinedUnreadCount ?? 0) > 0;
 
-        // Beauty / Face Filters Button (🎭)
-        GestureDetector(
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('✨ Beauty Filter & Effects active!'),
-                duration: const Duration(seconds: 1),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: const Color(0xFF8A2BE2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-              ),
-            );
-          },
-          child: Container(
-            width: 38.w,
-            height: 38.w,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.auto_fix_high_rounded,
-                color: Colors.white,
-                size: 19,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(width: 8.w),
-
-        // Camera Flip Button (📷)
-        GestureDetector(
-          onTap: () {
-            if (widget.isHost && _cameras.length > 1) {
-              _switchCamera();
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('📷 Camera preview refreshed'),
-                  duration: const Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: const Color(0xFF1E1A34),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                ),
-              );
-            }
-          },
-          child: Container(
-            width: 38.w,
-            height: 38.w,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.flip_camera_ios_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Bottom Action Bar (Image 1 Exact 4 Actions: Vote, Gift, Share, More) ───
-  Widget _buildBottomActionBar() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
       decoration: const BoxDecoration(
         color: Colors.transparent,
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 1. Vote
-          _buildBottomActionItem(
-            iconWidget: Container(
-              width: 30.w,
-              height: 30.w,
+          // ── 1. Expanding Capsule Chat Input with Smiley Emoji ──
+          Expanded(
+            flex: _isInputExpanded ? 10 : 4,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              height: 40.h,
+              padding: EdgeInsets.only(left: 14.w, right: 6.w),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF8A2BE2), Color(0xFF6C63FF)],
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(22.r),
+                border: Border.all(
+                  color: _isInputExpanded
+                      ? const Color(0xFF00E5FF).withValues(alpha: 0.6)
+                      : Colors.white.withValues(alpha: 0.18),
+                  width: 1.0,
                 ),
-                borderRadius: BorderRadius.circular(8.r),
               ),
-              child: const Icon(Icons.star_rounded, color: Colors.white, size: 18),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      focusNode: _commentFocusNode,
+                      cursorColor: const Color(0xFF00E5FF),
+                      style: GoogleFonts.poppins(color: Colors.white, fontSize: 13.sp),
+                      decoration: InputDecoration(
+                        hintText: 'Type a message...',
+                        hintStyle: GoogleFonts.poppins(
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontSize: 12.sp,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 8.h),
+                      ),
+                      onTap: () {
+                        setState(() => _isInputExpanded = true);
+                      },
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+
+                  // Emoji Icon inside the text field capsule (smiling face matching reference)
+                  GestureDetector(
+                    onTap: () {
+                      EmojiPickerSheet.show(
+                        context,
+                        roomId: widget.room.id,
+                        onEmojiSelected: (emoji) {
+                          if (mounted) {
+                            setState(() {
+                              _commentController.text += emoji;
+                            });
+                          }
+                        },
+                        onReactionSelected: (reactionAsset, symbol) {
+                          final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+                          context.read<EmojiReactionProvider>().sendReaction(
+                            roomId: widget.room.id,
+                            senderId: user.id,
+                            emoji: reactionAsset,
+                            senderName: user.name,
+                          );
+                        },
+                      );
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4.w),
+                      child: Icon(
+                        Icons.sentiment_satisfied_alt_rounded,
+                        color: Colors.white.withValues(alpha: 0.85),
+                        size: 22.sp,
+                      ),
+                    ),
+                  ),
+
+                  if (_isInputExpanded) ...[
+                    SizedBox(width: 4.w),
+                    GestureDetector(
+                      onTap: _sendMessage,
+                      child: Container(
+                        width: 30.w,
+                        height: 30.w,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF2979FF), Color(0xFF00E5FF)],
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 15.sp,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            label: 'Vote',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
-              );
-            },
           ),
 
-          // 2. Gift (Hot pink glowing circular button with 🎁)
-          _buildBottomActionItem(
-            iconWidget: Container(
-              width: 32.w,
-              height: 32.w,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  colors: [Color(0xFFFF007F), Color(0xFFFF4081)],
-                  radius: 0.85,
+          // If input is expanded, collapse other action icons or show cancel button
+          if (!_isInputExpanded) ...[
+            SizedBox(width: 7.w),
+
+            // ── 2. Blue Circular Mic Icon Button ──
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isMuted = !_isMuted;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(_isMuted ? 'Microphone Muted 🔇' : 'Microphone Unmuted 🎙️'),
+                    duration: const Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: const Color(0xFF2979FF),
+                  ),
+                );
+              },
+              child: Container(
+                width: 36.w,
+                height: 36.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: _isMuted
+                        ? [const Color(0xFFFF1744), const Color(0xFFD50000)]
+                        : [const Color(0xFF2979FF), const Color(0xFF1565C0)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_isMuted ? const Color(0xFFFF1744) : const Color(0xFF2979FF)).withValues(alpha: 0.4),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFF007F).withValues(alpha: 0.6),
-                    blurRadius: 10,
-                    spreadRadius: 1,
+                child: Center(
+                  child: Icon(
+                    _isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                    color: Colors.white,
+                    size: 20.sp,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: 7.w),
+
+            // ── 3. Outside Chat Icon: White circular bubble with lines, Green dot if outside unread msg else Red ──
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const InboxScreen()),
+                );
+              },
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 34.w,
+                    height: 34.w,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.chat_bubble_rounded,
+                        color: const Color(0xFF1E2235),
+                        size: 19.sp,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: -1,
+                    right: -1,
+                    child: Container(
+                      width: 10.w,
+                      height: 10.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: hasUnread ? const Color(0xFF00E676) : const Color(0xFFFF1744),
+                        border: Border.all(color: Colors.black, width: 1.5),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              child: const Center(
-                child: Text('🎁', style: TextStyle(fontSize: 17)),
+            ),
+            SizedBox(width: 7.w),
+
+            // ── 4. Games Gamepad Icon (White controller with crown) ──
+            GestureDetector(
+              onTap: () {
+                HangoutGamesSheet.show(
+                  context,
+                  roomId: widget.room.id,
+                  roomTitle: widget.room.title,
+                );
+              },
+              child: Container(
+                width: 34.w,
+                height: 34.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.15),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                ),
+                child: Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        Icons.sports_esports_rounded,
+                        color: Colors.white,
+                        size: 21.sp,
+                      ),
+                      Positioned(
+                        top: -6.h,
+                        child: const Text('👑', style: TextStyle(fontSize: 10)),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            label: 'Gift',
-            onTap: () {
-              final hostName = widget.room.host.name.isNotEmpty
-                  ? widget.room.host.name
-                  : 'Priya';
-              _addRandomFloatingHeart();
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                isScrollControlled: true,
-                builder: (_) => GiftDialog(streamerName: hostName),
-              );
-            },
-          ),
+            SizedBox(width: 7.w),
 
-          // 3. Share
-          _buildBottomActionItem(
-            iconWidget: Container(
-              width: 30.w,
-              height: 30.w,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
+            // ── 5. Frame Laurel / Crown Icon (Outfit & Frame equipping sheet) ──
+            GestureDetector(
+              onTap: () {
+                ProfileFramePickerSheet.show(context);
+              },
+              child: Container(
+                width: 34.w,
+                height: 34.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.15),
+                  border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.4)),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.military_tech_rounded,
+                    color: const Color(0xFFFFB300),
+                    size: 22.sp,
+                  ),
+                ),
               ),
-              child: const Icon(Icons.reply_rounded, color: Colors.white, size: 18),
             ),
-            label: 'Share',
-            onTap: () {
-              BringMyFriendSheet.show(
-                context,
-                roomId: widget.room.id,
-                roomTitle: widget.room.title,
-              );
-            },
-          ),
+            SizedBox(width: 7.w),
 
-          // 4. More
-          _buildBottomActionItem(
-            iconWidget: Container(
-              width: 30.w,
-              height: 30.w,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
+            // ── 6. Gift Icon (Hot pink box with gold ribbon 🎁) ──
+            GestureDetector(
+              onTap: () {
+                final hostName = widget.room.host.name.isNotEmpty
+                    ? widget.room.host.name
+                    : 'Priya';
+                _addRandomFloatingHeart();
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  isScrollControlled: true,
+                  builder: (_) => GiftDialog(streamerName: hostName),
+                );
+              },
+              child: Container(
+                width: 34.w,
+                height: 34.w,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text('🎁', style: TextStyle(fontSize: 22)),
+                ),
               ),
-              child: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 20),
             ),
-            label: 'More',
-            onTap: _openMoreSheet,
-          ),
-        ],
-      ),
-    );
-  }
+            SizedBox(width: 7.w),
 
-  Widget _buildBottomActionItem({
-    required Widget iconWidget,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          iconWidget,
-          SizedBox(height: 2.h),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w500,
+            // ── 7. Share Icon (White paper airplane ✈️ / telegram arrow) ──
+            GestureDetector(
+              onTap: () {
+                BringMyFriendSheet.show(
+                  context,
+                  roomId: widget.room.id,
+                  roomTitle: widget.room.title,
+                );
+              },
+              child: Container(
+                width: 34.w,
+                height: 34.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.15),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                ),
+                child: Center(
+                  child: Transform.rotate(
+                    angle: -0.2,
+                    child: Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 19.sp,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
+          ] else ...[
+            // Collapsed cancel focus button when expanded
+            SizedBox(width: 8.w),
+            GestureDetector(
+              onTap: () {
+                _commentFocusNode.unfocus();
+                setState(() => _isInputExpanded = false);
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.poppins(color: Colors.white70, fontSize: 11.sp),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

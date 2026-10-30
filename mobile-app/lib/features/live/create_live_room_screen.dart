@@ -21,10 +21,12 @@ import 'live_room_screen.dart';
 
 class CreateLiveRoomScreen extends StatefulWidget {
   final bool initialAudioMode;
+  final bool isDailyLive;
 
   const CreateLiveRoomScreen({
     super.key,
     this.initialAudioMode = false,
+    this.isDailyLive = false,
   });
 
   @override
@@ -62,6 +64,25 @@ class _CreateLiveRoomScreenState extends State<CreateLiveRoomScreen>
     )..repeat();
 
     _initCamera();
+
+    // Daily Live creation guard: Strictly restricted to female creators
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.isDailyLive && mounted) {
+        final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+        final isFemale = currentUser.gender.trim().toLowerCase() == 'female';
+        if (!isFemale) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Daily Live creation is reserved for female creators. Male users can watch and browse Daily Live broadcasts.'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 4),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      }
+    });
   }
 
   Future<void> _initCamera() async {
@@ -605,6 +626,22 @@ class _CreateLiveRoomScreenState extends State<CreateLiveRoomScreen>
           );
         }
         return;
+      }
+
+      if (widget.isDailyLive) {
+        final isFemale = currentUser.gender.trim().toLowerCase() == 'female';
+        if (!isFemale) {
+          if (mounted) {
+            setState(() => _isCreating = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('⚠️ Daily Live creation is strictly reserved for female creators.'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+          return;
+        }
       }
 
       // Check if user already has an active host room

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_provider.dart';
@@ -252,46 +253,25 @@ class _LiveExploreScreenState extends State<LiveExploreScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Prominent Add (+) Button with pink/magenta gradient & neon glow on the Left (in place of Live ✨)
-          GestureDetector(
-            key: _addButtonKey,
-            onTap: () => _showAddLivePopup(context),
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 38.w,
-              height: 38.w,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFF1493),
-                    Color(0xFFFF2A9D),
-                    Color(0xFFE00070),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(10.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFF1493).withValues(alpha: 0.55),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 2),
+          // Left: Stylish Live Branding Badge (Top header create button removed)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color(0xFFFF007F), Color(0xFF00E5FF)],
+                ).createShader(bounds),
+                child: Text(
+                  'LIVE',
+                  style: GoogleFonts.poppins(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                    color: Colors.white,
                   ),
-                ],
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  width: 1.2,
                 ),
               ),
-              child: Center(
-                child: Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 24.w,
-                ),
-              ),
-            ),
+            ],
           ),
 
           // Right Action Icons: Trophy, Search, Notification

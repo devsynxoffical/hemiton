@@ -24,6 +24,10 @@ import '../../widgets/user_list_sheet.dart';
 import '../social/create_post_screen.dart';
 import '../social/upload_video_screen.dart';
 import '../social/camera_recorder_screen.dart';
+import '../live/create_live_room_screen.dart';
+import '../party_room/create_party_screen.dart';
+import '../party_room/group_video_party_room_screen.dart';
+import '../../models/live_room_model.dart';
 
 /// HEMI TON Profile ("Me") Screen
 /// Layout & Features:
@@ -161,33 +165,182 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  void _showCreatePostOptions(BuildContext context, bool isDark) {
+  void _showCreateLiveAndPostOptions(BuildContext context, bool isDark, bool isFemale) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF161928) : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24.r))),
+      backgroundColor: isDark ? const Color(0xFF161129) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        side: BorderSide(color: const Color(0xFF8A2BE2).withValues(alpha: 0.3)),
+      ),
+      isScrollControlled: true,
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
-                ),
-                SizedBox(height: 14.h),
-                Text(
-                  'Create New Post / Moment ✨',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.darkNavy,
+                Center(
+                  child: Container(
+                    width: 42.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
                   ),
                 ),
+                SizedBox(height: 14.h),
+                Center(
+                  child: Text(
+                    'Create Live & Moments ✨',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.darkNavy,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16.h),
+
+                // ── LIVE CREATION OPTIONS (Permission Matrix Gated) ──
+                Text(
+                  'GO LIVE NOW',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF00E5FF),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+
+                // Live types row: Daily Live (Female only), Audio Group Live (Both), Video Group Live (Both), Video Live (Both)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      // 1. Daily Live: Strictly Female Only
+                      if (isFemale) ...[
+                        _buildLiveCreationCard(
+                          ctx,
+                          title: 'Daily Live',
+                          subtitle: 'Solo Female Live',
+                          badgeText: 'FEMALE',
+                          icon: Icons.sensors_rounded,
+                          gradient: const [Color(0xFFFF007F), Color(0xFFFF1493)],
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CreateLiveRoomScreen(
+                                  initialAudioMode: false,
+                                  isDailyLive: true,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(width: 10.w),
+                      ],
+
+                      // 2. Audio Group Live: Both Genders
+                      _buildLiveCreationCard(
+                        ctx,
+                        title: 'Audio Group',
+                        subtitle: 'Multi-Seat Party',
+                        badgeText: 'AUDIO',
+                        icon: Icons.record_voice_over_rounded,
+                        gradient: const [Color(0xFF8A2BE2), Color(0xFF6C63FF)],
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreatePartyScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(width: 10.w),
+
+                      // 3. Video Group Live: Both Genders
+                      _buildLiveCreationCard(
+                        ctx,
+                        title: 'Video Group',
+                        subtitle: '8-Seat Cam Grid',
+                        badgeText: 'GROUP CAM',
+                        icon: Icons.grid_view_rounded,
+                        gradient: const [Color(0xFF00B0FF), Color(0xFF00E5FF)],
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          final auth = Provider.of<AuthProvider>(context, listen: false);
+                          final newRoom = LiveRoomModel(
+                            id: 'group_vid_${DateTime.now().millisecondsSinceEpoch}',
+                            title: "${auth.currentUser.displayName.isNotEmpty ? auth.currentUser.displayName : 'Host'}'s Video Stage",
+                            host: auth.currentUser,
+                            coverUrl: auth.currentUser.avatarUrl,
+                            roomType: 'GROUP_VIDEO',
+                            status: 'LIVE',
+                            category: 'Chat',
+                            viewerCount: 1,
+                            startTime: DateTime.now(),
+                          );
+                          BackendRepository.instance.addLiveRoom(newRoom);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => GroupVideoPartyRoomScreen(room: newRoom, isHost: true),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(width: 10.w),
+
+                      // 4. Video Live: Both Genders
+                      _buildLiveCreationCard(
+                        ctx,
+                        title: 'Video Live',
+                        subtitle: 'Solo Broadcast',
+                        badgeText: 'VIDEO',
+                        icon: Icons.videocam_rounded,
+                        gradient: const [Color(0xFFFF007F), Color(0xFF7928CA)],
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreateLiveRoomScreen(
+                                initialAudioMode: false,
+                                isDailyLive: false,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
                 SizedBox(height: 18.h),
+                Divider(color: Colors.white12, height: 1),
+                SizedBox(height: 14.h),
+
+                // ── POST & MOMENTS OPTIONS ──
+                Text(
+                  'SHARE MOMENTS',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white60,
+                  ),
+                ),
+                SizedBox(height: 10.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -223,12 +376,86 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ),
                   ],
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 10.h),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLiveCreationCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required String badgeText,
+    required IconData icon,
+    required List<Color> gradient,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 106.w,
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1A34),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: gradient.first.withValues(alpha: 0.5),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.first.withValues(alpha: 0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44.w,
+              height: 44.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: gradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Center(
+                child: Icon(icon, color: Colors.white, size: 22.sp),
+              ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11.5.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 2.h),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 9.sp,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -282,7 +509,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F111A) : Colors.white,
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreatePostOptions(context, isDark),
+        onPressed: () => _showCreateLiveAndPostOptions(context, isDark, isFemale),
         backgroundColor: Colors.transparent,
         elevation: 6,
         child: Container(

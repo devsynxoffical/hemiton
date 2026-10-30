@@ -2570,7 +2570,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const CreateLiveRoomScreen(initialAudioMode: false),
+          builder: (_) => const CreateLiveRoomScreen(initialAudioMode: false, isDailyLive: true),
         ),
       );
     } else if (_selectedMode == 1) {
@@ -2655,7 +2655,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const CreateLiveRoomScreen(initialAudioMode: false),
+          builder: (_) => const CreateLiveRoomScreen(initialAudioMode: false, isDailyLive: false),
         ),
       );
     }

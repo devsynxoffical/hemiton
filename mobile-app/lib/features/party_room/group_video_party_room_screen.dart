@@ -15,6 +15,7 @@ import '../../widgets/gift_dialog.dart';
 import '../../widgets/emoji_picker_sheet.dart';
 import '../../widgets/bring_my_friend_sheet.dart';
 import '../../widgets/hangout_games_sheet.dart';
+import '../../widgets/profile_frame_picker_sheet.dart';
 import '../messages/inbox_screen.dart';
 import '../profile/modules/outfit_screen.dart';
 
@@ -1158,10 +1159,7 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
               // ── 5. Frame Laurel / Crown Icon (Outfit & Frame equipping shop) ──
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const OutfitScreen()),
-                  );
+                  ProfileFramePickerSheet.show(context);
                 },
                 child: Container(
                   width: 34.w,
