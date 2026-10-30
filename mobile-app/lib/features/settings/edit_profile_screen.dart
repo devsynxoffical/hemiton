@@ -65,7 +65,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         : (user.username.isNotEmpty ? user.username : 'HEMI TON Member');
     _username = user.username.isNotEmpty ? user.username : 'user';
     _bio = user.bio.isNotEmpty ? user.bio : '';
-    _gender = (user.gender.toLowerCase() == 'female') ? 'Female' : 'Male';
+    final gLower = user.gender.toLowerCase();
+    _gender = gLower == 'female'
+        ? 'Female'
+        : (gLower == 'other' ? 'Other' : 'Male');
     _dob = user.dateOfBirth ?? DateTime(2002, 5, 15);
 
     final details = await PersonalDetailsService.instance.getDetails(user);
@@ -344,47 +347,51 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           children: [
             Text('Gender', style: GoogleFonts.poppins(fontSize: 16.sp, fontWeight: FontWeight.bold)),
             SizedBox(height: 12.h),
-            Row(
-              children: ['Male', 'Female'].map((g) {
-                final isSelected = _gender.toLowerCase() == g.toLowerCase();
-                final isFemale = g == 'Female';
-                final color = isFemale ? const Color(0xFFFF007F) : const Color(0xFF00E5FF);
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => _gender = g);
-                      _saveChanges(showFeedback: true);
-                      Navigator.pop(ctx);
-                    },
-                    child: Container(
-                      margin: EdgeInsets.only(right: g == 'Male' ? 6.w : 0, left: isFemale ? 6.w : 0),
-                      padding: EdgeInsets.symmetric(vertical: 14.h),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: isSelected ? 0.22 : 0.08),
-                        borderRadius: BorderRadius.circular(16.r),
-                        border: Border.all(
-                          color: isSelected ? color : Colors.transparent,
-                          width: 1.5,
-                        ),
-                      ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E2132) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: ['Male', 'Female', 'Other'].contains(_gender) ? _gender : 'Male',
+                  isExpanded: true,
+                  dropdownColor: isDark ? const Color(0xFF1E2132) : Colors.white,
+                  borderRadius: BorderRadius.circular(16.r),
+                  items: const ['Male', 'Female', 'Other'].map((g) {
+                    final icon = g == 'Female'
+                        ? Icons.female_rounded
+                        : (g == 'Male' ? Icons.male_rounded : Icons.transgender_rounded);
+                    final color = g == 'Female'
+                        ? const Color(0xFFFF007F)
+                        : (g == 'Male' ? const Color(0xFF00E5FF) : const Color(0xFF8A2BE2));
+                    return DropdownMenuItem<String>(
+                      value: g,
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(isFemale ? Icons.female_rounded : Icons.male_rounded, color: color),
-                          SizedBox(width: 6.w),
+                          Icon(icon, color: color, size: 18.sp),
+                          SizedBox(width: 8.w),
                           Text(
                             g,
                             style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               color: isDark ? Colors.white : AppColors.darkNavy,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _gender = val);
+                      _saveChanges(showFeedback: true);
+                      Navigator.pop(ctx);
+                    }
+                  },
+                ),
+              ),
             ),
           ],
         ),

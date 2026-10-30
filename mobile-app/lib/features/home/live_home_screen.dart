@@ -5,14 +5,12 @@ import 'package:provider/provider.dart';
 import '../../core/repositories/backend_repository.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../models/live_room_model.dart';
-import '../../models/party_room_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../live/create_live_room_screen.dart';
 import '../live/live_room_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../party_room/create_party_screen.dart';
-import '../party_room/party_room_screen.dart';
 import '../party_room/group_video_party_room_screen.dart';
 import '../party_room/live_party_room_screen.dart';
 import '../profile/profile_screen.dart';
@@ -142,11 +140,13 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left: HEMI TON Neon Branding Logo Image in place of LIVE text
+          // Left: HEMI TON Neon Branding Logo Image in place of LIVE text (Larger size)
           Image.asset(
             'assets/images/hemiton_top_logo.png',
-            height: 36.h,
+            height: 52.h,
+            width: 155.w,
             fit: BoxFit.contain,
+            alignment: Alignment.centerLeft,
             errorBuilder: (context, error, stackTrace) => ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
                 colors: [Color(0xFFFF007F), Color(0xFF00E5FF)],
@@ -154,7 +154,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
               child: Text(
                 'HEMI TON',
                 style: GoogleFonts.poppins(
-                  fontSize: 20.sp,
+                  fontSize: 22.sp,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
                   color: Colors.white,
@@ -1816,7 +1816,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                     ),
                   ),
 
-                  // Top Left Badges: "LIVE" + Viewers + Public/Private
+                  // Top Left Badges: "LIVE" + Viewers (No Public/Private text tags)
                   Positioned(
                     top: 8.h,
                     left: 8.w,
@@ -1826,50 +1826,42 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                         _buildLiveBadge(),
                         SizedBox(width: 4.w),
                         _buildViewerCountBadge(item['viewers'] as String),
-                        SizedBox(width: 4.w),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
-                          decoration: BoxDecoration(
-                            color: isPrivate
-                                ? Colors.amber.withValues(alpha: 0.88)
-                                : const Color(0xFF00E676).withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(8.r),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isPrivate ? Icons.lock_rounded : Icons.lock_open_rounded,
-                                size: 9.sp,
-                                color: Colors.black,
-                              ),
-                              SizedBox(width: 2.w),
-                              Text(
-                                isPrivate ? 'Private' : 'Public',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 8.sp,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
 
-                  // Top Right 3-Dots or Crown if PK
+                  // Top Right: Lock Icon ONLY if Private, or Crown if PK, or 3-Dots
                   Positioned(
                     top: 8.h,
                     right: 8.w,
-                    child: isPK
-                        ? Icon(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isPrivate)
+                          Container(
+                            padding: EdgeInsets.all(5.w),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.amber.withValues(alpha: 0.7),
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.lock_rounded,
+                              color: Colors.amber,
+                              size: 13.w,
+                            ),
+                          )
+                        else if (isPK)
+                          Icon(
                             Icons.emoji_events_rounded,
                             color: const Color(0xFFFFD700),
                             size: 19.w,
                           )
-                        : GestureDetector(
+                        else
+                          GestureDetector(
                             onTap: () => _showLiveRoomOptionsSheet(
                               hostName: item['host'] as String? ?? 'Group Host',
                               roomTitle: item['title'] as String? ?? 'Group Live',
@@ -1885,6 +1877,8 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                               ),
                             ),
                           ),
+                      ],
+                    ),
                   ),
 
                   // Bottom Info & Circular '+' Button (Neon Pink-Purple Gradient)
@@ -2842,51 +2836,27 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
   }
 
   void _openPartyRoom({required String title, bool isVideo = false, bool isPrivate = false}) {
-    if (isVideo) {
-      final room = LiveRoomModel(
-        id: 'party_video_${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
-        title: title,
-        coverUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&q=80',
-        category: 'Live Video',
-        startTime: DateTime.now(),
-        host: const UserModel(
-          id: 'host_group',
-          username: 'group_host',
-          name: 'Group Host',
-          avatarUrl:
-              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        ),
-        roomType: 'GROUP_VIDEO',
-        status: 'LIVE',
-        viewerCount: 120,
-        isPrivate: isPrivate,
-      );
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => GroupVideoPartyRoomScreen(room: room, isHost: false)),
-      );
-      return;
-    }
-
-    final room = PartyRoomModel(
-      id: 'party_${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
+    final room = LiveRoomModel(
+      id: 'party_video_${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
       title: title,
+      coverUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&q=80',
+      category: 'Group Live',
+      startTime: DateTime.now(),
       host: const UserModel(
         id: 'host_group',
         username: 'group_host',
         name: 'Group Host',
-        avatarUrl:
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       ),
-      roomType: 'Open Group Live',
-      seats: const [],
-      totalListeners: 120,
+      roomType: 'GROUP_VIDEO',
+      status: 'LIVE',
+      viewerCount: 120,
+      isPrivate: isPrivate,
     );
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => PartyRoomScreen(partyRoom: room)),
+      MaterialPageRoute(builder: (_) => GroupVideoPartyRoomScreen(room: room, isHost: false)),
     );
   }
 }

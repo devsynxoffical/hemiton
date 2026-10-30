@@ -837,56 +837,22 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                 ),
               ),
 
-              SizedBox(width: 6.w),
-
-              // Public / Private Permission Mode Badge (Tappable to toggle for demo/host)
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isPrivateRoom = !_isPrivateRoom;
-                    _messages.add({
-                      'user': 'System',
-                      'text': _isPrivateRoom
-                          ? '🔒 Room switched to PRIVATE mode (Host permission required to join seats).'
-                          : '🔓 Room switched to PUBLIC mode (Anyone can join available seats!).',
-                      'isSystem': 'true',
-                    });
-                  });
-                  _scrollToBottom();
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+              if (_isPrivateRoom) ...[
+                SizedBox(width: 6.w),
+                Container(
+                  padding: EdgeInsets.all(6.w),
                   decoration: BoxDecoration(
-                    color: _isPrivateRoom
-                        ? Colors.amber.withValues(alpha: 0.18)
-                        : const Color(0xFF00E676).withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: _isPrivateRoom ? Colors.amber : const Color(0xFF00E676),
-                      width: 1.0,
-                    ),
+                    color: Colors.amber.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.amber.withValues(alpha: 0.6), width: 1.0),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isPrivateRoom ? Icons.lock_rounded : Icons.lock_open_rounded,
-                        color: _isPrivateRoom ? Colors.amber : const Color(0xFF00E676),
-                        size: 12.sp,
-                      ),
-                      SizedBox(width: 3.w),
-                      Text(
-                        _isPrivateRoom ? 'Private' : 'Public',
-                        style: GoogleFonts.poppins(
-                          color: _isPrivateRoom ? Colors.amber : const Color(0xFF00E676),
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  child: Icon(
+                    Icons.lock_rounded,
+                    color: Colors.amber,
+                    size: 15.sp,
                   ),
                 ),
-              ),
+              ],
 
               SizedBox(width: 6.w),
 
@@ -1201,7 +1167,21 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                 ),
               ),
             ] else ...[
-              // Empty Video Slot (Public Instant Join vs Private Request Permission)
+              // Empty Video Slot (Top-right lock icon if Private)
+              if (_isPrivateRoom)
+                Positioned(
+                  top: 6.h,
+                  right: 6.w,
+                  child: Container(
+                    padding: EdgeInsets.all(4.w),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.amber.withValues(alpha: 0.6), width: 0.8),
+                    ),
+                    child: Icon(Icons.lock_rounded, color: Colors.amber, size: 11.sp),
+                  ),
+                ),
               Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1212,22 +1192,19 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
-                          colors: _isPrivateRoom
-                              ? [Colors.amber.withValues(alpha: 0.22), Colors.orange.withValues(alpha: 0.1)]
-                              : [const Color(0xFFFF007F).withValues(alpha: 0.22), const Color(0xFF8A2BE2).withValues(alpha: 0.22)],
+                          colors: [
+                            const Color(0xFFFF007F).withValues(alpha: 0.22),
+                            const Color(0xFF8A2BE2).withValues(alpha: 0.22),
+                          ],
                         ),
                         border: Border.all(
-                          color: _isPrivateRoom
-                              ? Colors.amber.withValues(alpha: 0.6)
-                              : const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                           width: 1.2,
                         ),
                       ),
                       child: Icon(
-                        isPendingApproval
-                            ? Icons.hourglass_top_rounded
-                            : (_isPrivateRoom ? Icons.lock_person_rounded : Icons.videocam_rounded),
-                        color: _isPrivateRoom ? Colors.amber : const Color(0xFF00E5FF),
+                        isPendingApproval ? Icons.hourglass_top_rounded : Icons.videocam_rounded,
+                        color: const Color(0xFF00E5FF),
                         size: 18.sp,
                       ),
                     ),
@@ -1241,11 +1218,9 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                       ),
                     ),
                     Text(
-                      isPendingApproval
-                          ? 'Pending Approval...'
-                          : (_isPrivateRoom ? '🔒 Request Join' : '+ Join Video'),
+                      isPendingApproval ? 'Pending...' : '+ Join Video',
                       style: GoogleFonts.poppins(
-                        color: _isPrivateRoom ? Colors.amber : const Color(0xFFFF007F),
+                        color: const Color(0xFFFF007F),
                         fontSize: 9.sp,
                         fontWeight: FontWeight.w600,
                       ),

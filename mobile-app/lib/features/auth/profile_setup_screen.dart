@@ -255,14 +255,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.lock_rounded, color: Colors.amber, size: 12),
-                        SizedBox(width: 4),
+                        const Icon(Icons.lock_rounded, color: Colors.amber, size: 12),
+                        const SizedBox(width: 4),
                         Text(
                           '1-Time',
-                          style: TextStyle(color: Colors.amber, fontSize: 10.5, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.poppins(
+                            color: Colors.amber,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -273,15 +277,27 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               TextField(
                 controller: customCtrl,
                 onChanged: (v) => setModalState(() => tempSelected = v.trim()),
-                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                style: GoogleFonts.poppins(color: isDark ? Colors.white : Colors.black87, fontSize: 13.5),
                 decoration: InputDecoration(
                   hintText: 'Search or type city...',
+                  hintStyle: GoogleFonts.poppins(
+                    color: isDark ? Colors.white38 : Colors.grey,
+                    fontSize: 13,
+                  ),
                   prefixIcon: const Icon(Icons.location_city_rounded, size: 18, color: Color(0xFF00E5FF)),
                   filled: true,
                   fillColor: isDark ? const Color(0xFF1E1A36) : const Color(0xFFF1F5F9),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFFF007F), width: 1.2),
                   ),
                   isDense: true,
                 ),
@@ -461,28 +477,38 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         backgroundColor: isDark ? const Color(0xFF0A0816) : const Color(0xFFF6F8FC),
         body: Stack(
           children: [
-            // Ambient Top Glow
+            // Soft, subtle ambient glow bubbles (smaller & radial)
             Positioned(
-              top: -80,
-              left: -50,
+              top: -65,
+              left: -45,
               child: Container(
-                width: 240,
-                height: 240,
+                width: 175,
+                height: 175,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFFF007F).withValues(alpha: isDark ? 0.18 : 0.08),
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFFFF007F).withValues(alpha: isDark ? 0.12 : 0.06),
+                      const Color(0xFFFF007F).withValues(alpha: 0.0),
+                    ],
+                  ),
                 ),
               ),
             ),
             Positioned(
-              top: 40,
-              right: -60,
+              top: 30,
+              right: -55,
               child: Container(
-                width: 220,
-                height: 220,
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF8A2BE2).withValues(alpha: isDark ? 0.2 : 0.08),
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF8A2BE2).withValues(alpha: isDark ? 0.13 : 0.06),
+                      const Color(0xFF8A2BE2).withValues(alpha: 0.0),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -645,66 +671,82 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                           const SizedBox(height: 12),
 
-                          // ── 3. Gender Selection Row ────────────────────────
-                          Row(
-                            children: ['Male', 'Female'].map((gender) {
-                              final isSelected = _selectedGender == gender;
-                              final isFemale = gender == 'Female';
-                              final activeColor = isFemale ? const Color(0xFFFF007F) : const Color(0xFF00E5FF);
-
-                              return Expanded(
-                                child: GestureDetector(
-                                  onTap: () => setState(() => _selectedGender = gender),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 180),
-                                    margin: EdgeInsets.only(
-                                      right: gender == 'Male' ? 6 : 0,
-                                      left: isFemale ? 6 : 0,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    decoration: BoxDecoration(
-                                      gradient: isSelected
-                                          ? LinearGradient(
-                                              colors: [
-                                                activeColor.withValues(alpha: 0.28),
-                                                activeColor.withValues(alpha: 0.1),
+                          // ── 3. Gender Selection Dropdown (Male, Female, Other) ──
+                          _buildGlassSection(
+                            isDark: isDark,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              child: Row(
+                                children: [
+                                  _buildMiniIcon(
+                                    _selectedGender == 'Female'
+                                        ? Icons.female_rounded
+                                        : (_selectedGender == 'Male'
+                                            ? Icons.male_rounded
+                                            : Icons.transgender_rounded),
+                                    _selectedGender == 'Female'
+                                        ? const Color(0xFFFF007F)
+                                        : (_selectedGender == 'Male'
+                                            ? const Color(0xFF00E5FF)
+                                            : const Color(0xFF8A2BE2)),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: _selectedGender,
+                                        isExpanded: true,
+                                        dropdownColor: isDark ? const Color(0xFF1A1630) : Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        icon: Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: isDark ? Colors.white60 : Colors.black54,
+                                        ),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.white : AppColors.darkNavy,
+                                        ),
+                                        items: const ['Male', 'Female', 'Other'].map((gender) {
+                                          final icon = gender == 'Female'
+                                              ? Icons.female_rounded
+                                              : (gender == 'Male'
+                                                  ? Icons.male_rounded
+                                                  : Icons.transgender_rounded);
+                                          final color = gender == 'Female'
+                                              ? const Color(0xFFFF007F)
+                                              : (gender == 'Male'
+                                                  ? const Color(0xFF00E5FF)
+                                                  : const Color(0xFF8A2BE2));
+                                          return DropdownMenuItem<String>(
+                                            value: gender,
+                                            child: Row(
+                                              children: [
+                                                Icon(icon, size: 18, color: color),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  gender,
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 13.5,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isDark ? Colors.white : AppColors.darkNavy,
+                                                  ),
+                                                ),
                                               ],
-                                            )
-                                          : null,
-                                      color: isSelected
-                                          ? null
-                                          : (isDark ? const Color(0xFF151228) : Colors.white),
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? activeColor
-                                            : (isDark ? Colors.white10 : Colors.black12),
-                                        width: isSelected ? 1.6 : 1.0,
+                                            ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (val) {
+                                          if (val != null) {
+                                            setState(() => _selectedGender = val);
+                                          }
+                                        },
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          isFemale ? Icons.female_rounded : Icons.male_rounded,
-                                          color: activeColor,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          gender,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 14,
-                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                            color: isDark ? Colors.white : AppColors.darkNavy,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                   ),
-                                ),
-                              );
-                            }).toList(),
+                                ],
+                              ),
+                            ),
                           ),
 
                           const SizedBox(height: 12),
@@ -853,11 +895,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                       decoration: InputDecoration(
                                         hintText: 'Bio...',
                                         counterText: '',
+                                        filled: false,
+                                        fillColor: Colors.transparent,
                                         hintStyle: GoogleFonts.poppins(
                                           fontSize: 13,
                                           color: isDark ? Colors.white38 : Colors.grey,
                                         ),
                                         border: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        disabledBorder: InputBorder.none,
+                                        errorBorder: InputBorder.none,
                                       ),
                                     ),
                                   ),
@@ -985,11 +1033,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               ),
               decoration: InputDecoration(
                 hintText: hint,
+                filled: false,
+                fillColor: Colors.transparent,
                 hintStyle: GoogleFonts.poppins(
                   fontSize: 13,
                   color: isDark ? Colors.white38 : Colors.grey,
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
               ),
             ),
           ),
