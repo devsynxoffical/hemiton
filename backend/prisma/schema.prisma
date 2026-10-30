@@ -309,6 +309,24 @@ enum AnnouncementTarget {
   SELLERS
 }
 
+enum CallType {
+  VOICE_1ON1
+  VIDEO_1ON1
+  VOICE_GROUP
+}
+
+enum CallStatus {
+  INITIATED
+  RINGING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  ENDED
+  MISSED
+  FAILED
+  BUSY
+}
+
 // ==========================================
 // SYSTEM FOUNDATION
 // ==========================================
@@ -392,6 +410,11 @@ model User {
   settlementRecords        SettlementRecord[]  @relation("UserSettlementRecords")
   settlementAdjustments    SettlementAdjustment[] @relation("UserSettlementAdjustments")
   milestoneClaims          UserMilestoneClaim[]   @relation("UserMilestoneClaims")
+  callsMade                CallSession[]          @relation("CallsMade")
+  callsReceived            CallSession[]          @relation("CallsReceived")
+  callParticipations       CallParticipant[]      @relation("CallParticipants")
+  friendshipsAsUserOne     FriendshipLevel[]      @relation("FriendshipUserOne")
+  friendshipsAsUserTwo     FriendshipLevel[]      @relation("FriendshipUserTwo")
 
   @@index([status])
   @@index([countryCode])
@@ -1919,4 +1942,124 @@ model UserMilestoneClaim {
   @@index([userId, eventId])
   @@index([userId])
 }
+
+// ==========================================
+// DOMAIN: VOICE & VIDEO CALLING (HEMI TON)
+// ==========================================
+
+model CallSession {
+  id              String            @id @default(uuid())
+  callerId        String
+  recipientId     String?
+  callType        CallType          @default(VOICE_1ON1)
+  status          CallStatus        @default(INITIATED)
+  channelName     String            @unique
+  startedAt       DateTime?
+  endedAt         DateTime?
+  durationSeconds Int               @default(0)
+  endReason       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  caller          User              @relation("CallsMade", fields: [callerId], references: [id], onDelete: Cascade)
+  recipient       User?             @relation("CallsReceived", fields: [recipientId], references: [id], onDelete: SetNull)
+  participants    CallParticipant[]
+
+  @@index([callerId, createdAt])
+  @@index([recipientId, createdAt])
+  @@index([status])
+}
+
+model CallParticipant {
+  id            String       @id @default(uuid())
+  callSessionId String
+  userId        String
+  role          String       @default("PARTICIPANT") // CALLER, RECIPIENT, GUEST
+  joinedAt      DateTime?
+  leftAt        DateTime?
+  createdAt     DateTime     @default(now())
+
+  callSession   CallSession  @relation(fields: [callSessionId], references: [id], onDelete: Cascade)
+  user          User         @relation("CallParticipants", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([callSessionId, userId])
+  @@index([userId])
+}
+
+// ==========================================
+// DOMAIN: HANGOUT SOCIAL & FRIENDSHIP (HEMI TON)
+// ==========================================
+
+model FriendshipLevel {
+  id            String                @id @default(uuid())
+  userOneId     String
+  userTwoId     String
+  level         Int                   @default(1)
+  xp            Int                   @default(0)
+  callMinutes   Int                   @default(0)
+  roomMinutes   Int                   @default(0)
+  giftValueSent BigInt                @default(0)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  userOne       User                  @relation("FriendshipUserOne", fields: [userOneId], references: [id], onDelete: Cascade)
+  userTwo       User                  @relation("FriendshipUserTwo", fields: [userTwoId], references: [id], onDelete: Cascade)
+  milestones    FriendshipMilestone[]
+
+  @@unique([userOneId, userTwoId])
+  @@index([userOneId])
+  @@index([userTwoId])
+}
+
+model FriendshipMilestone {
+  id                String          @id @default(uuid())
+  friendshipLevelId String
+  milestoneKey      String
+  title             String
+  description       String?
+  unlockedAt        DateTime        @default(now())
+
+  friendshipLevel   FriendshipLevel @relation(fields: [friendshipLevelId], references: [id], onDelete: Cascade)
+
+  @@index([friendshipLevelId])
+}
+
+model HangoutCommunity {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  category    String   // MUSIC, GAMING, POETRY, CRICKET, CHAT
+  coverUrl    String?
+  iconUrl     String?
+  memberCount Int      @default(0)
+  isOfficial  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model HangoutChallenge {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  rewardXp    Int       @default(50)
+  rewardCoins Int       @default(0)
+  targetType  String    // CALL_MINUTES, ROOM_TIME, SEND_GIFT, ICEBREAKER
+  targetCount Int       @default(1)
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}
+
+model IcebreakerSession {
+  id          String   @id @default(uuid())
+  roomId      String
+  userOneId   String
+  userTwoId   String
+  topic       String
+  durationSec Int      @default(60)
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  createdAt   DateTime @default(now())
+}
+
 

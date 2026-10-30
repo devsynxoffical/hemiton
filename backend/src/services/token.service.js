@@ -7,7 +7,7 @@ import { generateRandomToken, hashToken } from '../utils/crypto.util.js';
  */
 export function generateAccessToken(payload) {
   const isAdmin = Boolean(payload.isAdmin || payload.userType === 'ADMIN');
-  const audience = payload.audience || (isAdmin ? 'zeparty-admin' : 'zeparty-mobile');
+  const audience = payload.audience || (isAdmin ? 'hemiton-admin' : 'hemiton-mobile');
   const claims = {
     sub: String(payload.userId || payload.adminId),
     sessionId: payload.sessionId,
@@ -19,7 +19,7 @@ export function generateAccessToken(payload) {
   return jwt.sign(claims, env.JWT_SECRET, {
     expiresIn: env.JWT_EXPIRES_IN,
     audience,
-    issuer: 'zeparty-api',
+    issuer: 'hemiton-api',
   });
 }
 
@@ -34,6 +34,15 @@ export function decodeToken(token) {
   }
 }
 
+const VALID_AUDIENCES = [
+  'hemiton-admin',
+  'hemiton-mobile',
+  'hemi-ton-admin',
+  'hemi-ton-mobile',
+  'zeparty-admin',
+  'zeparty-mobile',
+];
+
 /**
  * Verify access token claims against env JWT_SECRET.
  */
@@ -42,7 +51,7 @@ export function verifyAccessToken(token, options = {}) {
     const decoded = jwt.verify(token, env.JWT_SECRET, options);
     // If audience claim exists, validate that it belongs to an expected domain
     if (decoded && decoded.aud) {
-      if (decoded.aud !== 'zeparty-admin' && decoded.aud !== 'zeparty-mobile') {
+      if (!VALID_AUDIENCES.includes(decoded.aud)) {
         const error = new Error('Invalid token audience');
         error.status = 401;
         error.code = 'TOKEN_INVALID';

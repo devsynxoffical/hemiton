@@ -8,10 +8,10 @@
 import axios from 'axios';
 import handleMockRequest from './mockRouter';
 
-export const IS_BACKEND_DISCONNECTED = import.meta.env.VITE_BACKEND_DISCONNECTED !== 'false';
+export const IS_BACKEND_DISCONNECTED = import.meta.env.VITE_BACKEND_DISCONNECTED === 'true';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api.hemiton.live/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://hemi-ton-backend-production.up.railway.app/api',
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json',

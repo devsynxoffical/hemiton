@@ -1,7 +1,7 @@
 {
-  "name": "zeparty-backend",
+  "name": "hemi-ton-backend",
   "version": "1.0.0",
-  "description": "Shared Node.js + Express.js backend for ZeParty Flutter Mobile App and React Admin Dashboard",
+  "description": "Shared Node.js + Express.js backend for HEMI TON Live Social Entertainment Platform and React Admin Portal",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

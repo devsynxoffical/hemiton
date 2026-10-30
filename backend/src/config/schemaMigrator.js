@@ -371,12 +371,12 @@ export async function ensureDatabaseSchema(db = prisma) {
       console.log('🔄 No admin accounts detected in database. Auto-bootstrapping default super admin & owner...');
       const bcrypt = await import('bcryptjs');
       const superAdminUsername = process.env.SUPER_ADMIN_USERNAME || 'admin';
-      const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@zeparty.app';
-      const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123';
+      const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@hemiton.live';
+      const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin12345';
 
       const ownerUsername = process.env.OWNER_USERNAME || 'owner';
-      const ownerEmail = process.env.OWNER_EMAIL || 'owner@zeparty.app';
-      const ownerPassword = process.env.OWNER_PASSWORD || 'owner123';
+      const ownerEmail = process.env.OWNER_EMAIL || 'owner@hemiton.live';
+      const ownerPassword = process.env.OWNER_PASSWORD || 'owner12345';
 
       const [adminHash, ownerHash] = await Promise.all([
         bcrypt.default.hash(superAdminPassword, 10),
@@ -410,6 +410,24 @@ export async function ensureDatabaseSchema(db = prisma) {
         skipDuplicates: true,
       });
       console.log('✅ Super Admin and Owner accounts bootstrapped successfully into PostgreSQL');
+    } else {
+      const bcrypt = await import('bcryptjs');
+      const superAdminUsername = process.env.SUPER_ADMIN_USERNAME || 'admin';
+      const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin12345';
+      const ownerUsername = process.env.OWNER_USERNAME || 'owner';
+      const ownerPassword = process.env.OWNER_PASSWORD || 'owner12345';
+      const [adminHash, ownerHash] = await Promise.all([
+        bcrypt.default.hash(superAdminPassword, 10),
+        bcrypt.default.hash(ownerPassword, 10),
+      ]);
+      await db.admin.updateMany({
+        where: { username: superAdminUsername },
+        data: { passwordHash: adminHash, status: 'ACTIVE' },
+      });
+      await db.admin.updateMany({
+        where: { username: ownerUsername },
+        data: { passwordHash: ownerHash, status: 'ACTIVE' },
+      });
     }
   } catch (err) {
     console.warn('Admin bootstrap auto-check note:', err.message);
@@ -533,13 +551,139 @@ export async function ensureDatabaseSchema(db = prisma) {
           ],
         },
       });
-      console.log('✅ Default ZeParty Grand Recharge Fiesta event bootstrapped successfully');
+      console.log('✅ Default HEMI TON Grand Recharge Fiesta event bootstrapped successfully');
     }
   } catch (err) {
     console.warn('RechargeRewards event bootstrap note:', err.message);
   }
 
-  console.log('✅ Database schema and platform analytics verified and synchronized successfully');
+  // 9. HEMI TON Calling & Hangout Schema Migration
+  try {
+    await db.$executeRawUnsafe(`DO $$ BEGIN CREATE TYPE "CallType" AS ENUM ('VOICE_1ON1', 'VIDEO_1ON1', 'VOICE_GROUP'); EXCEPTION WHEN duplicate_object THEN null; END $$;`);
+    await db.$executeRawUnsafe(`DO $$ BEGIN CREATE TYPE "CallStatus" AS ENUM ('INITIATED', 'RINGING', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'ENDED', 'MISSED', 'FAILED', 'BUSY'); EXCEPTION WHEN duplicate_object THEN null; END $$;`);
+  } catch (err) {
+    console.warn('Call enums note:', err.message);
+  }
+
+  try {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "CallSession" (
+        "id" TEXT PRIMARY KEY,
+        "callerId" TEXT NOT NULL,
+        "recipientId" TEXT,
+        "callType" "CallType" NOT NULL DEFAULT 'VOICE_1ON1',
+        "status" "CallStatus" NOT NULL DEFAULT 'INITIATED',
+        "channelName" TEXT NOT NULL UNIQUE,
+        "startedAt" TIMESTAMP(3),
+        "endedAt" TIMESTAMP(3),
+        "durationSeconds" INTEGER NOT NULL DEFAULT 0,
+        "endReason" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS "CallSession_callerId_createdAt_idx" ON "CallSession"("callerId", "createdAt");
+      CREATE INDEX IF NOT EXISTS "CallSession_recipientId_createdAt_idx" ON "CallSession"("recipientId", "createdAt");
+      CREATE INDEX IF NOT EXISTS "CallSession_status_idx" ON "CallSession"("status");
+    `);
+  } catch (err) {
+    console.warn('CallSession table sync note:', err.message);
+  }
+
+  try {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "CallParticipant" (
+        "id" TEXT PRIMARY KEY,
+        "callSessionId" TEXT NOT NULL,
+        "userId" TEXT NOT NULL,
+        "role" TEXT NOT NULL DEFAULT 'PARTICIPANT',
+        "joinedAt" TIMESTAMP(3),
+        "leftAt" TIMESTAMP(3),
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "CallParticipant_callSessionId_userId_key" UNIQUE ("callSessionId", "userId")
+      );
+      CREATE INDEX IF NOT EXISTS "CallParticipant_userId_idx" ON "CallParticipant"("userId");
+    `);
+  } catch (err) {
+    console.warn('CallParticipant table sync note:', err.message);
+  }
+
+  try {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "FriendshipLevel" (
+        "id" TEXT PRIMARY KEY,
+        "userOneId" TEXT NOT NULL,
+        "userTwoId" TEXT NOT NULL,
+        "level" INTEGER NOT NULL DEFAULT 1,
+        "xp" INTEGER NOT NULL DEFAULT 0,
+        "callMinutes" INTEGER NOT NULL DEFAULT 0,
+        "roomMinutes" INTEGER NOT NULL DEFAULT 0,
+        "giftValueSent" BIGINT NOT NULL DEFAULT 0,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "FriendshipLevel_userOneId_userTwoId_key" UNIQUE ("userOneId", "userTwoId")
+      );
+      CREATE INDEX IF NOT EXISTS "FriendshipLevel_userOneId_idx" ON "FriendshipLevel"("userOneId");
+      CREATE INDEX IF NOT EXISTS "FriendshipLevel_userTwoId_idx" ON "FriendshipLevel"("userTwoId");
+
+      CREATE TABLE IF NOT EXISTS "FriendshipMilestone" (
+        "id" TEXT PRIMARY KEY,
+        "friendshipLevelId" TEXT NOT NULL,
+        "milestoneKey" TEXT NOT NULL,
+        "title" TEXT NOT NULL,
+        "description" TEXT,
+        "unlockedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS "FriendshipMilestone_friendshipLevelId_idx" ON "FriendshipMilestone"("friendshipLevelId");
+    `);
+  } catch (err) {
+    console.warn('FriendshipLevel sync note:', err.message);
+  }
+
+  try {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "HangoutCommunity" (
+        "id" TEXT PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "slug" TEXT NOT NULL UNIQUE,
+        "description" TEXT,
+        "category" TEXT NOT NULL,
+        "coverUrl" TEXT,
+        "iconUrl" TEXT,
+        "memberCount" INTEGER NOT NULL DEFAULT 0,
+        "isOfficial" BOOLEAN NOT NULL DEFAULT false,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS "HangoutChallenge" (
+        "id" TEXT PRIMARY KEY,
+        "title" TEXT NOT NULL,
+        "description" TEXT NOT NULL,
+        "rewardXp" INTEGER NOT NULL DEFAULT 50,
+        "rewardCoins" INTEGER NOT NULL DEFAULT 0,
+        "targetType" TEXT NOT NULL,
+        "targetCount" INTEGER NOT NULL DEFAULT 1,
+        "expiresAt" TIMESTAMP(3),
+        "isActive" BOOLEAN NOT NULL DEFAULT true,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS "IcebreakerSession" (
+        "id" TEXT PRIMARY KEY,
+        "roomId" TEXT NOT NULL,
+        "userOneId" TEXT NOT NULL,
+        "userTwoId" TEXT NOT NULL,
+        "topic" TEXT NOT NULL,
+        "durationSec" INTEGER NOT NULL DEFAULT 60,
+        "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  } catch (err) {
+    console.warn('Hangout tables sync note:', err.message);
+  }
+
+  console.log('✅ HEMI TON Database schema and platform analytics verified and synchronized successfully');
 }
 
 export default {

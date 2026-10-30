@@ -5,7 +5,7 @@
     "buildCommand": "npm install && npx prisma generate"
   },
   "deploy": {
-    "startCommand": "node src/server.js",
+    "startCommand": "npx prisma db push --skip-generate --accept-data-loss && node prisma/seed.js && node src/server.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",

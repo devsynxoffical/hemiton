@@ -45,10 +45,20 @@ import { adminEmojiRouter, userEmojiRouter } from './emoji.routes.js';
 import { adminExchangeTransferRouter, userExchangeTransferRouter } from './exchangeTransfer.routes.js';
 import { adminRankingRewardRouter, userRankingRewardRouter } from './rankingReward.routes.js';
 import completeSettingsRouter from './completeSettings.routes.js';
+import { userCallRouter, adminCallRouter } from './call.routes.js';
+import hangoutRouter from './hangout.routes.js';
 
 const router = express.Router();
 
+// HEMI TON Voice & Video Calling Routes (Chatta-style)
+router.use('/v1/calls', userCallRouter);
+router.use('/calls', userCallRouter);
+router.use('/v1/admin/calls', adminCallRouter);
+router.use('/admin/calls', adminCallRouter);
 
+// HEMI TON Hangout Social & Community Routes
+router.use('/v1/hangout', hangoutRouter);
+router.use('/hangout', hangoutRouter);
 
 // Leaderboard & Global Rankings routes
 router.use('/v1/rankings', leaderboardRouter);

@@ -29,6 +29,22 @@ async function connectDatabaseWithRetry(maxRetries = 20, delayMs = 3000) {
         console.log(`🔄 Connecting to PostgreSQL database via Prisma (attempt ${attempt}/${maxRetries})...`);
       }
       await prisma.$connect();
+      // Ensure base tables exist if starting on a fresh database
+      try {
+        await prisma.admin.findFirst();
+      } catch (checkErr) {
+        if (checkErr.code === 'P2021' || (checkErr.message && checkErr.message.includes('does not exist'))) {
+          console.log('🔄 Fresh database detected: pushing Prisma schema...');
+          const { execSync } = await import('child_process');
+          try {
+            execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
+            console.log('🌱 Database schema pushed. Seeding initial records...');
+            execSync('node prisma/seed.js', { stdio: 'inherit' });
+          } catch (initErr) {
+            console.warn('⚠️ Auto-schema initialization warning:', initErr.message);
+          }
+        }
+      }
       // Ensure required schema columns and enum values are present idempotently
       await ensureDatabaseSchema(prisma);
       console.log('✅ Database connected and verified successfully');
@@ -47,7 +63,7 @@ async function connectDatabaseWithRetry(maxRetries = 20, delayMs = 3000) {
 
 async function startServer() {
   try {
-    console.log('🔄 Initializing ZeParty Backend Foundation...');
+    console.log('🔄 Initializing HEMI TON Backend Foundation...');
 
     // 1. Create HTTP Server and bind immediately to prevent cold boot 502 Bad Gateway
     const port = Number(process.env.PORT) || Number(env.PORT) || 8080;
@@ -86,7 +102,7 @@ async function startServer() {
     })();
 
   } catch (error) {
-    console.error('❌ Failed to start ZeParty server:', error);
+    console.error('❌ Failed to start HEMI TON server:', error);
     process.exit(1);
   }
 }

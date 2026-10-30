@@ -10,6 +10,7 @@ import { registerGiftHandlers } from './gift.socket.js';
 import { registerPKHandlers } from './pk.socket.js';
 import { registerWheelHandlers } from './wheel.socket.js';
 import { registerLuckyBagHandlers } from './luckyBag.socket.js';
+import { registerCallHandlers } from './call.socket.js';
 import presenceService from './presence.service.js';
 
 let ioInstance = null;
@@ -85,6 +86,7 @@ export async function initSocketServer(httpServer) {
     registerPKHandlers(io, socket);
     registerWheelHandlers(io, socket);
     registerLuckyBagHandlers(io, socket);
+    registerCallHandlers(io, socket);
 
     // Direct Messaging Typing Indicators
     socket.on('chat:typing', (data) => {
@@ -112,14 +114,14 @@ export async function initSocketServer(httpServer) {
 
         const payload = {
           id: data.invitationId || `sys_inv_${Date.now()}`,
-          title: data.title || 'Host Invitation (ZeParty Official)',
+          title: data.title || 'Host Invitation (HEMI TON Official)',
           content: data.content || `${data.inviterName || 'Agency'} invited you to join as a Host.`,
           body: data.content || `${data.inviterName || 'Agency'} invited you to join as a Host.`,
           category: 'Official',
           timestamp: new Date().toISOString(),
           invitationType: data.invitationType || 'Host',
           invitationId: data.invitationId || `inv_ag_${Date.now()}`,
-          inviterName: data.inviterName || 'ZeParty Agency',
+          inviterName: data.inviterName || 'HEMI TON Agency',
           inviterUserId: socket.userId,
           targetId: data.targetUserId,
           status: 'Pending',

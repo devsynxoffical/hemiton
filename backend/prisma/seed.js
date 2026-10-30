@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 import { MODULE_PERMISSIONS, DEFAULT_ROLES } from '../src/constants/permissions.js';
 
 async function seed() {
-  console.log('🌱 Starting ZeParty System Configuration Bootstrap...');
+  console.log('🌱 Starting HEMI TON System Configuration Bootstrap...');
 
   // 1. Seed Canonical Permissions
   for (const moduleGroup of MODULE_PERMISSIONS) {
@@ -62,12 +62,12 @@ async function seed() {
   }
 
   const superAdminUsername = process.env.SUPER_ADMIN_USERNAME || 'admin';
-  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@zeparty.app';
-  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'admin123';
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@hemiton.live';
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'admin12345';
 
   const ownerUsername = process.env.OWNER_USERNAME || 'owner';
-  const ownerEmail = process.env.OWNER_EMAIL || 'owner@zeparty.app';
-  const ownerPassword = process.env.OWNER_PASSWORD || process.env.SUPER_ADMIN_PASSWORD || 'admin123';
+  const ownerEmail = process.env.OWNER_EMAIL || 'owner@hemiton.live';
+  const ownerPassword = process.env.OWNER_PASSWORD || process.env.SUPER_ADMIN_PASSWORD || 'owner12345';
 
   const adminPasswordHash = await bcrypt.hash(superAdminPassword, 10);
   const ownerPasswordHash = await bcrypt.hash(ownerPassword, 10);
@@ -154,7 +154,7 @@ async function seed() {
       id: 'dev-finance-001',
       name: 'Finance Admin',
       username: 'financeadmin',
-      email: 'financeadmin@zeparty.app',
+      email: 'financeadmin@hemiton.live',
       passwordHash: financeAdminPasswordHash,
       status: 'ACTIVE',
       isSuperAdmin: false,
@@ -183,7 +183,7 @@ async function seed() {
       id: 'dev-host-001',
       name: 'Host Admin',
       username: 'hostadmin',
-      email: 'hostadmin@zeparty.app',
+      email: 'hostadmin@hemiton.live',
       passwordHash: hostAdminPasswordHash,
       status: 'ACTIVE',
       isSuperAdmin: false,
@@ -452,14 +452,14 @@ async function seed() {
     update: {},
     create: {
       id: 'ann-01',
-      title: 'ZeParty Global System Upgrade & Fair Play Policy',
+      title: 'HEMI TON Global System Upgrade & Fair Play Policy',
       body: 'Automated audit trail, PostgreSQL financial ledger, and diamond settlement engine active.',
       targetAudience: 'ALL',
       isActive: true,
     },
   });
 
-  console.log('✅ ZeParty System Configuration Bootstrap Successfully Completed!');
+  console.log('✅ HEMI TON System Configuration Bootstrap Successfully Completed!');
   console.log('   - Canonical Permissions & System Roles seeded');
   console.log('   - Owner & Super Admin identities provisioned');
   console.log('   - Baseline Policy Templates & Dynamic Configs loaded');

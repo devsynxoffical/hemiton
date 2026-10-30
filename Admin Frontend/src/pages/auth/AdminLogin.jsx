@@ -18,7 +18,7 @@ export function AdminLogin() {
 
   const from = '/admin';
 
-  const [credentials, setCredentials] = useState({ username: 'admin', password: 'password' });
+  const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -94,7 +94,7 @@ export function AdminLogin() {
 
           <div className="mt-2.5 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Client Testing Mode · Backend Decoupled</span>
+            <span>Live Production Backend · Connected</span>
           </div>
         </div>
 
@@ -183,11 +183,6 @@ export function AdminLogin() {
               </Button>
             </div>
           </form>
-
-          <div className="mt-5 pt-4 border-t border-[#182337] flex items-center justify-between text-[11px] text-slate-500">
-            <span>Test User: <code className="text-slate-300">admin</code></span>
-            <span>Test Pass: <code className="text-slate-300">password</code></span>
-          </div>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-600">
