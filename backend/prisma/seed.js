@@ -63,11 +63,11 @@ async function seed() {
 
   const superAdminUsername = process.env.SUPER_ADMIN_USERNAME || 'admin';
   const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@hemiton.live';
-  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'admin123';
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'admin12345';
 
   const ownerUsername = process.env.OWNER_USERNAME || 'owner';
   const ownerEmail = process.env.OWNER_EMAIL || 'owner@hemiton.live';
-  const ownerPassword = process.env.OWNER_PASSWORD || process.env.SUPER_ADMIN_PASSWORD || 'admin123';
+  const ownerPassword = process.env.OWNER_PASSWORD || process.env.SUPER_ADMIN_PASSWORD || 'owner12345';
 
   const adminPasswordHash = await bcrypt.hash(superAdminPassword, 10);
   const ownerPasswordHash = await bcrypt.hash(ownerPassword, 10);

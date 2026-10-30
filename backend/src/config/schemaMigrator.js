@@ -371,12 +371,12 @@ export async function ensureDatabaseSchema(db = prisma) {
       console.log('🔄 No admin accounts detected in database. Auto-bootstrapping default super admin & owner...');
       const bcrypt = await import('bcryptjs');
       const superAdminUsername = process.env.SUPER_ADMIN_USERNAME || 'admin';
-      const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@zeparty.app';
-      const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123';
+      const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@hemiton.live';
+      const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin12345';
 
       const ownerUsername = process.env.OWNER_USERNAME || 'owner';
-      const ownerEmail = process.env.OWNER_EMAIL || 'owner@zeparty.app';
-      const ownerPassword = process.env.OWNER_PASSWORD || 'owner123';
+      const ownerEmail = process.env.OWNER_EMAIL || 'owner@hemiton.live';
+      const ownerPassword = process.env.OWNER_PASSWORD || 'owner12345';
 
       const [adminHash, ownerHash] = await Promise.all([
         bcrypt.default.hash(superAdminPassword, 10),
@@ -410,6 +410,24 @@ export async function ensureDatabaseSchema(db = prisma) {
         skipDuplicates: true,
       });
       console.log('✅ Super Admin and Owner accounts bootstrapped successfully into PostgreSQL');
+    } else {
+      const bcrypt = await import('bcryptjs');
+      const superAdminUsername = process.env.SUPER_ADMIN_USERNAME || 'admin';
+      const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin12345';
+      const ownerUsername = process.env.OWNER_USERNAME || 'owner';
+      const ownerPassword = process.env.OWNER_PASSWORD || 'owner12345';
+      const [adminHash, ownerHash] = await Promise.all([
+        bcrypt.default.hash(superAdminPassword, 10),
+        bcrypt.default.hash(ownerPassword, 10),
+      ]);
+      await db.admin.updateMany({
+        where: { username: superAdminUsername },
+        data: { passwordHash: adminHash, status: 'ACTIVE' },
+      });
+      await db.admin.updateMany({
+        where: { username: ownerUsername },
+        data: { passwordHash: ownerHash, status: 'ACTIVE' },
+      });
     }
   } catch (err) {
     console.warn('Admin bootstrap auto-check note:', err.message);

@@ -65,9 +65,9 @@ const envSchema = z.object({
   // Bootstrap Administrative Credentials
   SUPER_ADMIN_USERNAME: z.string().default('admin').catch('admin'),
   SUPER_ADMIN_EMAIL: z.string().email().default('admin@hemiton.live').catch('admin@hemiton.live'),
-  SUPER_ADMIN_PASSWORD: z.string().min(6).default('admin123').catch('admin123'),
+  SUPER_ADMIN_PASSWORD: z.string().min(6).default('admin12345').catch('admin12345'),
   OWNER_EMAIL: z.string().email().default('owner@hemiton.live').catch('owner@hemiton.live'),
-  OWNER_PASSWORD: z.string().min(6).default('owner123').catch('owner123'),
+  OWNER_PASSWORD: z.string().min(6).default('owner12345').catch('owner12345'),
 });
 
 const _env = envSchema.safeParse(sanitizedProcessEnv);

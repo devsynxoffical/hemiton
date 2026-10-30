@@ -37,11 +37,11 @@ async function seed() {
   // 4. Admin accounts - batch with hashed passwords
   const superAdminUsername = process.env.SUPER_ADMIN_USERNAME || "admin";
   const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || "admin@zeparty.app";
-  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "admin123";
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "admin12345";
 
   const ownerUsername = process.env.OWNER_USERNAME || "owner";
   const ownerEmail = process.env.OWNER_EMAIL || "owner@zeparty.app";
-  const ownerPassword = process.env.OWNER_PASSWORD || process.env.SUPER_ADMIN_PASSWORD || "admin123";
+  const ownerPassword = process.env.OWNER_PASSWORD || process.env.SUPER_ADMIN_PASSWORD || "owner12345";
 
   const [adminHash, ownerHash] = await Promise.all([
     bcrypt.hash(superAdminPassword, 10),

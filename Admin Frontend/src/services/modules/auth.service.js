@@ -7,8 +7,8 @@ const SESSION_KEY = 'hemi_ton_admin_session';
 const TOKEN_KEY = 'hemi_ton_admin_token';
 
 export async function loginAdmin(credentials = {}) {
-  const username = (credentials.username || '').trim() || 'HemiTonAdmin';
-  const password = (credentials.password || '').trim() || 'password';
+  const username = (credentials.username || '').trim();
+  const password = (credentials.password || '').trim();
 
   if (IS_BACKEND_DISCONNECTED) {
     // Client Testing & Verification Mode: Instant session without backend server requirement
