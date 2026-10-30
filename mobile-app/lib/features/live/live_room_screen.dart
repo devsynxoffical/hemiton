@@ -13,6 +13,7 @@ import '../../providers/emoji_reaction_provider.dart';
 import '../../providers/live_gift_provider.dart';
 import '../../providers/messaging_provider.dart';
 import '../../widgets/gift_dialog.dart';
+import '../../widgets/double_tap_like_overlay.dart';
 import '../../widgets/emoji_picker_sheet.dart';
 import '../../widgets/bring_my_friend_sheet.dart';
 import '../../widgets/hangout_games_sheet.dart';
@@ -400,9 +401,15 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
       },
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Stack(
-        fit: StackFit.expand,
-        children: [
+        body: DoubleTapLikeOverlay(
+          roomId: widget.room.id,
+          onLiked: () {
+            _addRandomFloatingHeart();
+            _addRandomFloatingHeart();
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
           // ── 1. Fullscreen Host Video / Image Background ─────────────────────
           if (widget.isHost &&
               _isCameraInitialized &&
@@ -527,7 +534,8 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
         ],
       ),
     ),
-  );
+  ),
+);
 }
 
   // ── Top Header Bar (Image 1 Exact Priya Host Capsule + PiP + Exit) ───────

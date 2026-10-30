@@ -16,15 +16,19 @@ import '../features/recharge/recharge_screen.dart';
 class GiftDialog extends StatefulWidget {
   final String streamerName;
   final UserModel? targetReceiver;
+  final List<UserModel>? roomUsers;
   final String? roomId;
   final ValueChanged<GiftModel>? onGiftSent;
+  final void Function(GiftModel gift, List<UserModel> recipients)? onGiftSentToUsers;
 
   const GiftDialog({
     super.key,
     this.streamerName = 'Streamer',
     this.targetReceiver,
+    this.roomUsers,
     this.roomId,
     this.onGiftSent,
+    this.onGiftSentToUsers,
   });
 
   @override
@@ -111,6 +115,17 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
 
     // Available room recipients (deduplicated by stable user ID and username)
     final Map<String, UserModel> recipientsMap = {};
+
+    // 0. Include explicitly passed roomUsers (e.g., all seated users in Group Video / Audio Live)
+    if (widget.roomUsers != null) {
+      for (final u in widget.roomUsers!) {
+        final key = u.id.trim().isNotEmpty ? u.id.trim() : u.username.trim().toLowerCase();
+        if (key.isNotEmpty && !recipientsMap.containsKey(key)) {
+          recipientsMap[key] = u;
+        }
+      }
+    }
+
     for (final p in partyProv.participants) {
       final u = p.user;
       final key = u.id.trim().isNotEmpty ? u.id.trim() : u.username.trim().toLowerCase();
@@ -219,146 +234,205 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
                 ),
               ),
 
-              // 1. RECIPIENT BAR
-              Row(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: availableRecipients.map((user) {
-                          final isMe = user.id == currentUser.id ||
-                              (currentUser.username.isNotEmpty && user.username.toLowerCase() == currentUser.username.toLowerCase()) ||
-                              (currentUser.name.isNotEmpty && user.name.toLowerCase() == currentUser.name.toLowerCase());
-                          final isSelected = recipientIsAllSelected ? !isMe : _selectedUserIds.contains(user.id);
-                          final resolvedAvatarUrl = (isMe && currentUser.avatarUrl.isNotEmpty)
-                              ? currentUser.avatarUrl
-                              : (user.avatarUrl.isNotEmpty ? user.avatarUrl : (currentUser.avatarUrl.isNotEmpty ? currentUser.avatarUrl : null));
-
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                recipientIsAllSelected = false;
-                                if (_selectedUserIds.contains(user.id)) {
-                                  _selectedUserIds.remove(user.id);
-                                } else {
-                                  _selectedUserIds.add(user.id);
-                                }
-                              });
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 10),
-                              child: Column(
-                                children: [
-                                  Stack(
-                                    clipBehavior: Clip.none,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? (isMe ? const Color(0xFFB388FF) : const Color(0xFF00E676))
-                                                : Colors.transparent,
-                                            width: 2,
-                                          ),
-                                          boxShadow: isSelected
-                                              ? [BoxShadow(color: isMe ? const Color(0xFFB388FF) : const Color(0xFF00E676), blurRadius: 6)]
-                                              : null,
-                                        ),
-                                        child: UserAvatar(
-                                          imageUrl: resolvedAvatarUrl,
-                                          name: user.name,
-                                          radius: 18,
-                                        ),
-                                      ),
-                                      if (isMe)
-                                        Positioned(
-                                          bottom: -2,
-                                          right: -2,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                            decoration: BoxDecoration(
-                                              color: Colors.orange.shade800,
-                                              borderRadius: BorderRadius.circular(6),
-                                            ),
-                                            child: const Text('You', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  SizedBox(
-                                    width: 44,
-                                    child: Text(
-                                      isMe ? '${user.name}\n(You)' : user.name,
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        color: isSelected
-                                            ? (isMe ? const Color(0xFFB388FF) : const Color(0xFF00E676))
-                                            : AppColors.getTextSecondary(isDark),
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      ),
-                                      maxLines: isMe ? 2 : 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
+              // 1. RECIPIENT BAR (Select any user in Group Live or All)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
                   ),
-
-                  const SizedBox(width: 8),
-
-                  // RECIPIENT ALL BUTTON
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        recipientIsAllSelected = !recipientIsAllSelected;
-                        if (recipientIsAllSelected) {
-                          _selectedUserIds = otherRecipients.map((u) => u.id).toSet();
-                        } else if (widget.targetReceiver != null && widget.targetReceiver!.id != currentUser.id) {
-                          _selectedUserIds = {widget.targetReceiver!.id};
-                        } else if (otherRecipients.isNotEmpty) {
-                          _selectedUserIds = {otherRecipients.first.id};
-                        } else {
-                          _selectedUserIds = {};
-                        }
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        gradient: recipientIsAllSelected
-                            ? const LinearGradient(colors: [Color(0xFF00E676), Color(0xFF00B0FF)])
-                            : null,
-                        color: recipientIsAllSelected ? null : AppColors.getSurface(isDark),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: recipientIsAllSelected ? const Color(0xFF00E676) : AppColors.getBorder(isDark),
-                        ),
-                        boxShadow: recipientIsAllSelected
-                            ? [const BoxShadow(color: Color(0xFF00E676), blurRadius: 8)]
-                            : null,
+                        color: const Color(0xFFFF007F).withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(
-                        'All',
+                      child: const Text(
+                        'Send To',
                         style: TextStyle(
-                          color: recipientIsAllSelected ? Colors.black : AppColors.getTextPrimary(isDark),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
+                          color: Color(0xFFFF007F),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: availableRecipients.map((user) {
+                            final isMe = user.id == currentUser.id ||
+                                (currentUser.username.isNotEmpty && user.username.toLowerCase() == currentUser.username.toLowerCase()) ||
+                                (currentUser.name.isNotEmpty && user.name.toLowerCase() == currentUser.name.toLowerCase());
+                            final isSelected = recipientIsAllSelected ? !isMe : _selectedUserIds.contains(user.id);
+                            final resolvedAvatarUrl = (isMe && currentUser.avatarUrl.isNotEmpty)
+                                ? currentUser.avatarUrl
+                                : (user.avatarUrl.isNotEmpty ? user.avatarUrl : (currentUser.avatarUrl.isNotEmpty ? currentUser.avatarUrl : null));
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  recipientIsAllSelected = false;
+                                  if (_selectedUserIds.length == 1 && _selectedUserIds.contains(user.id)) {
+                                    // Keep at least one selected or toggle if multiple
+                                    return;
+                                  } else if (_selectedUserIds.contains(user.id)) {
+                                    _selectedUserIds.remove(user.id);
+                                  } else {
+                                    _selectedUserIds = {user.id};
+                                  }
+                                });
+                              },
+                              onLongPress: () {
+                                // Long press allows multi-selecting recipients
+                                setState(() {
+                                  recipientIsAllSelected = false;
+                                  if (_selectedUserIds.contains(user.id)) {
+                                    _selectedUserIds.remove(user.id);
+                                  } else {
+                                    _selectedUserIds.add(user.id);
+                                  }
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? const Color(0xFF00E676)
+                                                  : Colors.white24,
+                                              width: isSelected ? 2.2 : 1.0,
+                                            ),
+                                            boxShadow: isSelected
+                                                ? [const BoxShadow(color: Color(0xFF00E676), blurRadius: 6)]
+                                                : null,
+                                          ),
+                                          child: UserAvatar(
+                                            imageUrl: resolvedAvatarUrl,
+                                            name: user.name,
+                                            radius: 17,
+                                          ),
+                                        ),
+                                        if (isSelected)
+                                          Positioned(
+                                            top: -2,
+                                            right: -2,
+                                            child: Container(
+                                              width: 14,
+                                              height: 14,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF00E676),
+                                                shape: BoxShape.circle,
+                                                border: Border.all(color: Colors.black, width: 1.2),
+                                              ),
+                                              child: const Icon(Icons.check, size: 9, color: Colors.black),
+                                            ),
+                                          ),
+                                        if (isMe)
+                                          Positioned(
+                                            bottom: -2,
+                                            right: -2,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: Colors.orange.shade800,
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: const Text('You', style: TextStyle(color: Colors.white, fontSize: 7.5, fontWeight: FontWeight.bold)),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    SizedBox(
+                                      width: 48,
+                                      child: Text(
+                                        user.name,
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          color: isSelected
+                                              ? const Color(0xFF00E676)
+                                              : AppColors.getTextSecondary(isDark),
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    // RECIPIENT ALL BUTTON
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          recipientIsAllSelected = !recipientIsAllSelected;
+                          if (recipientIsAllSelected) {
+                            final targets = otherRecipients.isNotEmpty ? otherRecipients : availableRecipients;
+                            _selectedUserIds = targets.map((u) => u.id).toSet();
+                          } else if (widget.targetReceiver != null && widget.targetReceiver!.id != currentUser.id) {
+                            _selectedUserIds = {widget.targetReceiver!.id};
+                          } else if (otherRecipients.isNotEmpty) {
+                            _selectedUserIds = {otherRecipients.first.id};
+                          } else if (availableRecipients.isNotEmpty) {
+                            _selectedUserIds = {availableRecipients.first.id};
+                          } else {
+                            _selectedUserIds = {};
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          gradient: recipientIsAllSelected
+                              ? const LinearGradient(colors: [Color(0xFF00E676), Color(0xFF00B0FF)])
+                              : null,
+                          color: recipientIsAllSelected ? null : AppColors.getSurface(isDark),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: recipientIsAllSelected ? const Color(0xFF00E676) : AppColors.getBorder(isDark),
+                          ),
+                          boxShadow: recipientIsAllSelected
+                              ? [const BoxShadow(color: Color(0xFF00E676), blurRadius: 8)]
+                              : null,
+                        ),
+                        child: Text(
+                          'All',
+                          style: TextStyle(
+                            color: recipientIsAllSelected ? Colors.black : AppColors.getTextPrimary(isDark),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 10),
@@ -626,6 +700,11 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
 
                             if (totalSuccess > 0) {
                               widget.onGiftSent?.call(selectedGift!);
+                              widget.onGiftSentToUsers?.call(selectedGift!, validRecipients);
+
+                              final recipientNames = validRecipients.length == 1
+                                  ? validRecipients.first.name
+                                  : '${validRecipients.length} users';
 
                               // 🍀 Lucky Gift Multiplier Jackpot Evaluation & Reward
                               int luckyMultiplier = 1;
@@ -654,8 +733,8 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
                                   SnackBar(
                                     content: Text(
                                       isLucky
-                                          ? '🎁 Sent $quantity × ${selectedGift!.name}!\n🎰 LUCKY WIN: Won $luckyMultiplier× ($coinsWon 🪙 returned to wallet)!'
-                                          : '🎁 Sent $quantity × ${selectedGift!.name} to $totalSuccess recipient(s)!',
+                                          ? '🎁 Sent $quantity × ${selectedGift!.name} to $recipientNames!\n🎰 LUCKY WIN: Won $luckyMultiplier× ($coinsWon 🪙 returned to wallet)!'
+                                          : '🎁 Sent $quantity × ${selectedGift!.name} to $recipientNames!',
                                     ),
                                     backgroundColor: isLucky ? Colors.amber.shade900 : Colors.green[800],
                                     behavior: SnackBarBehavior.floating,

@@ -25,6 +25,7 @@ import '../recharge/recharge_screen.dart';
 import '../../models/party_participant_model.dart';
 import '../../widgets/user_avatar.dart';
 import '../../widgets/gift_dialog.dart';
+import '../../widgets/double_tap_like_overlay.dart';
 import '../../widgets/gift_animation_overlay.dart';
 import '../../widgets/tiktok_gift_overlay.dart';
 import '../../providers/live_gift_provider.dart';
@@ -617,6 +618,12 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
     FocusScope.of(context).unfocus();
     _chatFocusNode.unfocus();
 
+    final partyProv = Provider.of<LivePartyProvider>(context, listen: false);
+    final allRoomUsers = <UserModel>[
+      widget.room.host,
+      ...partyProv.participants.map((p) => p.user),
+    ];
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -624,6 +631,7 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
       builder: (_) => GiftDialog(
         streamerName: widget.room.host.name,
         targetReceiver: targetReceiver ?? widget.room.host,
+        roomUsers: allRoomUsers,
         roomId: widget.room.id,
         onGiftSent: (gift) {
           final provider = Provider.of<LivePartyProvider>(context, listen: false);
@@ -661,10 +669,12 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: const Color(0xFF0D0B18),
-      body: Stack(
-        children: [
-          // TikTok Live Gifting Overlay
-          TikTokGiftOverlay(roomId: widget.room.id),
+        body: DoubleTapLikeOverlay(
+          roomId: widget.room.id,
+          child: Stack(
+            children: [
+              // TikTok Live Gifting Overlay
+              TikTokGiftOverlay(roomId: widget.room.id),
           // Ambient Gradient, Equipped Room Theme, or Custom Background Image
           Positioned.fill(
             child: Builder(
@@ -948,10 +958,11 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                 ),
               ),
             ),
-        ],
+            ],
+          ),
+        ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildHeader(
@@ -1412,7 +1423,72 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
       onSeatTap: (index) async {
         final occupant = provider.participants.where((p) => p.seatNumber == index).firstOrNull;
         final authUser = context.read<AuthProvider>().currentUser;
+        final isPrivateRoom = activeRoom.isPrivate || RoomLockManager.instance.isRoomLocked(activeRoom.id);
+
         if (occupant == null && !provider.isSeatLocked(index)) {
+          if (isPrivateRoom && !canManage) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF17122E),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: Color(0xFFFF007F), width: 1.2),
+                ),
+                title: const Row(
+                  children: [
+                    Icon(Icons.lock_person_rounded, color: Color(0xFFFF007F)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Private Group Live',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Text(
+                  'This is a private group live. Host permission is required to join Mic Seat ${index + 1}.',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF007F),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.pan_tool_alt_rounded, size: 16),
+                    label: const Text('Request Permission', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      provider.sendSystemMessage('✋ ${authUser.name} requested permission to join Mic ${index + 1}.');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Permission request sent to host for Mic ${index + 1}.'),
+                          backgroundColor: const Color(0xFF8A2BE2),
+                          behavior: SnackBarBehavior.floating,
+                          action: SnackBarAction(
+                            label: 'Host Approve',
+                            textColor: const Color(0xFF00E676),
+                            onPressed: () async {
+                              await provider.takeMicSeat(index, authUser);
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
+
           final err = await provider.takeMicSeat(index, authUser);
           if (context.mounted && err != null) {
             ScaffoldMessenger.of(context).showSnackBar(

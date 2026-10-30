@@ -142,40 +142,25 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left: Stylish Live Branding Badge (Moved create button to bottom-right)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFFFF007F), Color(0xFF00E5FF)],
-                ).createShader(bounds),
-                child: Text(
-                  'LIVE',
-                  style: GoogleFonts.poppins(
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    color: Colors.white,
-                  ),
+          // Left: HEMI TON Neon Branding Logo Image in place of LIVE text
+          Image.asset(
+            'assets/images/hemiton_top_logo.png',
+            height: 36.h,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [Color(0xFFFF007F), Color(0xFF00E5FF)],
+              ).createShader(bounds),
+              child: Text(
+                'HEMI TON',
+                style: GoogleFonts.poppins(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  color: Colors.white,
                 ),
               ),
-              SizedBox(width: 6.w),
-              Container(
-                width: 8.w,
-                height: 8.w,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF007F),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFF007F).withValues(alpha: 0.7),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
 
           // Right: Search, Notification Bell with Neon Pink Dot, User Avatar
@@ -1599,6 +1584,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
           'isPK': false,
           'verified': true,
           'isVideo': isVideo,
+          'isPrivate': room.isPrivate,
           'roomModel': room,
           'images': [
             room.coverUrl.isNotEmpty ? room.coverUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
@@ -1638,10 +1624,12 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
       },
       {
         'title': 'Talent Show',
-        'subtitle': 'Singing & Entertainment',
+        'subtitle': 'Private VIP Video Stage',
         'viewers': '1.9K',
         'isPK': false,
-        'verified': false,
+        'verified': true,
+        'isVideo': true,
+        'isPrivate': true,
         'images': [
           'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&q=80',
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
@@ -1699,28 +1687,82 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
       itemBuilder: (context, index) {
         final item = groupList[index];
         final isPK = item['isPK'] as bool;
+        final isPrivate = item['isPrivate'] == true;
         final images = item['images'] as List<String>;
+
+        void enterGroupRoom() {
+          if (item['roomModel'] != null) {
+            final r = item['roomModel'] as LiveRoomModel;
+            if (item['isVideo'] == true || r.roomType == 'LIVE_VIDEO' || r.roomType == 'GROUP_VIDEO') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => GroupVideoPartyRoomScreen(room: r, isHost: false)),
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => LivePartyRoomScreen(room: r)),
+              );
+            }
+          } else {
+            _openPartyRoom(
+              title: item['title'] as String,
+              isVideo: item['isVideo'] == true || _selectedMode == 2,
+              isPrivate: isPrivate,
+            );
+          }
+        }
 
         return GestureDetector(
           onTap: () {
-            if (item['roomModel'] != null) {
-              final r = item['roomModel'] as LiveRoomModel;
-              if (item['isVideo'] == true || r.roomType == 'LIVE_VIDEO' || r.roomType == 'GROUP_VIDEO') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => GroupVideoPartyRoomScreen(room: r, isHost: false)),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => LivePartyRoomScreen(room: r)),
-                );
-              }
-            } else {
-              _openPartyRoom(
-                title: item['title'] as String,
-                isVideo: item['isVideo'] == true || _selectedMode == 2,
+            if (isPrivate) {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: const Color(0xFF17122E),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.r),
+                    side: const BorderSide(color: Color(0xFFFF007F), width: 1.2),
+                  ),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.lock_person_rounded, color: Color(0xFFFF007F)),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          'Private Group Live',
+                          style: GoogleFonts.poppins(color: Colors.white, fontSize: 15.5.sp, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Text(
+                    'Permission is required to join "${item['title']}". Would you like to request permission from the host?',
+                    style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12.5.sp),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.white54)),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF007F),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      ),
+                      icon: const Icon(Icons.verified_user_rounded, size: 16),
+                      label: Text('Request & Join', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12.sp)),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        enterGroupRoom();
+                      },
+                    ),
+                  ],
+                ),
               );
+            } else {
+              enterGroupRoom();
             }
           },
           child: Container(
@@ -1774,7 +1816,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                     ),
                   ),
 
-                  // Top Left Badges: "LIVE" + Viewers
+                  // Top Left Badges: "LIVE" + Viewers + Public/Private
                   Positioned(
                     top: 8.h,
                     left: 8.w,
@@ -1784,6 +1826,35 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                         _buildLiveBadge(),
                         SizedBox(width: 4.w),
                         _buildViewerCountBadge(item['viewers'] as String),
+                        SizedBox(width: 4.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+                          decoration: BoxDecoration(
+                            color: isPrivate
+                                ? Colors.amber.withValues(alpha: 0.88)
+                                : const Color(0xFF00E676).withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isPrivate ? Icons.lock_rounded : Icons.lock_open_rounded,
+                                size: 9.sp,
+                                color: Colors.black,
+                              ),
+                              SizedBox(width: 2.w),
+                              Text(
+                                isPrivate ? 'Private' : 'Public',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 8.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -2770,7 +2841,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
     );
   }
 
-  void _openPartyRoom({required String title, bool isVideo = false}) {
+  void _openPartyRoom({required String title, bool isVideo = false, bool isPrivate = false}) {
     if (isVideo) {
       final room = LiveRoomModel(
         id: 'party_video_${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
@@ -2788,6 +2859,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         roomType: 'GROUP_VIDEO',
         status: 'LIVE',
         viewerCount: 120,
+        isPrivate: isPrivate,
       );
 
       Navigator.push(

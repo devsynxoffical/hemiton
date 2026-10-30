@@ -444,9 +444,10 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
       if (mounted) setState(() => _isCreating = false);
     }
 
-    if (isVideo && roomToJoin.roomType != 'GROUP_VIDEO') {
-      roomToJoin = roomToJoin.copyWith(roomType: 'GROUP_VIDEO');
-    }
+    roomToJoin = roomToJoin.copyWith(
+      isPrivate: _privacy != 'Public',
+      roomType: isVideo ? 'GROUP_VIDEO' : roomToJoin.roomType,
+    );
 
     BackendRepository.instance.addLiveRoom(roomToJoin);
 
