@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
+import '../../core/repositories/backend_repository.dart';
 import '../../core/services/room_share_service.dart';
 import '../../models/user_model.dart';
 import '../../models/post_model.dart';
@@ -22,7 +25,12 @@ import '../profile/user_profile_details_screen.dart';
 /// - Fixed bottom navigation bar remains visible
 class MomentsFeedScreen extends StatefulWidget {
   final bool isEmbeddedInHome;
-  const MomentsFeedScreen({super.key, this.isEmbeddedInHome = false});
+  final VoidCallback? onBackToRecommend;
+  const MomentsFeedScreen({
+    super.key,
+    this.isEmbeddedInHome = false,
+    this.onBackToRecommend,
+  });
 
   @override
   State<MomentsFeedScreen> createState() => _MomentsFeedScreenState();
@@ -40,6 +48,8 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
   // Local interaction tracking
   final Set<String> _likedPostIds = {};
   final Set<String> _followedUserIds = {'22773864'};
+  final Set<String> _hiddenPostIds = {};
+  final Set<String> _blockedUserIds = {};
   final List<Offset> _doubleTapHearts = [];
 
   // Demonstration and default reels
@@ -163,9 +173,70 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
   }
 
   List<_MomentPostData> _getFilteredPosts(SocialProvider? social, AuthProvider? auth) {
-    final realPosts = (social?.posts ?? []).map((p) => _MomentPostData.fromPostModel(p)).toList();
-    // Prioritize user's own created posts at the top
-    final combined = [...realPosts, ..._demoPosts];
+    // 1. Newly uploaded reels/videos from BackendRepository
+    final backendVideos = BackendRepository.instance.shortVideos.map((v) => _MomentPostData(
+      id: v.id,
+      userId: v.creator.id,
+      userName: v.creator.displayName.isNotEmpty ? v.creator.displayName : (v.creator.name.isNotEmpty ? v.creator.name : 'Creator'),
+      userAvatar: v.creator.avatarUrl.isNotEmpty ? v.creator.avatarUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+      title: v.caption,
+      gender: v.creator.gender.isNotEmpty ? v.creator.gender : 'female',
+      age: v.creator.age > 0 ? v.creator.age : 22,
+      caption: v.caption,
+      musicTitle: v.musicTitle.isNotEmpty ? v.musicTitle : 'Original Sound',
+      mediaUrl: v.videoUrl,
+      isVideo: true,
+      videoUrl: v.videoUrl,
+      dateText: 'Just now',
+      likes: v.likes > 0 ? v.likes : 150,
+      comments: v.comments > 0 ? v.comments : 12,
+      shares: 45,
+      category: 'For You',
+    )).toList();
+
+    // 2. Real posts from SocialProvider - STRICTLY EXCLUDE STATUS / STORIES (Status must only show in Status / Story viewer)
+    final realPosts = (social?.posts ?? [])
+        .where((p) {
+          // Strictly exclude stories and status posts from Moments reels
+          if (p.isStory ||
+              p.visibility == 'STORY' ||
+              p.content.startsWith('[STORY]') ||
+              p.content.contains('#story') ||
+              p.content.toLowerCase().contains('#status')) {
+            return false;
+          }
+          final media = p.imageUrls.isNotEmpty ? p.imageUrls.first : '';
+          final lower = media.toLowerCase();
+          return lower.endsWith('.mp4') ||
+              lower.endsWith('.mov') ||
+              lower.endsWith('.webm') ||
+              lower.contains('video') ||
+              p.content.toLowerCase().contains('#video');
+        })
+        .map((p) => _MomentPostData.fromPostModel(p))
+        .where((m) => m.isVideo && (m.videoUrl?.isNotEmpty ?? false))
+        .toList();
+
+    // Combine user's uploaded videos and video posts at the very top of For You reels
+    final combined = <_MomentPostData>[];
+    for (final v in backendVideos) {
+      if (v.isVideo && (v.videoUrl?.isNotEmpty ?? false) && !combined.any((e) => e.id == v.id)) {
+        combined.add(v);
+      }
+    }
+    for (final p in realPosts) {
+      if (p.isVideo && (p.videoUrl?.isNotEmpty ?? false) && !combined.any((e) => e.id == p.id)) {
+        combined.add(p);
+      }
+    }
+    for (final d in _demoPosts) {
+      if (d.isVideo && (d.videoUrl?.isNotEmpty ?? false) && !combined.any((e) => e.id == d.id)) {
+        combined.add(d);
+      }
+    }
+
+    // Filter out user dismissed "Not Interested" or blocked creators
+    combined.removeWhere((p) => _hiddenPostIds.contains(p.id) || _blockedUserIds.contains(p.userId));
 
     if (_selectedCategoryIndex == 1) {
       // "Following": Reels from accounts followed by user
@@ -217,19 +288,24 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
   Widget build(BuildContext context) {
     final social = Provider.of<SocialProvider?>(context);
     final auth = Provider.of<AuthProvider?>(context);
-    final displayedPosts = _getFilteredPosts(social, auth);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
+    return ListenableBuilder(
+      listenable: BackendRepository.instance,
+      builder: (context, _) {
+        final displayedPosts = _getFilteredPosts(social, auth);
+
+        return Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
           // ── 1. Full-Screen Vertical Scrolling Video PageView ────────────────
           if (displayedPosts.isEmpty)
             _buildEmptyState()
           else
             PageView.builder(
               controller: _pageController,
+              physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.vertical,
               itemCount: displayedPosts.length,
               onPageChanged: (index) {
@@ -282,8 +358,10 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
                   },
                 ),
               )),
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -291,86 +369,129 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
   // Top Categories Transparent Header: For You | Following | Community
   // ===========================================================================
   Widget _buildCategoryTabsHeader() {
+    final topPadding = MediaQuery.of(context).padding.top;
     return Container(
       padding: EdgeInsets.only(
-        top: widget.isEmbeddedInHome ? 6.h : (MediaQuery.of(context).padding.top + 6.h),
+        top: topPadding > 0 ? topPadding + 4.h : 10.h,
         bottom: 12.h,
+        left: 12.w,
+        right: 12.w,
       ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.black.withValues(alpha: 0.7),
-            Colors.black.withValues(alpha: 0.25),
+            Colors.black.withValues(alpha: 0.8),
+            Colors.black.withValues(alpha: 0.35),
             Colors.transparent,
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
       ),
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(_categories.length, (index) {
-          final isSelected = _selectedCategoryIndex == index;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedCategoryIndex = index;
-                _currentPageIndex = 0;
-              });
-              if (_pageController.hasClients) {
-                _pageController.jumpToPage(0);
-              }
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6.w),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _categories[index],
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.75),
-                      fontSize: 13.5.sp,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      letterSpacing: 0.2,
-                      shadows: const [
-                        Shadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 1)),
-                      ],
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Left: Back button to return to Recommend tab if embedded in Home
+          if (widget.isEmbeddedInHome && widget.onBackToRecommend != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: widget.onBackToRecommend,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 34.w,
+                  height: 34.w,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      width: 1.0,
                     ),
                   ),
-                  SizedBox(height: 3.h),
-                  // Pink/magenta underline indicator
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                    width: isSelected ? 18.w : 0,
-                    height: 2.h,
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFFF1493) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(2.r),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFFFF1493).withValues(alpha: 0.8),
-                                blurRadius: 6,
-                                spreadRadius: 0.5,
-                              ),
-                            ]
-                          : null,
+                  child: Center(
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 16.w,
                     ),
                   ),
-                ],
+                ),
               ),
             ),
-          );
-        }),
+
+          // Center: For You | Following | Community
+          Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(_categories.length, (index) {
+                  final isSelected = _selectedCategoryIndex == index;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedCategoryIndex = index;
+                        _currentPageIndex = 0;
+                      });
+                      if (_pageController.hasClients) {
+                        _pageController.jumpToPage(0);
+                      }
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _categories[index],
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.75),
+                              fontSize: 14.sp,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                              letterSpacing: 0.2,
+                              shadows: const [
+                                Shadow(color: Colors.black87, blurRadius: 6, offset: Offset(0, 1)),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 3.h),
+                          // Neon Pink/Purple glowing underline indicator
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            width: isSelected ? 22.w : 0,
+                            height: 2.5.h,
+                            decoration: BoxDecoration(
+                              gradient: isSelected
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFFFF007F), Color(0xFFB000FF)],
+                                    )
+                                  : null,
+                              color: isSelected ? null : Colors.transparent,
+                              borderRadius: BorderRadius.circular(2.r),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFFFF007F).withValues(alpha: 0.85),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -388,39 +509,48 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
       children: [
         // ── Video / Media Background with Tap to Play/Pause & Double-Tap Heart ──
         Positioned.fill(
-          child: GestureDetector(
-            onTap: () {
-              setState(() => _isPlaying = !_isPlaying);
-            },
-            onDoubleTapDown: (details) => _onDoubleTap(details, post.id),
-            onDoubleTap: () {},
-            behavior: HitTestBehavior.opaque,
-            child: post.mediaUrl.startsWith('http')
-                ? Image.network(
-                    post.mediaUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (_, _, _) => Container(
-                      color: const Color(0xFF0F1117),
-                      child: const Center(
-                        child: Icon(Icons.videocam_outlined, color: Colors.white24, size: 64),
-                      ),
-                    ),
-                  )
-                : Image.file(
-                    File(post.mediaUrl),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (_, _, _) => Container(
-                      color: const Color(0xFF0F1117),
-                      child: const Center(
-                        child: Icon(Icons.videocam_outlined, color: Colors.white24, size: 64),
-                      ),
-                    ),
-                  ),
-          ),
+          child: post.isVideo
+              ? _ReelVideoPlayerView(
+                  mediaUrl: post.videoUrl?.isNotEmpty == true ? post.videoUrl! : post.mediaUrl,
+                  isPlaying: _isPlaying && isCurrent,
+                  onTap: () {
+                    setState(() => _isPlaying = !_isPlaying);
+                  },
+                  onDoubleTapDown: (details) => _onDoubleTap(details, post.id),
+                )
+              : GestureDetector(
+                  onTap: () {
+                    setState(() => _isPlaying = !_isPlaying);
+                  },
+                  onDoubleTapDown: (details) => _onDoubleTap(details, post.id),
+                  onDoubleTap: () {},
+                  behavior: HitTestBehavior.opaque,
+                  child: post.mediaUrl.startsWith('http')
+                      ? Image.network(
+                          post.mediaUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (_, _, _) => Container(
+                            color: const Color(0xFF0F1117),
+                            child: const Center(
+                              child: Icon(Icons.image_not_supported_rounded, color: Colors.white24, size: 64),
+                            ),
+                          ),
+                        )
+                      : Image.file(
+                          File(post.mediaUrl),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (_, _, _) => Container(
+                            color: const Color(0xFF0F1117),
+                            child: const Center(
+                              child: Icon(Icons.image_not_supported_rounded, color: Colors.white24, size: 64),
+                            ),
+                          ),
+                        ),
+                ),
         ),
 
           // ── Bottom Dark Gradient for Caption and Controls Contrast ────────
@@ -461,7 +591,7 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
               ),
             ),
 
-          // ── Right-Side Action Panel ────────────────────────────────────────
+          // ── Right-Side Action Panel (TikTok / iOS Style) ─────────────────────
           Positioned(
             right: 12.w,
             bottom: 96.h,
@@ -470,12 +600,12 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
               children: [
                 // 1. Creator Avatar + Pink (+) Follow Badge
                 _buildCreatorAvatar(post, isFollowing),
-                SizedBox(height: 18.h),
+                SizedBox(height: 16.h),
 
-                // 2. Like Button + Count
-                _buildActionButton(
-                  icon: isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  color: isLiked ? const Color(0xFFFF1493) : Colors.white,
+                // 2. TikTok / iOS Like Button + Count (Crisp White / Vibrant #FE2C55 Heart)
+                _buildTikTokActionButton(
+                  icon: isLiked ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
+                  color: isLiked ? const Color(0xFFFE2C55) : Colors.white,
                   label: _formatCount(displayLikes),
                   onTap: () {
                     setState(() {
@@ -487,10 +617,10 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
                     });
                   },
                 ),
-                SizedBox(height: 16.h),
+                SizedBox(height: 14.h),
 
-                // 3. Comments Button + Count
-                _buildActionButton(
+                // 3. Comments Action Button (Clean crisp chat bubble icon matching comment sheet)
+                _buildTikTokActionButton(
                   icon: Icons.chat_bubble_outline_rounded,
                   color: Colors.white,
                   label: _formatCount(post.comments),
@@ -503,11 +633,12 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
                     );
                   },
                 ),
-                SizedBox(height: 16.h),
+                SizedBox(height: 14.h),
 
-                // 4. Share Button + Count (Paper Plane icon matching screenshot)
-                _buildActionButton(
-                  icon: Icons.send_rounded,
+                // 4. TikTok / iOS Curved Share Arrow Button + Count
+                _buildTikTokActionButton(
+                  icon: Icons.reply_rounded,
+                  flipX: true,
                   color: Colors.white,
                   label: _formatCount(post.shares),
                   onTap: () {
@@ -517,9 +648,18 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
                     );
                   },
                 ),
-                SizedBox(height: 18.h),
+                SizedBox(height: 14.h),
 
-                // 5. Spinning Music Disc
+                // 5. TikTok / iOS More Options (...) Button
+                _buildTikTokActionButton(
+                  icon: Icons.more_horiz_rounded,
+                  color: Colors.white,
+                  label: 'More',
+                  onTap: () => _showTikTokMoreBottomSheet(post),
+                ),
+                SizedBox(height: 16.h),
+
+                // 6. Spinning Music Disc
                 _buildMusicDisc(post),
               ],
             ),
@@ -684,12 +824,14 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
     );
   }
 
-  // ── Action Panel Button with Count ───────────────────────────────────────────
-  Widget _buildActionButton({
-    required IconData icon,
+  // ── TikTok / iOS Style Action Panel Button with Count ───────────────────────
+  Widget _buildTikTokActionButton({
+    IconData? icon,
+    Widget? customIcon,
     required Color color,
     required String label,
     required VoidCallback onTap,
+    bool flipX = false,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -697,28 +839,294 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 30.w,
-            color: color,
-            shadows: const [
-              Shadow(color: Colors.black87, blurRadius: 6, offset: Offset(0, 2)),
+          if (customIcon != null)
+            customIcon
+          else if (icon != null)
+            Transform.flip(
+              flipX: flipX,
+              child: Icon(
+                icon,
+                size: 32.w,
+                color: color,
+                shadows: const [
+                  Shadow(color: Colors.black87, blurRadius: 8, offset: Offset(0, 2)),
+                ],
+              ),
+            ),
+          if (label.isNotEmpty) ...[
+            SizedBox(height: 3.h),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11.5.sp,
+                fontWeight: FontWeight.w600,
+                shadows: const [
+                  Shadow(color: Colors.black87, blurRadius: 5, offset: Offset(0, 1)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── TikTok / iOS Style More (...) Options Bottom Sheet ───────────────────────
+  void _showTikTokMoreBottomSheet(_MomentPostData post) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF161823),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.65),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
             ],
           ),
-          SizedBox(height: 3.h),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 11.5.sp,
-              fontWeight: FontWeight.w600,
-              shadows: const [
-                Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(0, 1)),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top drag pill
+                Container(
+                  width: 38.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white30,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+                SizedBox(height: 14.h),
+
+                // Reel Info Header
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 17.r,
+                      backgroundImage: NetworkImage(post.userAvatar),
+                      backgroundColor: const Color(0xFF222638),
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '@${post.userName}',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.5.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            post.caption,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11.sp,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+                SizedBox(height: 6.h),
+
+                // 1. Not Interested
+                _buildTikTokOptionTile(
+                  icon: Icons.heart_broken_rounded,
+                  title: 'Not Interested',
+                  subtitle: "We'll show fewer videos like this",
+                  color: Colors.white,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _hiddenPostIds.add(post.id);
+                    });
+                    if (_pageController.hasClients) {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("We'll show fewer videos like this"),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Color(0xFF222638),
+                      ),
+                    );
+                  },
+                ),
+
+                // 2. Save Video / Bookmark
+                _buildTikTokOptionTile(
+                  icon: Icons.bookmark_border_rounded,
+                  title: 'Save to Bookmarks',
+                  subtitle: 'Save this reel to your favorites',
+                  color: Colors.white,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Video saved to bookmarks 📌'),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Color(0xFFFF1493),
+                      ),
+                    );
+                  },
+                ),
+
+                // 3. Copy Link
+                _buildTikTokOptionTile(
+                  icon: Icons.link_rounded,
+                  title: 'Copy Link',
+                  subtitle: 'Share video link with friends',
+                  color: Colors.white,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Clipboard.setData(ClipboardData(text: 'https://zeparty.app/reel/${post.id}'));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Link copied to clipboard 📋'),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Color(0xFF00C853),
+                      ),
+                    );
+                  },
+                ),
+
+                // 4. Report
+                _buildTikTokOptionTile(
+                  icon: Icons.flag_outlined,
+                  title: 'Report',
+                  subtitle: 'Report inappropriate or harmful content',
+                  color: const Color(0xFFFFB300),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Thank you! Video has been flagged for review.'),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Color(0xFFE65100),
+                      ),
+                    );
+                  },
+                ),
+
+                // 5. Block User
+                _buildTikTokOptionTile(
+                  icon: Icons.block_rounded,
+                  title: 'Block @${post.userName}',
+                  subtitle: "You won't see posts or reels from this user",
+                  color: const Color(0xFFFF4D4F),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _blockedUserIds.add(post.userId);
+                    });
+                    if (_pageController.hasClients) {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('@${post.userName} blocked'),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: const Color(0xFFD32F2F),
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(height: 8.h),
+
+                // Cancel Button
+                GestureDetector(
+                  onTap: () => Navigator.pop(ctx),
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13.5.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTikTokOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+      leading: Container(
+        width: 38.w,
+        height: 38.w,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: color, size: 20.sp),
       ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: color == const Color(0xFFFF4D4F) ? color : Colors.white,
+          fontSize: 13.5.sp,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: Colors.white54,
+          fontSize: 11.sp,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 
@@ -875,9 +1283,9 @@ class _MomentPostData {
       gender: post.author.gender.isNotEmpty ? post.author.gender : 'other',
       age: post.author.age > 0 ? post.author.age : 21,
       caption: post.content,
-      musicTitle: 'Original Audio • ${post.author.displayName}',
+      musicTitle: 'Original Audio • ${post.author.displayName.isNotEmpty ? post.author.displayName : post.author.name}',
       mediaUrl: post.imageUrls.isNotEmpty ? post.imageUrls.first : '',
-      isVideo: post.imageUrls.any((u) => u.endsWith('.mp4') || u.endsWith('.mov') || u.contains('/video')),
+      isVideo: post.imageUrls.any((u) => u.toLowerCase().endsWith('.mp4') || u.toLowerCase().endsWith('.mov') || u.toLowerCase().endsWith('.webm') || u.contains('video')) || post.content.toLowerCase().contains('#video'),
       videoUrl: post.imageUrls.isNotEmpty ? post.imageUrls.first : null,
       dateText: '${post.createdAt.month}/${post.createdAt.day}',
       likes: post.likes,
@@ -886,4 +1294,222 @@ class _MomentPostData {
       category: 'For You',
     );
   }
+}
+
+class _ReelVideoPlayerView extends StatefulWidget {
+  final String mediaUrl;
+  final bool isPlaying;
+  final VoidCallback onTap;
+  final Function(TapDownDetails) onDoubleTapDown;
+
+  const _ReelVideoPlayerView({
+    required this.mediaUrl,
+    required this.isPlaying,
+    required this.onTap,
+    required this.onDoubleTapDown,
+  });
+
+  @override
+  State<_ReelVideoPlayerView> createState() => _ReelVideoPlayerViewState();
+}
+
+class _ReelVideoPlayerViewState extends State<_ReelVideoPlayerView> {
+  VideoPlayerController? _controller;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVideo();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ReelVideoPlayerView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mediaUrl != widget.mediaUrl) {
+      _controller?.dispose();
+      _controller = null;
+      _initialized = false;
+      _initVideo();
+    } else if (_initialized && _controller != null) {
+      if (widget.isPlaying && !_controller!.value.isPlaying) {
+        _controller!.play();
+      } else if (!widget.isPlaying && _controller!.value.isPlaying) {
+        _controller!.pause();
+      }
+    }
+  }
+
+  void _initVideo() async {
+    try {
+      if (widget.mediaUrl.startsWith('http')) {
+        _controller = VideoPlayerController.networkUrl(Uri.parse(widget.mediaUrl));
+      } else {
+        _controller = VideoPlayerController.file(File(widget.mediaUrl));
+      }
+      await _controller!.initialize();
+      _controller!.setLooping(true);
+      if (widget.isPlaying) {
+        await _controller!.play();
+      }
+      if (mounted) {
+        setState(() {
+          _initialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('[ReelVideoPlayer] Init error: $e');
+      if (mounted) setState(() => _initialized = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onDoubleTapDown: widget.onDoubleTapDown,
+      onDoubleTap: () {},
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_initialized && _controller != null)
+            FittedBox(
+              fit: BoxFit.cover,
+              clipBehavior: Clip.hardEdge,
+              child: SizedBox(
+                width: _controller!.value.size.width > 0 ? _controller!.value.size.width : 400,
+                height: _controller!.value.size.height > 0 ? _controller!.value.size.height : 600,
+                child: VideoPlayer(_controller!),
+              ),
+            )
+          else
+            Container(
+              color: const Color(0xFF0F1117),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFFFF1493),
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Image 2 Exact Comment Icon: White Outline Speech Bubble with 3 Dots Inside
+// =============================================================================
+class _Image2CommentIcon extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _Image2CommentIcon({
+    this.size = 32,
+    this.color = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CustomPaint(
+            size: Size(size, size),
+            painter: _Image2CommentIconPainter(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Image2CommentIconPainter extends CustomPainter {
+  final Color color;
+
+  _Image2CommentIconPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeWidth = size.width * 0.088;
+    final strokePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final dotPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    // Draw shadow behind outline for video contrast
+    final shadowPaint = Paint()
+      ..color = Colors.black87
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth + 1.5
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+
+    final w = size.width;
+    final h = size.height;
+    final cx = w * 0.5;
+    final cy = h * 0.46;
+    final r = w * 0.40;
+
+    final path = Path();
+    // Arc for circular body with corner tail at bottom-left
+    path.addArc(
+      Rect.fromCircle(center: Offset(cx, cy), radius: r),
+      0.65 * 3.14159,
+      1.58 * 3.14159,
+    );
+    // Tail pointing down-left
+    path.quadraticBezierTo(
+      w * 0.16,
+      h * 0.82,
+      w * 0.12,
+      h * 0.90,
+    );
+    path.quadraticBezierTo(
+      w * 0.28,
+      h * 0.86,
+      cx + (r * -0.32),
+      cy + (r * 0.94),
+    );
+
+    // Draw shadow first, then white stroke
+    canvas.drawPath(path, shadowPaint);
+    canvas.drawPath(path, strokePaint);
+
+    // 3 Solid Dots inside horizontally
+    final dotRadius = size.width * 0.052;
+    final dotY = cy + (size.height * 0.01);
+    final spacing = size.width * 0.155;
+
+    // Shadow behind dots
+    final dotShadowPaint = Paint()
+      ..color = Colors.black87
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+
+    for (final x in [cx - spacing, cx, cx + spacing]) {
+      canvas.drawCircle(Offset(x, dotY + 1), dotRadius, dotShadowPaint);
+      canvas.drawCircle(Offset(x, dotY), dotRadius, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _Image2CommentIconPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

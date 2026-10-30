@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -15,12 +16,14 @@ import '../features/recharge/recharge_screen.dart';
 class GiftDialog extends StatefulWidget {
   final String streamerName;
   final UserModel? targetReceiver;
+  final String? roomId;
   final ValueChanged<GiftModel>? onGiftSent;
 
   const GiftDialog({
     super.key,
     this.streamerName = 'Streamer',
     this.targetReceiver,
+    this.roomId,
     this.onGiftSent,
   });
 
@@ -32,7 +35,7 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
   late TabController _tabController;
 
   bool recipientIsAllSelected = false;
-  String selectedCategory = 'Lucky Gift';
+  String selectedCategory = 'All';
   CatalogTypeFilter selectedCatalogFilter = CatalogTypeFilter.all;
 
   GiftModel? selectedGift;
@@ -99,6 +102,7 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = AppColors.getPrimary(isDark);
     final wallet = context.watch<WalletProvider>();
+    final liveProv = context.watch<LiveProvider>();
     final partyProv = context.watch<LivePartyProvider>();
     final liveGiftProv = context.watch<LiveGiftProvider>();
 
@@ -119,6 +123,12 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
       }
     }
 
+    // Include active host from liveProv or partyProv if available
+    final activeHost = liveProv.activeRoom?.host ?? partyProv.activeRoom?.host;
+    if (activeHost != null && activeHost.id.isNotEmpty && !recipientsMap.containsKey(activeHost.id)) {
+      recipientsMap[activeHost.id] = activeHost;
+    }
+
     // Include explicitly passed targetReceiver if provided and not yet in map
     if (widget.targetReceiver != null) {
       final tr = widget.targetReceiver!;
@@ -130,18 +140,25 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
 
     // Fallback if room participants list is empty
     if (recipientsMap.isEmpty) {
-      final isStreamerMe = widget.streamerName.trim().toLowerCase() == currentUser.name.trim().toLowerCase() ||
-          widget.streamerName.trim().toLowerCase() == currentUser.displayName.trim().toLowerCase() ||
-          widget.streamerName.trim().toLowerCase() == currentUser.username.trim().toLowerCase();
-      if (!isStreamerMe && widget.streamerName.trim().isNotEmpty) {
-        recipientsMap['streamer'] = UserModel(
-          id: 'user_target',
-          username: widget.streamerName,
-          name: widget.streamerName,
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        );
+      if (activeHost != null && activeHost.id.isNotEmpty) {
+        recipientsMap[activeHost.id] = activeHost;
       } else {
-        recipientsMap[currentUser.id] = currentUser;
+        final isStreamerMe = widget.streamerName.trim().toLowerCase() == currentUser.name.trim().toLowerCase() ||
+            widget.streamerName.trim().toLowerCase() == currentUser.displayName.trim().toLowerCase() ||
+            widget.streamerName.trim().toLowerCase() == currentUser.username.trim().toLowerCase();
+        if (!isStreamerMe && widget.streamerName.trim().isNotEmpty) {
+          final resolvedHostId = liveProv.activeRoom?.creatorUserId ??
+              partyProv.activeRoom?.creatorUserId ??
+              'host_${widget.streamerName.toLowerCase().replaceAll(' ', '_')}';
+          recipientsMap['streamer'] = UserModel(
+            id: resolvedHostId,
+            username: widget.streamerName,
+            name: widget.streamerName,
+            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          );
+        } else {
+          recipientsMap[currentUser.id] = currentUser;
+        }
       }
     }
 
@@ -154,12 +171,14 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
       (currentUser.name.isEmpty || u.name.toLowerCase() != currentUser.name.toLowerCase())
     ).toList();
 
-    // Safe initial recipient selection: Auto-select non-self user if none selected
+    // Safe initial recipient selection: Auto-select non-self user or first available recipient
     if (_selectedUserIds.isEmpty && !recipientIsAllSelected) {
-      if (widget.targetReceiver != null && widget.targetReceiver!.id != currentUser.id) {
+      if (widget.targetReceiver != null && widget.targetReceiver!.id.isNotEmpty) {
         _selectedUserIds.add(widget.targetReceiver!.id);
       } else if (otherRecipients.isNotEmpty) {
         _selectedUserIds.add(otherRecipients.first.id);
+      } else if (availableRecipients.isNotEmpty) {
+        _selectedUserIds.add(availableRecipients.first.id);
       }
     }
 
@@ -513,20 +532,24 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
                             final messenger = ScaffoldMessenger.of(context);
                             final nav = Navigator.of(context);
 
-                            // 1. Recipient selection check
-                            if (effectiveRecipients.isEmpty) {
-                              messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text('⚠️ Please select a recipient first.'),
-                                  backgroundColor: Colors.orange,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                              return;
+                            // 1. Ensure valid recipients (auto-fallback to host / available recipient)
+                            List<UserModel> validRecipients = effectiveRecipients;
+                            if (validRecipients.isEmpty) {
+                              if (otherRecipients.isNotEmpty) {
+                                validRecipients = [otherRecipients.first];
+                              } else if (availableRecipients.isNotEmpty) {
+                                validRecipients = [availableRecipients.first];
+                              } else {
+                                validRecipients = [
+                                  UserModel(
+                                    id: 'host_${widget.streamerName.toLowerCase().replaceAll(' ', '_')}',
+                                    username: widget.streamerName.isNotEmpty ? widget.streamerName : 'Host',
+                                    name: widget.streamerName.isNotEmpty ? widget.streamerName : 'Host',
+                                    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+                                  )
+                                ];
+                              }
                             }
-
-                            // 2. Allow all effective recipients (including self-gifting)
-                            final validRecipients = effectiveRecipients;
 
                             // 3. Balance verification for valid recipients
                             final effectiveTotalPrice = _calculateTotalPrice(currentGiftPrice, validRecipients.length);
@@ -570,7 +593,9 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
                             }
 
                             int totalSuccess = 0;
-                            final roomId = liveProv.activeRoom?.id ?? partyLiveProv.activeRoom?.id ?? '';
+                            final roomId = (widget.roomId != null && widget.roomId!.isNotEmpty)
+                                ? widget.roomId!
+                                : (liveGiftProv.activeRoomId ?? liveProv.activeRoom?.id ?? partyLiveProv.activeRoom?.id ?? '');
 
                             for (final targetUser in validRecipients) {
                               final success = await liveGiftProv.sendGift(
@@ -601,13 +626,40 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
 
                             if (totalSuccess > 0) {
                               widget.onGiftSent?.call(selectedGift!);
+
+                              // 🍀 Lucky Gift Multiplier Jackpot Evaluation & Reward
+                              int luckyMultiplier = 1;
+                              int coinsWon = 0;
+                              final isLucky = selectedGift!.isLuckyGift || selectedGift!.id.startsWith('lucky_');
+                              if (isLucky) {
+                                final rand = math.Random().nextDouble();
+                                if (rand < 0.02) {
+                                  luckyMultiplier = 500;
+                                } else if (rand < 0.08) {
+                                  luckyMultiplier = 100;
+                                } else if (rand < 0.20) {
+                                  luckyMultiplier = 10;
+                                } else if (rand < 0.45) {
+                                  luckyMultiplier = 5;
+                                } else {
+                                  luckyMultiplier = 2;
+                                }
+                                coinsWon = currentGiftPrice * quantity * luckyMultiplier;
+                                wallet.spendCoins(-coinsWon);
+                              }
+
                               if (mounted) {
                                 nav.pop();
                                 messenger.showSnackBar(
                                   SnackBar(
-                                    content: Text('🎁 Sent $quantity × ${selectedGift!.name} to $totalSuccess recipient(s)!'),
-                                    backgroundColor: Colors.green[800],
+                                    content: Text(
+                                      isLucky
+                                          ? '🎁 Sent $quantity × ${selectedGift!.name}!\n🎰 LUCKY WIN: Won $luckyMultiplier× ($coinsWon 🪙 returned to wallet)!'
+                                          : '🎁 Sent $quantity × ${selectedGift!.name} to $totalSuccess recipient(s)!',
+                                    ),
+                                    backgroundColor: isLucky ? Colors.amber.shade900 : Colors.green[800],
                                     behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(seconds: 4),
                                   ),
                                 );
                               }

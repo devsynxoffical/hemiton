@@ -98,7 +98,7 @@ class _BasicGiftAnimatorState extends State<BasicGiftAnimator>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       widget.event.giftIcon.startsWith('assets/')
-                          ? Image.asset(widget.event.giftIcon, width: 36, height: 36, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Text('🎁', style: TextStyle(fontSize: 36)))
+                          ? Image.asset(widget.event.giftIcon, width: 36, height: 36, fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) => const Text('🎁', style: TextStyle(fontSize: 36)))
                           : Text(widget.event.giftIcon, style: const TextStyle(fontSize: 36)),
                       const SizedBox(width: 10),
                       Column(

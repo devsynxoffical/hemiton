@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/live_room_model.dart';
 import '../features/live/live_room_screen.dart';
+import '../features/live/live_broadcast_screen.dart';
 import '../features/party_room/live_party_room_screen.dart';
+import '../core/repositories/room_repository.dart';
 import 'live_provider.dart';
 import 'live_party_provider.dart';
 
@@ -10,19 +12,30 @@ class RoomOverlayProvider extends ChangeNotifier {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   bool _isMinimized = false;
-  String? _roomType; // 'LIVE' or 'PARTY'
+  String? _roomType; // 'LIVE', 'BROADCAST', or 'PARTY'
   LiveRoomModel? _activeRoom;
+  bool _isHost = false;
+  bool _isAudioMode = true;
   Offset _position = const Offset(16, 120);
 
   bool get isMinimized => _isMinimized;
   String? get roomType => _roomType;
   LiveRoomModel? get activeRoom => _activeRoom;
+  bool get isHost => _isHost;
+  bool get isAudioMode => _isAudioMode;
   Offset get position => _position;
 
-  void minimizeRoom({required String roomType, required LiveRoomModel room}) {
+  void minimizeRoom({
+    required String roomType,
+    required LiveRoomModel room,
+    bool isHost = false,
+    bool isAudioMode = true,
+  }) {
     _isMinimized = true;
     _roomType = roomType;
     _activeRoom = room;
+    _isHost = isHost;
+    _isAudioMode = isAudioMode;
     notifyListeners();
   }
 
@@ -31,6 +44,8 @@ class RoomOverlayProvider extends ChangeNotifier {
 
     final targetRoom = _activeRoom!;
     final targetType = _roomType!;
+    final host = _isHost;
+    final audioMode = _isAudioMode;
 
     _isMinimized = false;
     notifyListeners();
@@ -38,10 +53,23 @@ class RoomOverlayProvider extends ChangeNotifier {
     final navState = navigatorKey.currentState ?? (context != null ? Navigator.maybeOf(context) : null);
 
     if (navState != null) {
-      if (targetType == 'LIVE') {
+      if (targetType == 'BROADCAST') {
         navState.push(
           MaterialPageRoute(
-            builder: (_) => LiveRoomScreen(room: targetRoom),
+            builder: (_) => LiveBroadcastScreen(
+              room: targetRoom,
+              isHost: host,
+              isAudioMode: audioMode,
+            ),
+          ),
+        );
+      } else if (targetType == 'LIVE') {
+        navState.push(
+          MaterialPageRoute(
+            builder: (_) => LiveRoomScreen(
+              room: targetRoom,
+              isHost: host,
+            ),
           ),
         );
       } else {
@@ -58,15 +86,36 @@ class RoomOverlayProvider extends ChangeNotifier {
 
   Future<void> closeRoom(BuildContext context) async {
     final type = _roomType;
+    final host = _isHost;
+    final activeId = _activeRoom?.id;
+    final liveProvider = Provider.of<LiveProvider>(context, listen: false);
+    final partyProvider = Provider.of<LivePartyProvider>(context, listen: false);
+
     _isMinimized = false;
     _activeRoom = null;
     _roomType = null;
+    _isHost = false;
     notifyListeners();
 
-    if (type == 'LIVE') {
-      await Provider.of<LiveProvider>(context, listen: false).leaveRoom();
+    if (type == 'BROADCAST') {
+      if (host && activeId != null) {
+        try {
+          await RoomRepository.instance.closeRoom(activeId);
+        } catch (_) {}
+      }
+    } else if (type == 'LIVE') {
+      if (host && activeId != null) {
+        try {
+          await RoomRepository.instance.closeRoom(activeId);
+        } catch (_) {}
+      }
+      try {
+        await liveProvider.leaveRoom();
+      } catch (_) {}
     } else if (type == 'PARTY') {
-      await Provider.of<LivePartyProvider>(context, listen: false).unjoinCurrentRoom();
+      try {
+        await partyProvider.unjoinCurrentRoom();
+      } catch (_) {}
     }
   }
 

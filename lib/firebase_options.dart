@@ -35,40 +35,50 @@ class DefaultFirebaseOptions {
   }
 
   // Placeholder options: Run `flutterfire configure` to connect your new Firebase project
+
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_YOUR_FIREBASE_API_KEY',
-    appId: 'REPLACE_WITH_YOUR_FIREBASE_APP_ID',
-    messagingSenderId: '000000000000',
-    projectId: 'new-hemiton-project',
+    apiKey: 'AIzaSyB05WfZV7Ok55p27jq4OF7bBEIFXjmHftc',
+    appId: '1:747197896976:web:f5495d38f2970e0b4c6d95',
+    messagingSenderId: '747197896976',
+    projectId: 'hemi-ton',
+    authDomain: 'hemi-ton.firebaseapp.com',
+    storageBucket: 'hemi-ton.firebasestorage.app',
+    measurementId: 'G-TBVP0XGS68',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_YOUR_FIREBASE_API_KEY',
-    appId: 'REPLACE_WITH_YOUR_FIREBASE_APP_ID',
-    messagingSenderId: '000000000000',
-    projectId: 'new-hemiton-project',
+    apiKey: 'AIzaSyBw2Y_EtAQxpbuxwquLI18YA9DQdkpJ6yw',
+    appId: '1:747197896976:android:fd57ff43729d34c34c6d95',
+    messagingSenderId: '747197896976',
+    projectId: 'hemi-ton',
+    storageBucket: 'hemi-ton.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_YOUR_FIREBASE_API_KEY',
-    appId: 'REPLACE_WITH_YOUR_FIREBASE_APP_ID',
-    messagingSenderId: '000000000000',
-    projectId: 'new-hemiton-project',
+    apiKey: 'AIzaSyCA8ndLn8mnETXP0m9uPZwdlxpkSrtVv7k',
+    appId: '1:747197896976:ios:9d5bef1f4f8af1bb4c6d95',
+    messagingSenderId: '747197896976',
+    projectId: 'hemi-ton',
+    storageBucket: 'hemi-ton.firebasestorage.app',
+    iosClientId: '747197896976-tp5o9qg2s0dmcbkmvnlcgge8gr1mtrk6.apps.googleusercontent.com',
     iosBundleId: 'com.hemiton.app',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_YOUR_FIREBASE_API_KEY',
-    appId: 'REPLACE_WITH_YOUR_FIREBASE_APP_ID',
-    messagingSenderId: '000000000000',
-    projectId: 'new-hemiton-project',
-    iosBundleId: 'com.hemiton.app',
+    apiKey: 'AIzaSyCA8ndLn8mnETXP0m9uPZwdlxpkSrtVv7k',
+    appId: '1:747197896976:ios:eb670c5ca505ca134c6d95',
+    messagingSenderId: '747197896976',
+    projectId: 'hemi-ton',
+    storageBucket: 'hemi-ton.firebasestorage.app',
+    iosClientId: '747197896976-fkmq7t6urkb3o6vdsc5i9oi4c0ttkb48.apps.googleusercontent.com',
+    iosBundleId: 'com.example.liveStreamApp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_YOUR_FIREBASE_API_KEY',
-    appId: 'REPLACE_WITH_YOUR_FIREBASE_APP_ID',
-    messagingSenderId: '000000000000',
-    projectId: 'new-hemiton-project',
+    apiKey: 'AIzaSyB05WfZV7Ok55p27jq4OF7bBEIFXjmHftc',
+    appId: '1:747197896976:web:4653b410fcad79094c6d95',
+    messagingSenderId: '747197896976',
+    projectId: 'hemi-ton',
+    authDomain: 'hemi-ton.firebaseapp.com',
+    storageBucket: 'hemi-ton.firebasestorage.app',
+    measurementId: 'G-3Z0W0R1DR2',
   );
 }

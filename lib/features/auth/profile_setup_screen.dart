@@ -9,7 +9,6 @@ import '../../widgets/design/gold_button.dart';
 import '../../providers/auth_provider.dart';
 import 'under_age_screen.dart';
 import '../main_layout.dart';
-import '../settings/edit_profile_screen.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -144,11 +143,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           MaterialPageRoute(builder: (_) => const UnderAgeScreen()),
         );
       } else {
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const MainLayout()),
-        );
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+          (route) => false,
         );
       }
     }

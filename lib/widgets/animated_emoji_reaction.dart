@@ -112,7 +112,7 @@ class _AnimatedEmojiReactionState extends State<AnimatedEmojiReaction> with Sing
                             width: widget.emojiSize * 1.6,
                             height: widget.emojiSize * 1.6,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Text(
+                            errorBuilder: (context, error, stackTrace) => Text(
                               '✨',
                               style: TextStyle(
                                 fontSize: widget.emojiSize,

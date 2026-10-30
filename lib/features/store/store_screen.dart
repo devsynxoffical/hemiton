@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../models/store_item_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/backpack_provider.dart';
@@ -11,15 +13,14 @@ import '../profile/modules/outfit_screen.dart';
 import '../wallet/gold_coins_screen.dart';
 
 /// Luxury Store Screen inspired by Image 1:
-/// - Dark luxury golden wave header with user coins balance chip
-/// - Important store disclaimer banner
-/// - Filter category tabs (All, Cars / Rides, Frame, Special card, Bubble, Background)
-/// - 2-Column Luxury Cards with:
-///   * SVIP Level pill badge (e.g. SVIP 4, SVIP 3)
-///   * Quick Preview / Fullscreen action button
-///   * Illuminated circular vignette showcasing 3D rides and gifts
-///   * Title, Coin price (🪙 4,000,000), and validity duration (30d / 21d)
-/// - Interactive Preview Sheet with Test Drive animation and instant buy
+/// - Split layout: Left vertical category sidebar + Right 2-column item grid
+/// - Top Header: Back button, [Store | Custom] centered tabs with active indicator, Shopping bag icon
+/// - 12 Categories: Entry, Frame, Special ID, Chat Bubble, Theme, Entry Strip,
+///   Profile Card, Room Frame, CP Theme, CP Profile, CP Token, CP Entry
+/// - Clean transparent/isolated item graphics with top-right play preview button
+/// - Coin price chip: e.g. 🪙 2,000 /7Day
+/// - Vibrant purple capsule [Buy] button with instant functional purchase & equipping
+/// - Interactive full preview modal (Test Drive, validity duration, instant buy/equip)
 class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
 
@@ -28,31 +29,32 @@ class StoreScreen extends StatefulWidget {
 }
 
 class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final List<String> _displayCategories = [
-    'All',
-    'Cars',
+  int _selectedHeaderTab = 0; // 0 = Store, 1 = Custom
+  int _selectedCategoryIndex = 0;
+
+  final List<String> _categories = [
+    'Entry',
     'Frame',
-    'Special card',
-    'Bubble',
-    'Background',
+    'Special ID',
+    'Chat Bubble',
+    'Theme',
+    'Entry Strip',
+    'Profile Card',
+    'Room Frame',
+    'CP Theme',
+    'CP Profile',
+    'CP Token',
+    'CP Entry',
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _displayCategories.length, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StoreProvider>().fetchStoreItems();
       final auth = context.read<AuthProvider>();
       context.read<BackpackProvider>().fetchBackpack(currentUser: auth.currentUser);
     });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   void _handleBuy(StoreItemModel item) async {
@@ -98,18 +100,20 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
             label: 'MY OUTFIT',
             textColor: const Color(0xFFFF1493),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const OutfitScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OutfitScreen()),
+              );
             },
           ),
         ),
       );
+      setState(() {});
     } else if (mounted) {
-      final error = context.read<StoreProvider>().errorMessage;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Failed to purchase item'),
+        const SnackBar(
+          content: Text('Purchase could not be completed. Please try again.'),
           backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -119,23 +123,17 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
     showDialog(
       context: context,
       builder: (c) => AlertDialog(
-        backgroundColor: const Color(0xFF181926),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-          side: BorderSide(color: const Color(0xFFFF1493).withValues(alpha: 0.4)),
-        ),
+        backgroundColor: const Color(0xFF161824),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Row(
           children: [
-            const Icon(Icons.monetization_on_rounded, color: Color(0xFFFF1493)),
+            const Icon(Icons.monetization_on_rounded, color: Color(0xFFFFD700), size: 24),
             SizedBox(width: 8.w),
-            const Text(
-              'Insufficient Coins',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
+            const Text('Insufficient Coins', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
-          'You need 🪙 $price coins to purchase this luxury item. Please recharge your wallet.',
+          'You need ${_formatPrice(price)} Gold Coins for this exclusive item. Would you like to recharge now?',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -162,7 +160,8 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
 
   void _showItemPreviewModal(StoreItemModel item) {
     final backpack = context.read<BackpackProvider>();
-    final isOwned = backpack.isItemOwned(item);
+    final isOwned = backpack.userAssets.any((a) => a.assetId == item.id && !a.isExpired);
+    final isEquipped = backpack.userAssets.any((a) => a.assetId == item.id && a.isEquipped && !a.isExpired);
 
     showModalBottomSheet(
       context: context,
@@ -171,12 +170,12 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
       builder: (ctx) {
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF12131F),
+            color: const Color(0xFF140E24),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-            border: Border.all(color: const Color(0xFFFF1493).withValues(alpha: 0.35), width: 1.2),
+            border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.45), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFF1493).withValues(alpha: 0.2),
+                color: const Color(0xFF9C27B0).withValues(alpha: 0.25),
                 blurRadius: 30,
                 spreadRadius: 2,
               ),
@@ -197,52 +196,26 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
               ),
               SizedBox(height: 16.h),
 
-              // SVIP Requirement Badge if any
-              if (item.minVipLevelRequired > 0)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: item.minVipLevelRequired >= 4
-                          ? [const Color(0xFFFF007F), const Color(0xFF7928CA)]
-                          : [const Color(0xFF0070F3), const Color(0xFF00DFD8)],
-                    ),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Text(
-                    'SVIP ${item.minVipLevelRequired} Exclusive',
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-
-              SizedBox(height: 14.h),
-
-              // Item Big 3D Preview Frame
+              // Item Big 3D Preview Frame with background vignette
               Container(
-                width: 150.w,
-                height: 150.w,
+                width: 140.w,
+                height: 140.w,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFFFF1493).withValues(alpha: 0.25),
-                      const Color(0xFF1C1D29),
+                      const Color(0xFFE040FB).withValues(alpha: 0.3),
+                      const Color(0xFF1C1335),
                       Colors.transparent,
                     ],
                   ),
                   border: Border.all(
-                    color: const Color(0xFFFF1493).withValues(alpha: 0.45),
+                    color: const Color(0xFFE040FB).withValues(alpha: 0.5),
                     width: 1.5,
                   ),
                 ),
-                child: ClipOval(
-                  child: Center(
-                    child: _buildItemImage(item, size: 110.w),
-                  ),
+                child: Center(
+                  child: _buildItemImage(item, size: 100.w),
                 ),
               ),
 
@@ -251,74 +224,83 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
               // Item Name
               Text(
                 item.name,
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 18.sp,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 0.3,
                 ),
                 textAlign: TextAlign.center,
               ),
+              SizedBox(height: 4.h),
 
-              SizedBox(height: 6.h),
-
-              // Duration & Category
-              Text(
-                '${item.durationDays} Days Duration • ${item.categoryId}',
-                style: TextStyle(
-                  color: const Color(0xFFFF4081),
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w600,
+              // Category & Duration Tag
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF281C48),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: const Color(0xFFE040FB).withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  '${item.categoryId} • ${item.durationDays} Days Duration',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFE1BEE7),
+                    fontSize: 11.5.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
+              SizedBox(height: 16.h),
 
-              SizedBox(height: 14.h),
-
-              // Price Row
+              // Coin Price Box
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: const Color(0xFF1E1538),
                   borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    const Text('🪙', style: TextStyle(fontSize: 18)),
+                    SizedBox(width: 8.w),
                     Text(
-                      'Price',
-                      style: TextStyle(color: Colors.white70, fontSize: 13.sp),
-                    ),
-                    Row(
-                      children: [
-                        Text('🪙 ', style: TextStyle(fontSize: 14.sp)),
-                        Text(
-                          item.priceCoins.toString(),
-                          style: TextStyle(
-                            color: const Color(0xFFFF4081),
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                      '${_formatPrice(item.priceCoins)} Gold Coins',
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ],
                 ),
               ),
+              SizedBox(height: 22.h),
 
-              SizedBox(height: 20.h),
-
-              // Buy Now Button
+              // Action Button (Buy Now or Equip)
               GestureDetector(
-                onTap: isOwned
-                    ? () {
-                        Navigator.pop(ctx);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const OutfitScreen()));
-                      }
-                    : () {
-                        Navigator.pop(ctx);
-                        _handleBuy(item);
-                      },
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (isOwned) {
+                    final asset = backpack.userAssets.firstWhere((a) => a.assetId == item.id);
+                    if (asset.isEquipped) {
+                      backpack.unequipAsset(asset.id);
+                    } else {
+                      backpack.equipAsset(asset.id);
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(isEquipped ? 'Unequipped ${item.name}' : 'Equipped ${item.name}! ✨'),
+                        backgroundColor: const Color(0xFF9C27B0),
+                      ),
+                    );
+                    setState(() {});
+                  } else {
+                    _handleBuy(item);
+                  }
+                },
                 child: Container(
                   width: double.infinity,
                   height: 48.h,
@@ -326,7 +308,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                     gradient: LinearGradient(
                       colors: isOwned
                           ? [const Color(0xFF00E5FF), const Color(0xFF0070F3)]
-                          : [const Color(0xFFFF1493), const Color(0xFF7928CA)],
+                          : [const Color(0xFF8A2BE2), const Color(0xFFFF1493)],
                     ),
                     borderRadius: BorderRadius.circular(24.r),
                     boxShadow: [
@@ -340,12 +322,12 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    isOwned ? 'Equip in My Outfit' : 'Purchase with Coins',
-                    style: TextStyle(
+                    isOwned ? (isEquipped ? 'In Use (Equipped)' : 'Equip Now') : 'Buy (${_formatPrice(item.priceCoins)} Coins)',
+                    style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontSize: 15.sp,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
@@ -359,7 +341,7 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
   }
 
   Widget _buildItemImage(StoreItemModel item, {double? size}) {
-    final double imgSize = size ?? 75.w;
+    final double imgSize = size ?? 72.w;
     if (item.imageUrl.startsWith('http')) {
       return Image.network(
         item.imageUrl,
@@ -367,9 +349,9 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
         height: imgSize,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => Icon(
-          Icons.stars_rounded,
+          Icons.auto_awesome_rounded,
           size: imgSize * 0.7,
-          color: const Color(0xFFFF1493),
+          color: const Color(0xFFE040FB),
         ),
       );
     } else if (item.imageUrl.isNotEmpty) {
@@ -379,233 +361,272 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
         height: imgSize,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => Icon(
-          Icons.stars_rounded,
+          Icons.auto_awesome_rounded,
           size: imgSize * 0.7,
-          color: const Color(0xFFFF1493),
+          color: const Color(0xFFE040FB),
         ),
       );
     }
     return Icon(
-      Icons.stars_rounded,
+      Icons.auto_awesome_rounded,
       size: imgSize * 0.7,
-      color: const Color(0xFFFF1493),
+      color: const Color(0xFFE040FB),
     );
+  }
+
+  String _formatPrice(int coins) {
+    if (coins >= 1000000) {
+      return '${(coins / 1000000).toStringAsFixed(1)}M';
+    } else if (coins >= 1000) {
+      return '${(coins / 1000).toStringAsFixed(coins % 1000 == 0 ? 0 : 1)}k';
+    }
+    return coins.toString();
   }
 
   @override
   Widget build(BuildContext context) {
     final storeProvider = context.watch<StoreProvider>();
-    final wallet = context.watch<WalletProvider>();
+    final backpack = context.watch<BackpackProvider>();
+
+    final selectedCategory = _categories[_selectedCategoryIndex];
+    final items = storeProvider.getItemsByCategory(selectedCategory);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0C0D12),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Top Header with Gold Curves & Coin Chip ──────────────────────
-            _buildStoreHeader(context, wallet),
-
-            // ── Store Disclaimer Banner ──────────────────────────────────────
-            _buildDisclaimerBanner(),
-
-            // ── Category Tabs ────────────────────────────────────────────────
-            _buildCategoryTabBar(),
-
-            // ── Grid Content ─────────────────────────────────────────────────
-            Expanded(
-              child: storeProvider.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Color(0xFFFFD700)),
-                    )
-                  : TabBarView(
-                      controller: _tabController,
-                      children: _displayCategories.map((category) {
-                        final items = storeProvider.getItemsByCategory(category);
-                        return _buildItemsGrid(items);
-                      }).toList(),
-                    ),
+      backgroundColor: const Color(0xFF100A20),
+      body: Stack(
+        children: [
+          // Background Gradient matching Image 1 dark luxury theme
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF1E1035), // Luxury purple top
+                    Color(0xFF120C24),
+                    Color(0xFF090714), // Deep dark base
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+
+          // Main Layout
+          SafeArea(
+            child: Column(
+              children: [
+                // ── 1. Top Header Bar (Back, Store/Custom tabs, Shopping Bag) ──────
+                _buildTopHeader(),
+
+                // ── 2. Split Body (Left Category Sidebar + Right 2-Col Grid) ───────
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left Category Sidebar Rail
+                      _buildCategorySidebar(),
+
+                      // Right Content Area (2-Column Grid)
+                      Expanded(
+                        child: storeProvider.isLoading
+                            ? const Center(
+                                child: CircularProgressIndicator(color: Color(0xFFE040FB)),
+                              )
+                            : _buildItemsGrid(items, backpack),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStoreHeader(BuildContext context, WalletProvider wallet) {
+  // ===========================================================================
+  // Top Header Bar
+  // ===========================================================================
+  Widget _buildTopHeader() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF22112C),
-            Color(0xFF0F1018),
-          ],
-        ),
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back button
+          // Back Button (<)
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: EdgeInsets.all(8.w),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: EdgeInsets.all(4.w),
               child: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 color: Colors.white,
-                size: 18.sp,
+                size: 20.sp,
               ),
             ),
           ),
 
-          SizedBox(width: 12.w),
-
-          // Title
-          Text(
-            'Store',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.3,
-            ),
+          // Center Tabs: [ Store | Custom ]
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildHeaderTab(title: 'Store', index: 0),
+              SizedBox(width: 24.w),
+              _buildHeaderTab(title: 'Custom', index: 1),
+            ],
           ),
 
-          const Spacer(),
-
-          // Coin Balance Chip with tap to recharge
+          // Shopping Bag Icon (Outfit / Backpack)
           GestureDetector(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const GoldCoinsScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OutfitScreen()),
+              );
             },
+            behavior: HitTestBehavior.opaque,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+              padding: EdgeInsets.all(6.w),
+              child: Icon(
+                Icons.shopping_bag_rounded,
+                color: Colors.white,
+                size: 22.sp,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderTab({required String title, required int index}) {
+    final isSelected = _selectedHeaderTab == index;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedHeaderTab = index;
+        });
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              color: isSelected ? Colors.white : Colors.white60,
+              fontSize: 17.sp,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 3.h),
+          // Pink active indicator underline
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: isSelected ? 22.w : 0,
+            height: 3.h,
+            decoration: BoxDecoration(
+              gradient: isSelected
+                  ? const LinearGradient(
+                      colors: [Color(0xFFFF007F), Color(0xFFFF1493)],
+                    )
+                  : null,
+              borderRadius: BorderRadius.circular(2.r),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // Left Category Sidebar (12 Categories from Image 1)
+  // ===========================================================================
+  Widget _buildCategorySidebar() {
+    return Container(
+      width: 98.w,
+      decoration: BoxDecoration(
+        color: const Color(0xFF17102A).withValues(alpha: 0.65),
+        border: Border(
+          right: BorderSide(
+            color: Colors.white.withValues(alpha: 0.07),
+            width: 1.0,
+          ),
+        ),
+      ),
+      child: ListView.builder(
+        physics: const BouncingScrollPhysics(),
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          final isSelected = _selectedCategoryIndex == index;
+          final title = _categories[index];
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedCategoryIndex = index;
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 48.h,
+              margin: EdgeInsets.only(bottom: 2.h),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1428),
-                borderRadius: BorderRadius.circular(20.r),
-                border: Border.all(
-                  color: const Color(0xFFFF1493).withValues(alpha: 0.5),
-                  width: 1.0,
+                gradient: isSelected
+                    ? const LinearGradient(
+                        colors: [Color(0xFF9C27B0), Color(0xFFE040FB)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      )
+                    : null,
+                color: isSelected ? null : const Color(0xFF261D3B).withValues(alpha: 0.4),
+                borderRadius: isSelected
+                    ? BorderRadius.horizontal(right: Radius.circular(12.r))
+                    : null,
+              ),
+              alignment: Alignment.center,
+              padding: EdgeInsets.symmetric(horizontal: 6.w),
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  color: isSelected ? Colors.white : const Color(0xFFCE93D8),
+                  fontSize: 12.sp,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  height: 1.2,
                 ),
               ),
-              child: Row(
-                children: [
-                  Text('🪙 ', style: TextStyle(fontSize: 12.sp)),
-                  Text(
-                    wallet.coins.toString(),
-                    style: TextStyle(
-                      color: const Color(0xFFFF4081),
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(width: 4.w),
-                  Container(
-                    padding: EdgeInsets.all(2.w),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFF1493),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.add, size: 10.sp, color: Colors.white),
-                  ),
-                ],
-              ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildDisclaimerBanner() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1224),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: const Color(0xFFFF1493).withValues(alpha: 0.25),
-          width: 0.8,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.info_outline_rounded,
-            color: const Color(0xFFFF1493).withValues(alpha: 0.9),
-            size: 15.sp,
-          ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Text(
-              'The consumption of purchasing the store gifts is only included in the personal consumption and wealth level, and is not included in hosting income and hosting tasks.',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 10.5.sp,
-                height: 1.35,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryTabBar() {
-    return Container(
-      height: 38.h,
-      margin: EdgeInsets.only(bottom: 6.h),
-      child: TabBar(
-        controller: _tabController,
-        isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        padding: EdgeInsets.symmetric(horizontal: 12.w),
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: Colors.transparent,
-        indicator: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF1493), Color(0xFF7928CA)],
-          ),
-          borderRadius: BorderRadius.circular(20.r),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF1493).withValues(alpha: 0.45),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.white54,
-        labelStyle: TextStyle(fontSize: 12.5.sp, fontWeight: FontWeight.bold),
-        unselectedLabelStyle: TextStyle(fontSize: 12.5.sp, fontWeight: FontWeight.w500),
-        tabs: _displayCategories.map((c) => Tab(text: c)).toList(),
-      ),
-    );
-  }
-
-  Widget _buildItemsGrid(List<StoreItemModel> items) {
+  // ===========================================================================
+  // Right 2-Column Grid (Image 1 Exact Layout)
+  // ===========================================================================
+  Widget _buildItemsGrid(List<StoreItemModel> items, BackpackProvider backpack) {
     if (items.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.storefront_outlined,
-              size: 48.sp,
-              color: Colors.white24,
-            ),
-            SizedBox(height: 10.h),
+            Icon(Icons.inventory_2_outlined, size: 48.w, color: Colors.white30),
+            SizedBox(height: 12.h),
             Text(
-              'No items available in this category.',
-              style: TextStyle(color: Colors.white38, fontSize: 13.sp),
+              'No items in this category yet',
+              style: GoogleFonts.poppins(
+                color: Colors.white60,
+                fontSize: 13.sp,
+              ),
             ),
           ],
         ),
@@ -613,157 +634,163 @@ class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStat
     }
 
     return GridView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
       physics: const BouncingScrollPhysics(),
-      itemCount: items.length,
+      padding: EdgeInsets.fromLTRB(10.w, 6.h, 12.w, 80.h),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
+        crossAxisSpacing: 10.w,
         mainAxisSpacing: 12.h,
-        crossAxisSpacing: 12.w,
-        childAspectRatio: 0.82,
+        childAspectRatio: 0.72,
       ),
+      itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return _buildStoreLuxuryCard(item);
+        final isOwned = backpack.userAssets.any((a) => a.assetId == item.id && !a.isExpired);
+
+        return _buildStoreItemCard(item, isOwned);
       },
     );
   }
 
-  Widget _buildStoreLuxuryCard(StoreItemModel item) {
-    final int vipLevel = item.minVipLevelRequired > 0
-        ? item.minVipLevelRequired
-        : (item.priceCoins >= 3000000 ? 4 : (item.priceCoins >= 1000000 ? 3 : 0));
-
-    return GestureDetector(
-      onTap: () => _showItemPreviewModal(item),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF13141F),
-          borderRadius: BorderRadius.circular(18.r),
-          border: Border.all(
-            color: const Color(0xFFFF1493).withValues(alpha: 0.25),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+  Widget _buildStoreItemCard(StoreItemModel item, bool isOwned) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1433), // Dark luxury theme matching application
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: const Color(0xFF8A2BE2).withValues(alpha: 0.35),
+          width: 1.2,
         ),
-        padding: EdgeInsets.all(10.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Row: SVIP Badge & Preview Icon
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Main Card Content
+          Padding(
+            padding: EdgeInsets.fromLTRB(8.w, 12.h, 8.w, 10.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (vipLevel > 0)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: vipLevel >= 4
-                            ? [const Color(0xFFFF007F), const Color(0xFF7928CA)]
-                            : [const Color(0xFF0070F3), const Color(0xFF00DFD8)],
-                      ),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: Text(
-                      'SVIP $vipLevel',
-                      style: TextStyle(
-                        fontSize: 9.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  )
-                else
-                  const SizedBox.shrink(),
-                
-                // Expand / Preview Icon button
-                Container(
-                  padding: EdgeInsets.all(4.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                  child: Icon(
-                    Icons.crop_free_rounded,
-                    color: const Color(0xFFFF1493).withValues(alpha: 0.8),
-                    size: 14.sp,
-                  ),
-                ),
-              ],
-            ),
-
-            // Center: 3D Item in illuminated circle
-            Expanded(
-              child: Center(
-                child: Container(
-                  width: 90.w,
-                  height: 90.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xFFFF1493).withValues(alpha: 0.15),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
+                // Item Center Visual (Isolated with clean transparent blend)
+                Expanded(
                   child: Center(
-                    child: _buildItemImage(item, size: 75.w),
+                    child: GestureDetector(
+                      onTap: () => _showItemPreviewModal(item),
+                      child: Container(
+                        padding: EdgeInsets.all(4.w),
+                        child: _buildItemImage(item, size: 85.w),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+                SizedBox(height: 6.h),
 
-            // Item Name
-            Text(
-              item.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+                // Item Name (e.g. Romantic, Summer Sprite, Gorgeous-Cool)
+                Text(
+                  item.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 3.h),
 
-            SizedBox(height: 6.h),
-
-            // Bottom Row: Price & Duration
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+                // Price Tag: 🪙 2,000 /7Day
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('🪙 ', style: TextStyle(fontSize: 10.sp)),
+                    const Text('🪙', style: TextStyle(fontSize: 11)),
+                    SizedBox(width: 4.w),
                     Text(
-                      item.priceCoins.toString(),
-                      style: TextStyle(
-                        color: const Color(0xFFFF4081),
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w800,
+                      '${_formatPrice(item.priceCoins)} /${item.durationDays}Day',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10.5.sp,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFFFD700),
                       ),
                     ),
                   ],
                 ),
-                Text(
-                  '${item.durationDays}d',
-                  style: TextStyle(
-                    color: Colors.white38,
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w600,
+                SizedBox(height: 8.h),
+
+                // Buy Capsule Gradient Button
+                GestureDetector(
+                  onTap: () {
+                    if (isOwned) {
+                      _showItemPreviewModal(item);
+                    } else {
+                      _handleBuy(item);
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 30.h,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isOwned
+                            ? [const Color(0xFF00B0FF), const Color(0xFF0081CB)]
+                            : [const Color(0xFF9C27B0), const Color(0xFFE040FB)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9C27B0).withValues(alpha: 0.4),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      isOwned ? 'Use' : 'Buy',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+
+          // Top-Right Translucent Play / Preview Button
+          Positioned(
+            top: 6.h,
+            right: 6.w,
+            child: GestureDetector(
+              onTap: () => _showItemPreviewModal(item),
+              child: Container(
+                width: 22.w,
+                height: 22.w,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white70,
+                    size: 15.sp,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

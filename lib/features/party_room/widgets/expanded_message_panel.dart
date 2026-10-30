@@ -103,22 +103,33 @@ class _ExpandedMessagePanelState extends State<ExpandedMessagePanel> {
 
   void _openEmojiPicker() {
     Navigator.pop(context);
-    EmojiPickerSheet.show(context, onEmojiSelected: (emoji) {
-      final provider = context.read<LivePartyProvider>();
-      final currentUser = context.read<AuthProvider>().currentUser;
-      provider.sendMessage(currentUser, emoji);
+    final partyProv = context.read<LivePartyProvider>();
+    final roomId = partyProv.activeRoom?.id ?? 'room_101';
 
-      final participant = provider.participants.where((p) => p.user.id == currentUser.id && p.seatNumber != null).firstOrNull;
-      final seatId = participant?.seatNumber;
+    EmojiPickerSheet.show(
+      context,
+      roomId: roomId,
+      onEmojiSelected: (emoji) {
+        // Send unicode or custom symbol as a normal chat message
+        final currentUser = context.read<AuthProvider>().currentUser;
+        context.read<LivePartyProvider>().sendMessage(currentUser, emoji);
+      },
+      onReactionSelected: (reactionAsset, symbol) {
+        // Animated reaction asset plays on screen without sending raw paths into chat
+        final currentUser = context.read<AuthProvider>().currentUser;
+        final provider = context.read<LivePartyProvider>();
+        final participant = provider.participants.where((p) => p.user.id == currentUser.id && p.seatNumber != null).firstOrNull;
+        final seatId = participant?.seatNumber;
 
-      context.read<EmojiReactionProvider>().sendReaction(
-        roomId: provider.activeRoom?.id ?? 'room_101',
-        senderId: currentUser.id,
-        emoji: emoji,
-        seatId: seatId,
-        senderName: currentUser.name,
-      );
-    });
+        context.read<EmojiReactionProvider>().sendReaction(
+          roomId: roomId,
+          senderId: currentUser.id,
+          emoji: reactionAsset,
+          seatId: seatId,
+          senderName: currentUser.name,
+        );
+      },
+    );
   }
 
   @override

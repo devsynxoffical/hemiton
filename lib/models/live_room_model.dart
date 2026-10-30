@@ -92,7 +92,9 @@ class LiveRoomModel {
 
     final id = (json['id']?.toString().isNotEmpty == true)
         ? json['id'].toString()
-        : (json['roomId']?.toString() ?? '');
+        : (json['roomId']?.toString().isNotEmpty == true
+            ? json['roomId'].toString()
+            : (json['_id']?.toString() ?? ''));
     final title = json['title']?.toString() ?? 'HEMI TON Live';
     final coverUrl =
         json['coverImageUrl']?.toString() ??

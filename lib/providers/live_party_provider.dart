@@ -340,11 +340,16 @@ class LivePartyProvider extends ChangeNotifier {
       _setupSocketSubscriptions(currentUser);
 
       // 2. Perform backend REST join
-      final joinResult = await _roomRepository.joinRoom(room.id, password: password);
-      final roomData = joinResult['room'] ?? joinResult;
-      if (roomData is Map<String, dynamic> && roomData.isNotEmpty) {
-        _activeRoom = LiveRoomModel.fromJson(roomData);
-        _socketService.joinRoom(_activeRoom!.id, user: currentUser.toJson());
+      try {
+        final joinResult = await _roomRepository.joinRoom(room.id, password: password);
+        final roomData = joinResult['room'] ?? joinResult;
+        if (roomData is Map<String, dynamic> && roomData.isNotEmpty) {
+          _activeRoom = LiveRoomModel.fromJson(roomData);
+          _socketService.joinRoom(_activeRoom!.id, user: currentUser.toJson());
+        }
+      } catch (e) {
+        if (!isHost) rethrow;
+        debugPrint('[LivePartyProvider] Host initialized local/standalone party room session: $e');
       }
 
       // Re-fetch authoritative room details with seats state
@@ -556,7 +561,7 @@ class LivePartyProvider extends ChangeNotifier {
           errLower.contains('room_not_found') ||
           errLower.contains('closed');
 
-      if (isUnavailable) {
+      if (isUnavailable && !isHost) {
         // Attempt to resolve current active session of the room owner
         try {
           final creatorId = room.creatorUserId;

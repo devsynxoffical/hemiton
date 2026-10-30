@@ -21,7 +21,9 @@ class RoomRepository {
   }) async {
     String normType = 'LIVE_VIDEO';
     final uType = roomType.toUpperCase().trim();
-    if (uType.contains('AUDIO') ||
+    if (uType == 'GROUP_VIDEO') {
+      normType = 'GROUP_VIDEO';
+    } else if (uType.contains('AUDIO') ||
         uType.contains('PARTY') ||
         uType.contains('VOICE')) {
       normType = 'AUDIO_PARTY';
@@ -205,9 +207,25 @@ class RoomRepository {
 
   /// Get full room details including current 8-seat state and participants
   Future<LiveRoomModel> getRoomDetails(String roomId) async {
-    final response = await _apiClient.get('/v1/rooms/$roomId');
-    final data = response.data?['data'] as Map<String, dynamic>;
-    return LiveRoomModel.fromJson(data);
+    try {
+      final response = await _apiClient.get('/v1/rooms/$roomId');
+      final data = response.data?['data'];
+      if (data is Map<String, dynamic>) {
+        return LiveRoomModel.fromJson(data);
+      }
+    } catch (e) {
+      if (!AppConfig.isBackendDisconnected) rethrow;
+    }
+    return LiveRoomModel(
+      id: roomId,
+      title: 'Live Room',
+      host: UserModel.empty,
+      coverUrl: '',
+      viewerCount: 1,
+      category: 'CHAT',
+      startTime: DateTime.now(),
+      status: 'LIVE',
+    );
   }
 
   /// Join a room as viewer / audience
@@ -215,13 +233,24 @@ class RoomRepository {
     String roomId, {
     String? password,
   }) async {
-    final response = await _apiClient.post(
-      '/v1/rooms/$roomId/join',
-      data: password != null && password.isNotEmpty
-          ? {'password': password, 'pin': password}
-          : null,
-    );
-    return response.data?['data'] as Map<String, dynamic>? ?? {};
+    try {
+      final response = await _apiClient.post(
+        '/v1/rooms/$roomId/join',
+        data: password != null && password.isNotEmpty
+            ? {'password': password, 'pin': password}
+            : null,
+      );
+      final rawData = response.data?['data'];
+      if (rawData is Map<String, dynamic>) {
+        return rawData;
+      }
+      return {'roomId': roomId, 'status': 'LIVE'};
+    } catch (e) {
+      if (AppConfig.isBackendDisconnected) {
+        return {'roomId': roomId, 'status': 'LIVE'};
+      }
+      rethrow;
+    }
   }
 
   /// Leave a room cleanly on backend

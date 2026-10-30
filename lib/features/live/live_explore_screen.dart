@@ -16,6 +16,7 @@ import '../../widgets/friend_live_banner.dart';
 import '../../widgets/hangout_communities_sheet.dart';
 import '../social/upload_video_screen.dart';
 import '../social/create_post_screen.dart';
+import '../leaderboard/leaderboard_screen.dart';
 
 class LiveExploreScreen extends StatefulWidget {
   const LiveExploreScreen({super.key});
@@ -297,16 +298,12 @@ class _LiveExploreScreenState extends State<LiveExploreScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Golden Trophy Icon
+              // Golden Trophy Icon (Leaderboard)
               GestureDetector(
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Top Streamers Leaderboard ✨'),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: AppColors.purple,
-                      duration: const Duration(seconds: 1),
-                    ),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
                   );
                 },
                 child: Container(

@@ -484,7 +484,7 @@ class _InboxScreenState extends State<InboxScreen> {
             padding: EdgeInsets.symmetric(horizontal: 12.w),
             children: [
               // ── 1. My Status / "Add status" Card ──────────────────────────
-              _buildAddStatusCard(isDark, auth),
+              _buildAddStatusCard(isDark, auth, social),
 
               // ── 2. Profile Cards (LIVE button for streamers, status ring for status users)
               ...combinedCards.map((card) => _buildFriendStatusCard(card, isDark, social)),
@@ -495,12 +495,30 @@ class _InboxScreenState extends State<InboxScreen> {
     );
   }
 
-  /// My Status ("Add status") Card matching reference screenshot
-  Widget _buildAddStatusCard(bool isDark, AuthProvider auth) {
+  /// My Status ("Add status" / "View Status") Card matching reference screenshot
+  Widget _buildAddStatusCard(bool isDark, AuthProvider auth, SocialProvider social) {
     final avatar = auth.currentUser.avatarUrl;
+    final myStories = StoryService.instance.getActiveStoriesForUser(
+      userId: auth.currentUser.id.isNotEmpty ? auth.currentUser.id : 'me',
+      userName: auth.currentUser.displayName.isNotEmpty ? auth.currentUser.displayName : 'You',
+      allPosts: social.posts,
+    );
+    final hasActiveStatus = myStories.isNotEmpty;
 
     return GestureDetector(
-      onTap: () => _openAddStatusFlow(),
+      onTap: () {
+        if (hasActiveStatus) {
+          StoryService.handleAvatarTap(
+            context: context,
+            userId: auth.currentUser.id.isNotEmpty ? auth.currentUser.id : 'me',
+            userName: auth.currentUser.displayName.isNotEmpty ? auth.currentUser.displayName : 'You',
+            avatarUrl: avatar,
+            allPosts: social.posts,
+          );
+        } else {
+          _openAddStatusFlow();
+        }
+      },
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: 104.w,
@@ -509,12 +527,16 @@ class _InboxScreenState extends State<InboxScreen> {
           color: isDark ? const Color(0xFF0F1117) : Colors.white,
           borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
-            color: isDark ? const Color(0xFF1E2330) : const Color(0xFFE2E8F0),
-            width: 1.0,
+            color: hasActiveStatus
+                ? const Color(0xFFFF1493).withValues(alpha: 0.6)
+                : (isDark ? const Color(0xFF1E2330) : const Color(0xFFE2E8F0)),
+            width: hasActiveStatus ? 1.5 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.06),
+              color: hasActiveStatus
+                  ? const Color(0xFFFF1493).withValues(alpha: 0.25)
+                  : Colors.black.withValues(alpha: isDark ? 0.45 : 0.06),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -526,7 +548,7 @@ class _InboxScreenState extends State<InboxScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Circular Avatar with prominent pink (+) button
+              // Circular Avatar with prominent pink (+) button & optional active story ring
               Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -534,51 +556,66 @@ class _InboxScreenState extends State<InboxScreen> {
                     padding: const EdgeInsets.all(2.5),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFFF1493),
-                        width: 1.8,
-                      ),
+                      gradient: hasActiveStatus
+                          ? const LinearGradient(
+                              colors: [Color(0xFFFF007F), Color(0xFFFF1493), Color(0xFF00E676)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      border: hasActiveStatus
+                          ? null
+                          : Border.all(
+                              color: const Color(0xFFFF1493),
+                              width: 1.8,
+                            ),
                     ),
                     child: CircleAvatar(
                       radius: 24.r,
                       backgroundColor: isDark ? const Color(0xFF1A1C24) : Colors.grey.shade200,
-                      backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                      child: avatar.isEmpty
+                      backgroundImage: (hasActiveStatus && myStories.first.mediaUrl.isNotEmpty && !myStories.first.isVideo)
+                          ? NetworkImage(myStories.first.mediaUrl)
+                          : (avatar.isNotEmpty ? NetworkImage(avatar) : null),
+                      child: avatar.isEmpty && !hasActiveStatus
                           ? Icon(Icons.person, color: Colors.white60, size: 24.sp)
                           : null,
                     ),
                   ),
 
-                  // Pink Circular (+) Button
+                  // Pink Circular (+) Button for adding status
                   Positioned(
                     bottom: -2,
                     right: -2,
-                    child: Container(
-                      width: 22.w,
-                      height: 22.w,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF1493), Color(0xFFFF2A9D)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark ? const Color(0xFF0F1117) : Colors.white,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF1493).withValues(alpha: 0.6),
-                            blurRadius: 6,
+                    child: GestureDetector(
+                      onTap: () => _openAddStatusFlow(),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        width: 22.w,
+                        height: 22.w,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF1493), Color(0xFFFF2A9D)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.add_rounded,
-                          color: Colors.white,
-                          size: 14.sp,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF0F1117) : Colors.white,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF1493).withValues(alpha: 0.6),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.add_rounded,
+                            color: Colors.white,
+                            size: 14.sp,
+                          ),
                         ),
                       ),
                     ),
@@ -588,18 +625,26 @@ class _InboxScreenState extends State<InboxScreen> {
 
               SizedBox(height: 8.h),
 
-              // "Add status" Label
+              // Status Label
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  'Add status',
+                  hasActiveStatus ? 'My Status' : 'Add status',
                   style: TextStyle(
-                    color: isDark ? Colors.white : AppColors.darkNavy,
+                    color: hasActiveStatus ? const Color(0xFFFF1493) : (isDark ? Colors.white : AppColors.darkNavy),
                     fontSize: 12.5.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
+              if (hasActiveStatus)
+                Text(
+                  'Tap to view',
+                  style: TextStyle(
+                    color: isDark ? Colors.white54 : Colors.black45,
+                    fontSize: 10.sp,
+                  ),
+                ),
             ],
           ),
         ),

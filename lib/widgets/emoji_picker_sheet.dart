@@ -281,8 +281,9 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
 
     if (widget.onReactionSelected != null) {
       widget.onReactionSelected!(reaction, symbol);
+    } else {
+      widget.onEmojiSelected(symbol);
     }
-    widget.onEmojiSelected(reaction);
     if (mounted) Navigator.pop(context);
   }
 
@@ -404,7 +405,7 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
                                       width: 36,
                                       height: 36,
                                       fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const Text('✨', style: TextStyle(fontSize: 26)),
+                                      errorBuilder: (context, error, stackTrace) => const Text('✨', style: TextStyle(fontSize: 26)),
                                     ),
                                     const SizedBox(height: 5),
                                     Text(
@@ -491,9 +492,6 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
                           final emoji = emojis[index];
                           return GestureDetector(
                             onTap: () {
-                              if (widget.onReactionSelected != null) {
-                                widget.onReactionSelected!(emoji, emoji);
-                              }
                               widget.onEmojiSelected(emoji);
                               Navigator.pop(context);
                             },

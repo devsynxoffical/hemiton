@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -188,14 +188,20 @@ class _ChatBubbleState extends State<ChatBubble> {
         widget.message.text.contains('🎤') ||
         (mediaPath != null && (mediaPath.endsWith('.m4a') || mediaPath.endsWith('.mp3')));
 
-    final isImage = widget.message.type == 'image' ||
+    final isVideo = widget.message.type == 'video' ||
         (mediaPath != null &&
             !isVoice &&
+            (mediaPath.endsWith('.mp4') || mediaPath.contains('video') || widget.message.text.contains('🎬')));
+
+    final isImage = (widget.message.type == 'image' ||
+        (mediaPath != null &&
+            !isVoice &&
+            !isVideo &&
             (mediaPath.endsWith('.jpg') ||
                 mediaPath.endsWith('.jpeg') ||
                 mediaPath.endsWith('.png') ||
                 mediaPath.startsWith('/') ||
-                mediaPath.contains('image')));
+                mediaPath.contains('image'))));
 
     final isGift = widget.message.type == 'gift' || widget.message.text.contains('🎁');
     final backpack = context.watch<BackpackProvider>();
@@ -206,17 +212,17 @@ class _ChatBubbleState extends State<ChatBubble> {
 
     final bubbleColor = widget.isMe
         ? primaryColor
-        : Theme.of(context).colorScheme.surfaceContainerHighest;
+        : (isDark ? const Color(0xFF221A38) : const Color(0xFFF3F4F6));
 
     final textColor = hasCustomBubble
         ? Colors.white
-        : (widget.isMe ? onPrimary : Theme.of(context).textTheme.bodyLarge?.color);
+        : (widget.isMe ? Colors.white : (isDark ? Colors.white : Colors.black87));
 
     return Align(
       alignment: widget.isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        padding: isImage
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+        padding: (isImage || isVideo)
             ? const EdgeInsets.all(4)
             : (hasCustomBubble
                 ? (widget.isMe
@@ -231,7 +237,16 @@ class _ChatBubbleState extends State<ChatBubble> {
         decoration: BoxDecoration(
           color: isGift
               ? (isDark ? const Color(0xFF2A153E) : const Color(0xFFF3E5F5))
-              : (hasCustomBubble ? Colors.transparent : bubbleColor),
+              : (hasCustomBubble
+                  ? Colors.transparent
+                  : (widget.isMe ? null : bubbleColor)),
+          gradient: (!hasCustomBubble && widget.isMe && !isGift)
+              ? const LinearGradient(
+                  colors: [Color(0xFF8A2BE2), Color(0xFF6C63FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           image: hasCustomBubble
               ? DecorationImage(
                   image: (equippedBubble.startsWith('http://') || equippedBubble.startsWith('https://'))
@@ -248,7 +263,11 @@ class _ChatBubbleState extends State<ChatBubble> {
                   bottomLeft: Radius.circular(widget.isMe ? 16 : 4),
                   bottomRight: Radius.circular(widget.isMe ? 4 : 16),
                 ),
-          border: isGift ? Border.all(color: Colors.purpleAccent, width: 1.5) : null,
+          border: isGift
+              ? Border.all(color: Colors.purpleAccent, width: 1.5)
+              : (!widget.isMe
+                  ? Border.all(color: Colors.white.withValues(alpha: 0.08), width: 0.8)
+                  : null),
           boxShadow: hasCustomBubble
               ? null
               : [
@@ -381,81 +400,127 @@ class _ChatBubbleState extends State<ChatBubble> {
                 ],
               ),
             ] else if (isVoice) ...[
-              // ─── Playable Voice Note Bubble ───
+              // ─── Playable Voice Note Bubble (Image 2) ───
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   GestureDetector(
                     onTap: _toggleVoicePlayback,
                     child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isExpired
-                            ? Colors.grey.withValues(alpha: 0.3)
-                            : (widget.isMe ? Colors.white.withValues(alpha: 0.25) : primaryColor.withValues(alpha: 0.2)),
+                      width: 38,
+                      height: 38,
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF8A2BE2), Color(0xFF6C63FF)],
+                        ),
                       ),
-                      child: Icon(
-                        isExpired
-                            ? Icons.timer_off_outlined
-                            : (_isPlayingVoice ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                        color: isExpired ? Colors.white60 : textColor,
-                        size: 22,
+                      child: Center(
+                        child: Icon(
+                          isExpired
+                              ? Icons.timer_off_outlined
+                              : (_isPlayingVoice ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isExpired) ...[
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: List.generate(10, (index) {
-                            final barHeight = (index % 3 == 0 ? 12 : (index % 2 == 0 ? 8 : 16)).toDouble();
-                            final isActive = (index / 10) <= _playbackProgress;
-                            return Container(
-                              width: 2.5,
-                              height: barHeight,
-                              margin: const EdgeInsets.symmetric(horizontal: 1.2),
-                              decoration: BoxDecoration(
-                                color: isActive
-                                    ? (hasCustomBubble ? Colors.white : (widget.isMe ? Colors.white : primaryColor))
-                                    : (hasCustomBubble ? Colors.white.withValues(alpha: 0.5) : (widget.isMe ? Colors.white38 : Colors.grey.shade400)),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            );
-                          }),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(18, (index) {
+                      final heights = [10, 16, 22, 14, 8, 20, 26, 18, 12, 24, 28, 16, 10, 20, 14, 8, 18, 12];
+                      final barHeight = heights[index % heights.length].toDouble();
+                      final isActive = (index / 18) <= _playbackProgress;
+                      return Container(
+                        width: 2.5,
+                        height: barHeight,
+                        margin: const EdgeInsets.symmetric(horizontal: 1.2),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? (widget.isMe ? Colors.white : const Color(0xFF8A2BE2))
+                              : (widget.isMe ? Colors.white38 : const Color(0xFF8A2BE2).withValues(alpha: 0.45)),
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          _isPlayingVoice
-                              ? 'Playing voice note (${(_playbackProgress * 100).toInt()}%)'
-                              : widget.message.text.contains('Voice Note')
-                                  ? widget.message.text
-                                  : 'Voice Note • Play',
-                          style: TextStyle(
-                            color: textColor?.withValues(alpha: 0.9),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            shadows: hasCustomBubble ? [const Shadow(color: Colors.black54, blurRadius: 3)] : null,
-                          ),
-                        ),
-                      ] else ...[
-                        Text(
-                          'Media not available',
-                          style: TextStyle(color: textColor ?? Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Expired after 1 month to reduce storage',
-                          style: TextStyle(color: textColor?.withValues(alpha: 0.65) ?? Colors.white60, fontSize: 10),
-                        ),
-                      ],
-                    ],
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    widget.message.durationSeconds != null
+                        ? '0:${widget.message.durationSeconds!.toString().padLeft(2, '0')}'
+                        : '0:12',
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.85),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
+            ] else if (isVideo) ...[
+              // ─── Video Message Thumbnail (Image 2) ───
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Image.network(
+                      mediaPath != null && mediaPath.isNotEmpty
+                          ? mediaPath
+                          : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=80',
+                      width: 220,
+                      height: 125,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 220,
+                        height: 125,
+                        color: const Color(0xFF2E1C59),
+                        child: const Icon(Icons.videocam_rounded, color: Colors.white54, size: 36),
+                      ),
+                    ),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 1.5),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.videocam_rounded, color: Colors.white, size: 12),
+                            SizedBox(width: 4),
+                            Text('0:45', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.message.text.isNotEmpty && widget.message.text != '🎬 Video' && !widget.message.text.contains('Live room vibes')) ...[
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(widget.message.text, style: TextStyle(color: textColor, fontSize: 13)),
+                ),
+              ],
             ] else if (widget.message.text.contains('HEMI TON.app/short/')) ...[
               // ─── Clickable Short Video Link Preview Card ───
               GestureDetector(

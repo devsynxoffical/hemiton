@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/design/gold_button.dart';
@@ -56,8 +56,10 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
   }
 
   Future<void> _handleSignup() async {
-    if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
+    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     final navigator = Navigator.of(context);
 
     final success = await auth.signup(
@@ -72,7 +74,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
         navigator.pushAndRemoveUntil(
           PageRouteBuilder(
             transitionDuration: const Duration(milliseconds: 400),
-            pageBuilder: (context, anim1, anim2) => const MainLayout(),
+            pageBuilder: (context, anim1, anim2) => const ProfileSetupScreen(),
             transitionsBuilder: (context, anim, secondaryAnim, child) =>
                 FadeTransition(opacity: anim, child: child),
           ),
@@ -91,6 +93,8 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
 
   Future<void> _handleGoogleSignIn() async {
     final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
+    FocusScope.of(context).unfocus();
     final navigator = Navigator.of(context);
 
     final success = await auth.loginWithGoogle();

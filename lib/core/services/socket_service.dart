@@ -882,6 +882,11 @@ class SocketService {
     }
   }
 
+  /// Broadcast an emoji reaction symbol in a room
+  void sendReaction(String roomId, String symbol) {
+    sendRoomEmoji(roomId: roomId, emoji: symbol);
+  }
+
   /// Broadcast double-tap likes to all room participants
   void sendRoomLike({
     required String roomId,

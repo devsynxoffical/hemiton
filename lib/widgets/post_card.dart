@@ -27,6 +27,96 @@ class PostCard extends StatelessWidget {
     required this.onShare,
   });
 
+  Widget _buildSingleMediaItem(String path) {
+    final cleanPath = path.replaceFirst('file://', '');
+    final lower = cleanPath.toLowerCase();
+    final isVideo = lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.m4v') ||
+        lower.endsWith('.webm') ||
+        cleanPath.contains('/videos/');
+
+    if (isVideo) {
+      return _PostVideoPlayer(videoUrl: cleanPath);
+    }
+
+    final isLocal = !cleanPath.startsWith('http://') && !cleanPath.startsWith('https://');
+    final file = isLocal ? File(cleanPath) : null;
+
+    if (isLocal && file != null && file.existsSync()) {
+      return Image.file(
+        file,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildImageError(),
+      );
+    } else {
+      return Image.network(
+        cleanPath,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildImageError(),
+      );
+    }
+  }
+
+  Widget _buildMultipleMedia(List<String> urls) {
+    if (urls.length == 2) {
+      return SizedBox(
+        height: 200,
+        child: Row(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: _buildSingleMediaItem(urls[0]),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: _buildSingleMediaItem(urls[1]),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 230,
+      child: PageView.builder(
+        itemCount: urls.length,
+        itemBuilder: (context, idx) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildSingleMediaItem(urls[idx]),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${idx + 1}/${urls.length}',
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildPostMedia(String path) {
     final cleanPath = path.replaceFirst('file://', '');
     final lower = cleanPath.toLowerCase();
@@ -293,7 +383,9 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: _buildPostMedia(post.imageUrls.first),
+                child: post.imageUrls.length > 1
+                    ? _buildMultipleMedia(post.imageUrls)
+                    : _buildPostMedia(post.imageUrls.first),
               ),
             ],
             const SizedBox(height: 12),

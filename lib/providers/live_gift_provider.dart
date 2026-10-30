@@ -125,6 +125,7 @@ class LiveGiftProvider extends ChangeNotifier {
   }) async {
     final unitPrice = gift.priceCoins > 0 ? gift.priceCoins : gift.diamondPrice;
     final totalCost = unitPrice * quantity;
+    final effectiveRoomId = (roomId.trim().isNotEmpty) ? roomId.trim() : (_activeRoomId ?? '');
 
     // Quick client-side check to prevent needless network roundtrips if balance is clearly low
     if (walletProvider.coins < totalCost) {
@@ -147,7 +148,7 @@ class LiveGiftProvider extends ChangeNotifier {
         giftId: gift.id,
         recipientUserId: receiver.id,
         quantity: quantity,
-        roomId: roomId,
+        roomId: effectiveRoomId,
         idempotencyKey: idempotencyKey,
       );
 
@@ -159,7 +160,8 @@ class LiveGiftProvider extends ChangeNotifier {
         _processedTransactionIds.add(txId);
       }
 
-      // Authoritative server balance reconciliation
+      // Authoritative server balance deduction & reconciliation
+      walletProvider.spendCoins(totalCost, idempotencyKey, gift.id);
       walletProvider.fetchWallet();
 
       // Credit sender Wealth XP according to approved spending-to-XP rules (1 coin spent = 1 Wealth XP)
@@ -173,7 +175,7 @@ class LiveGiftProvider extends ChangeNotifier {
         gift: gift,
         sender: sender,
         receiver: receiver,
-        roomId: roomId,
+        roomId: effectiveRoomId,
         quantity: quantity,
       );
 

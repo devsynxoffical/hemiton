@@ -7,10 +7,12 @@ import '../core/utils/auth_guard.dart';
 import '../widgets/glass_nav_bar.dart';
 import 'games/game_lobby_screen.dart';
 import 'home/home_screen.dart';
+import 'home/live_home_screen.dart';
 import 'social/camera_recorder_screen.dart';
 import 'social/upload_video_screen.dart';
 import 'live/live_explore_screen.dart';
 import 'live/create_live_room_screen.dart';
+import 'live/create_broadcast_screen.dart';
 import 'party_room/create_party_screen.dart';
 import 'pk_battle/pk_battle_screen.dart';
 import 'profile/profile_screen.dart';
@@ -152,14 +154,27 @@ class _MainLayoutState extends State<MainLayout> {
                   ),
                   _buildCreateOption(
                     context: ctx,
-                    icon: Icons.sensors_rounded,
-                    label: 'Go Live',
+                    icon: Icons.mic_rounded,
+                    label: 'Audio Live',
+                    color: const Color(0xFF8A2BE2),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CreateBroadcastScreen(initialAudioMode: true)),
+                      );
+                    },
+                  ),
+                  _buildCreateOption(
+                    context: ctx,
+                    icon: Icons.videocam_rounded,
+                    label: 'Video Live',
                     color: AppColors.liveRed,
                     onTap: () {
                       Navigator.pop(ctx);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const CreateLiveRoomScreen()),
+                        MaterialPageRoute(builder: (_) => const CreateBroadcastScreen(initialAudioMode: false)),
                       );
                     },
                   ),
@@ -253,8 +268,8 @@ class _MainLayoutState extends State<MainLayout> {
         body: IndexedStack(
           index: _currentIndex,
           children: [
+            const LiveHomeScreen(),
             const HomeScreen(),
-            const LiveExploreScreen(),
             const GameLobbyScreen(),
             const InboxScreen(),
             const ProfileScreen(),

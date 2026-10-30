@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
-import '../../models/post_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/social_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../core/services/media_upload_service.dart';
+import '../../core/services/local_media_service.dart';
 import '../../widgets/design/gold_button.dart';
 import '../../widgets/user_avatar.dart';
 
@@ -21,35 +20,89 @@ class CreatePostScreen extends StatefulWidget {
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final _contentController = TextEditingController();
-  XFile? _selectedImage;
+  final List<XFile> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
   bool _isPublishing = false;
   String? _errorMessage;
 
-  Future<void> _pickPostImage(ImageSource source) async {
+  Future<void> _pickMultipleImages() async {
     try {
-      final XFile? picked = await _picker.pickImage(
-        source: source,
+      final List<XFile> pickedList = await _picker.pickMultiImage(
         maxWidth: 1080,
         maxHeight: 1080,
-        imageQuality: 80,
+        imageQuality: 85,
       );
-      if (picked != null) {
+      if (pickedList.isNotEmpty) {
         setState(() {
-          _selectedImage = picked;
+          _selectedImages.addAll(pickedList);
         });
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to select image: $e')),
+        SnackBar(content: Text('Failed to select photos: $e')),
       );
     }
   }
 
+  Future<void> _pickCameraImage() async {
+    try {
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1080,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() {
+          _selectedImages.add(picked);
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to capture photo: $e')),
+      );
+    }
+  }
+
+  Future<void> _pickVideo() async {
+    try {
+      final XFile? video = await _picker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 5),
+      );
+      if (video != null) {
+        setState(() {
+          _selectedImages.add(video);
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to select video: $e')),
+      );
+    }
+  }
+
+  void _removeImageAt(int index) {
+    if (index >= 0 && index < _selectedImages.length) {
+      setState(() {
+        _selectedImages.removeAt(index);
+      });
+    }
+  }
+
   Future<void> _publishPost() async {
+    if (_isPublishing) return;
+
     final content = _contentController.text.trim();
-    if (content.isEmpty && _selectedImage == null) return;
+    if (content.isEmpty && _selectedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter text or select at least one photo')),
+      );
+      return;
+    }
 
     setState(() {
       _isPublishing = true;
@@ -57,18 +110,28 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
 
     try {
-      final List<String> mediaUrls = [];
-      if (_selectedImage != null) {
+      final List<String> persistentMediaPaths = [];
+
+      // 1. Save all selected images to persistent local storage
+      for (final image in _selectedImages) {
         try {
-          final uploadResult = await MediaUploadService.instance.uploadFile(
-            filePath: _selectedImage!.path,
-            folder: widget.isStory ? 'stories' : 'posts',
+          final savedPath = await LocalMediaService.instance.saveMediaFile(
+            image.path,
+            subFolder: widget.isStory ? 'stories' : 'posts',
           );
-          mediaUrls.add(uploadResult.url);
-        } catch (uploadErr) {
-          debugPrint('Upload via server failed, using local device image: $uploadErr');
-          mediaUrls.add(_selectedImage!.path);
+          persistentMediaPaths.add(savedPath);
+        } catch (saveErr) {
+          debugPrint('[CreatePost] Failed to copy image to persistent storage: $saveErr');
+          // Fall back to original file if readable
+          if (File(image.path).existsSync()) {
+            persistentMediaPaths.add(image.path);
+          }
         }
+      }
+
+      // If user selected photos but none could be saved, halt and warn
+      if (_selectedImages.isNotEmpty && persistentMediaPaths.isEmpty) {
+        throw Exception('Unable to save selected photos to device storage. Please check permissions.');
       }
 
       if (!mounted) return;
@@ -76,20 +139,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ? (content.isNotEmpty ? '[STORY] $content' : '[STORY] Shared a 24h story ✨')
           : (content.isNotEmpty ? content : 'Shared a moment ✨');
 
-      await context.read<SocialProvider>().createPost(
-            content: finalContent,
-            mediaUrls: mediaUrls.isEmpty ? null : mediaUrls,
-            visibility: 'PUBLIC',
-          );
-
-      if (!mounted) return;
-      Navigator.pop(context, true); // Return true to signal post created
-    } catch (e) {
-      debugPrint('Create post fallback triggered: $e');
-      if (!mounted) return;
-      // Optimistic fallback so user never faces an upload blocker
       final auth = context.read<AuthProvider>();
-      final fallbackUser = auth.currentUser.id.isNotEmpty
+      final currentUser = auth.currentUser.id.isNotEmpty
           ? auth.currentUser
           : const UserModel(
               id: 'me',
@@ -98,22 +149,41 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
               profileCompleted: true,
             );
-      final fallbackPost = PostModel(
-        id: 'local_${DateTime.now().millisecondsSinceEpoch}',
-        author: fallbackUser,
-        content: widget.isStory
-            ? (content.isNotEmpty ? '[STORY] $content' : '[STORY] Shared a 24h story ✨')
-            : (content.isNotEmpty ? content : 'Shared a moment ✨'),
-        imageUrls: _selectedImage != null ? [_selectedImage!.path] : [],
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        isLiked: false,
-        createdAt: DateTime.now(),
-        visibility: 'PUBLIC',
+
+      final visibility = widget.isStory ? 'STORY' : 'PUBLIC';
+
+      // 2. Persist post model to shared local storage & feed immediately
+      await context.read<SocialProvider>().createPost(
+            content: finalContent,
+            mediaUrls: persistentMediaPaths.isEmpty ? null : persistentMediaPaths,
+            visibility: visibility,
+            author: currentUser,
+          );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(widget.isStory ? 'Story shared successfully! 🌟' : 'Post shared successfully! 🎉'),
+          backgroundColor: AppColors.success,
+        ),
       );
-      context.read<SocialProvider>().addPostLocally(fallbackPost);
       Navigator.pop(context, true);
+    } catch (e) {
+      debugPrint('[CreatePost] Publish error: $e');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to share: $e';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to share: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isPublishing = false);
+      }
     }
   }
 
@@ -125,14 +195,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New Post'),
+        title: Text(widget.isStory ? 'Create Story' : 'Create New Post'),
         actions: [
           _isPublishing
-              ? const Center(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    ),
+                  ),
+                )
               : Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: GoldButton(
-                    text: 'Post',
+                    text: widget.isStory ? 'Share' : 'Post',
                     height: 36,
                     expand: false,
                     onPressed: _publishPost,
@@ -143,6 +222,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_errorMessage != null)
               Container(
@@ -161,6 +241,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   ],
                 ),
               ),
+
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -169,40 +250,131 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 Expanded(
                   child: TextField(
                     controller: _contentController,
-                    maxLines: 6,
-                    decoration: const InputDecoration(
-                      hintText: "What's happening in your live party world today?",
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                      hintText: widget.isStory
+                          ? "What's on your mind for this 24-hour story?"
+                          : "What's happening in your live party world today?",
                       border: InputBorder.none,
                     ),
                   ),
                 ),
               ],
             ),
-            if (_selectedImage != null) ...[
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Stack(
-                  children: [
-                    Image.file(
-                      File(_selectedImage!.path),
-                      height: 220,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedImage = null),
+
+            // Multiple Selected Photos Grid / Strip
+            if (_selectedImages.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Selected Photos (${_selectedImages.length})',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: AppColors.getTextSecondary(isDark),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 140,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _selectedImages.length + 1,
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
+                  itemBuilder: (context, index) {
+                    if (index == _selectedImages.length) {
+                      // Add more button
+                      return GestureDetector(
+                        onTap: _pickMultipleImages,
                         child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                          child: const Icon(Icons.close, color: Colors.white, size: 18),
+                          width: 100,
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF13151D) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: primary.withValues(alpha: 0.4), width: 1.5),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_photo_alternate_rounded, color: primary, size: 28),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Add More',
+                                style: TextStyle(
+                                  color: primary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                      );
+                    }
+
+                    final file = _selectedImages[index];
+                    final isVideo = file.path.toLowerCase().endsWith('.mp4') ||
+                        file.path.toLowerCase().endsWith('.mov') ||
+                        file.path.toLowerCase().endsWith('.m4v') ||
+                        file.path.toLowerCase().endsWith('.webm');
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            width: 120,
+                            height: 140,
+                            color: Colors.black26,
+                            child: isVideo
+                                ? const Center(
+                                    child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 40),
+                                  )
+                                : Image.file(
+                                    File(file.path),
+                                    width: 120,
+                                    height: 140,
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                        ),
+                        if (isVideo)
+                          Positioned(
+                            bottom: 6,
+                            left: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.65),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.videocam_rounded, color: Colors.white, size: 12),
+                                  SizedBox(width: 3),
+                                  Text('VIDEO', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: GestureDetector(
+                            onTap: () => _removeImageAt(index),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Color(0xB3000000),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ],
@@ -212,19 +384,37 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.photo_library_rounded, color: primary, size: 28),
-                  onPressed: () => _pickPostImage(ImageSource.gallery),
+                  icon: Icon(Icons.photo_library_rounded, color: primary, size: 26),
+                  tooltip: 'Add Photos',
+                  onPressed: _pickMultipleImages,
                 ),
                 IconButton(
-                  icon: Icon(Icons.camera_alt_rounded, color: isDark ? AppColors.metallicGold : AppColors.metallicBlue, size: 28),
-                  onPressed: () => _pickPostImage(ImageSource.camera),
+                  icon: const Icon(Icons.videocam_rounded, color: Color(0xFF00E676), size: 26),
+                  tooltip: 'Add Video',
+                  onPressed: _pickVideo,
                 ),
                 IconButton(
-                  icon: Icon(Icons.emoji_emotions_rounded, color: primary, size: 28),
+                  icon: Icon(Icons.camera_alt_rounded, color: isDark ? AppColors.metallicGold : AppColors.metallicBlue, size: 26),
+                  tooltip: 'Take Photo',
+                  onPressed: _pickCameraImage,
+                ),
+                IconButton(
+                  icon: Icon(Icons.emoji_emotions_rounded, color: primary, size: 26),
+                  tooltip: 'Add Emoji',
                   onPressed: () {
                     _contentController.text += ' 🔥✨';
                   },
                 ),
+                const Spacer(),
+                if (_selectedImages.isNotEmpty)
+                  Text(
+                    '${_selectedImages.length} media attached',
+                    style: TextStyle(
+                      color: AppColors.getTextSecondary(isDark),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
               ],
             ),
           ],

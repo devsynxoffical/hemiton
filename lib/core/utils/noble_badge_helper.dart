@@ -51,19 +51,9 @@ class NobleBadgeHelper {
       if (match != null) {
         final level = int.tryParse(match.group(1)!) ?? 1;
         final clampedLevel = level.clamp(1, 16);
-        if (clampedLevel == 1) return 'assets/svip/svip1_badge.webp';
-        if (clampedLevel == 2) return 'assets/svip/svip2_badge.webp';
-        if (clampedLevel == 3) return 'assets/svip/svip3_badge.webp';
-        if (clampedLevel == 4) return 'assets/svip/svip4_badge.webp';
-        if (clampedLevel == 5) return 'assets/svip/svip5_badge.webp';
-        if (clampedLevel == 6) return 'assets/svip/svip6_badge.webp';
-        final pad2 = clampedLevel.toString().padLeft(2, '0');
-        if (clampedLevel <= 15) {
-          return 'assets/svip/SVIP${pad2}_badge_live.webp';
-        }
-        return 'assets/svip/SVIP16_badge_live.webp';
+        return 'assets/svip/svip/svip${clampedLevel}_badge.webp';
       }
-      return 'assets/svip/svip1_badge.webp';
+      return 'assets/svip/svip/svip1_badge.webp';
     }
 
     // Role Badges
@@ -108,9 +98,9 @@ class NobleBadgeHelper {
       if (match != null) {
         final level = int.tryParse(match.group(1)!) ?? 1;
         final clampedLevel = level.clamp(1, 16);
-        return 'assets/svip/svip${clampedLevel}_frame.webp';
+        return 'assets/svip/svip/svip${clampedLevel}_frame.webp';
       }
-      return 'assets/nobles/baron_frame.webp';
+      return 'assets/svip/svip/svip1_frame.webp';
     }
 
     // Role Frames
@@ -140,15 +130,15 @@ class NobleBadgeHelper {
     if (title == null || title.isEmpty) return null;
     final lower = title.toLowerCase().trim();
 
-    // SVIP Tags
+    // SVIP Tags / Badges (Use WebP instead of PNG)
     if (lower.contains('svip')) {
       for (int i = 16; i >= 1; i--) {
         if (lower.contains('svip $i') || lower.contains('svip$i')) {
-          if (i == 2) return null; // SVIP 2 does not have an official VIP tag
-          return 'assets/svip/svip${i}_tag.png';
+          final pad2 = i.toString().padLeft(2, '0');
+          return 'assets/svip/svip/SVIP${pad2}_badge_live.webp';
         }
       }
-      return 'assets/svip/svip1_tag.png';
+      return 'assets/svip/svip/SVIP01_badge_live.webp';
     }
 
     // Role Tags
@@ -187,13 +177,13 @@ class NobleBadgeHelper {
     if (lower.contains('svip')) {
       for (int i = 16; i >= 1; i--) {
         if (lower.contains('svip $i') || lower.contains('svip$i')) {
-          return 'assets/svip/svip${i}_chat_bubble.webp';
+          return 'assets/svip/svip/svip${i}_chat_bubble.webp';
         }
       }
       return 'assets/nobles/count_chat_bubble.webp';
     }
 
-    if (lower.contains('mystery')) return 'assets/svip/svip16_chat_bubble.webp';
+    if (lower.contains('mystery')) return 'assets/svip/svip/svip16_chat_bubble.webp';
 
     return null;
   }
@@ -215,8 +205,8 @@ class NobleBadgeHelper {
     if (lower.contains('svip')) {
       for (int i = 16; i >= 1; i--) {
         if (lower.contains('svip $i') || lower.contains('svip$i')) {
-          if (i == 1 || i == 2) return null; // SVIP 1 and 2 do not have an official profile card / skin
-          return 'assets/svip/svip${i}_card.webp';
+          if (i == 1) return null; // SVIP 1 does not have an official card
+          return 'assets/svip/svip/svip${i}_card.webp';
         }
       }
       return null;
@@ -238,8 +228,7 @@ class NobleBadgeHelper {
     if (lower.contains('svip')) {
       for (int i = 16; i >= 1; i--) {
         if (lower.contains('svip $i') || lower.contains('svip$i')) {
-          if (i == 13) return 'assets/svip/ZP-124_svip-14_entry.webp';
-          return 'assets/svip/svip${i}_entry.webp';
+          return 'assets/svip/svip/svip${i}_entry.webp';
         }
       }
       return 'assets/nobles/marquis_entrance.webp';

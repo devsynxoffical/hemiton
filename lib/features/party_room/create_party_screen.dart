@@ -14,10 +14,11 @@ import '../../providers/live_provider.dart';
 import '../../providers/room_overlay_provider.dart';
 import '../../models/live_room_model.dart';
 import 'live_party_room_screen.dart';
-import '../live/live_room_screen.dart';
+import 'group_video_party_room_screen.dart';
 
 class CreatePartyScreen extends StatefulWidget {
-  const CreatePartyScreen({super.key});
+  final String? initialRoomType;
+  const CreatePartyScreen({super.key, this.initialRoomType});
 
   @override
   State<CreatePartyScreen> createState() => _CreatePartyScreenState();
@@ -26,12 +27,18 @@ class CreatePartyScreen extends StatefulWidget {
 class _CreatePartyScreenState extends State<CreatePartyScreen> {
   final _nameController = TextEditingController();
   String _selectedCategory = 'Music';
-  String _roomType = 'AUDIO_PARTY';
-  int _capacity = 10;
+  late String _roomType;
+  int _capacity = 8;
   String _privacy = 'Public';
   String? _selectedCoverUrl;
   File? _selectedLocalImageFile;
   bool _isCreating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _roomType = widget.initialRoomType ?? 'AUDIO_PARTY';
+  }
   
   final List<String> _dummyCovers = [
     'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80',
@@ -265,7 +272,20 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
 
     final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
 
-    // Check if user already has an active room
+    if (currentUser.id.isEmpty) {
+      if (mounted) {
+        setState(() => _isCreating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please log in before creating a party room.'),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Check if user already has an active host room
     final overlayProvider = Provider.of<RoomOverlayProvider>(context, listen: false);
     final partyProvider = Provider.of<LivePartyProvider>(context, listen: false);
     final liveProvider = Provider.of<LiveProvider>(context, listen: false);
@@ -273,15 +293,25 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
     final currentUserId = currentUser.id;
     await BackendRepository.instance.fetchLiveRooms();
 
-    final existingRoom = BackendRepository.instance.liveRooms.where((r) => r.host.id == currentUserId || r.creatorUserId == currentUserId).firstOrNull ??
-        overlayProvider.activeRoom ??
-        partyProvider.activeRoom ??
-        liveProvider.activeRoom;
+    LiveRoomModel? existingRoom = BackendRepository.instance.liveRooms.where((r) {
+      final isMyHost = r.host.id == currentUserId || (r.creatorUserId != null && r.creatorUserId == currentUserId);
+      return isMyHost && r.status.toUpperCase() == 'LIVE';
+    }).firstOrNull;
+
+    if (existingRoom == null) {
+      for (final r in [overlayProvider.activeRoom, partyProvider.activeRoom, liveProvider.activeRoom]) {
+        if (r != null && (r.host.id == currentUserId || r.creatorUserId == currentUserId) && r.status.toUpperCase() == 'LIVE') {
+          existingRoom = r;
+          break;
+        }
+      }
+    }
 
     if (existingRoom != null) {
+      final activeOldRoom = existingRoom;
       if (mounted) {
         setState(() => _isCreating = false);
-        final isExistingVideo = (existingRoom.roomType == 'LIVE_VIDEO');
+        final isExistingVideo = (activeOldRoom.roomType == 'LIVE_VIDEO');
         final choice = await showDialog<String>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -298,7 +328,7 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
               ],
             ),
             content: Text(
-              'Aapki pehle se ek live/party stream chal rahi hai:\n"${existingRoom.title}"\n\nKya aap purani room mein wapas jaana chahte hain ya use khatam karke nayi party room shuru karna chahte hain?',
+              'You already have an active live/party stream:\n"${activeOldRoom.title}"\n\nWould you like to return to your previous room, or end it and start a new party room?',
               style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
             ),
             actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -335,8 +365,8 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
               context,
               MaterialPageRoute(
                 builder: (_) => isExistingVideo
-                    ? LiveRoomScreen(room: existingRoom, isHost: true)
-                    : LivePartyRoomScreen(room: existingRoom),
+                    ? GroupVideoPartyRoomScreen(room: activeOldRoom, isHost: true)
+                    : LivePartyRoomScreen(room: activeOldRoom),
               ),
             );
           }
@@ -344,8 +374,8 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
         } else if (choice == 'close_old') {
           setState(() => _isCreating = true);
           try {
-            await RoomRepository.instance.closeRoom(existingRoom.id);
-            BackendRepository.instance.removeLiveRoom(existingRoom.id);
+            await RoomRepository.instance.closeRoom(activeOldRoom.id);
+            BackendRepository.instance.removeLiveRoom(activeOldRoom.id);
           } catch (_) {}
         } else {
           return;
@@ -353,11 +383,13 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
       }
     }
 
-    final title = _nameController.text.trim().isNotEmpty
-        ? _nameController.text.trim()
-        : '${currentUser.name}\'s Party';
+    final rawTitle = _nameController.text.trim();
+    final hostDisplayName = currentUser.displayName.isNotEmpty
+        ? currentUser.displayName
+        : (currentUser.name.isNotEmpty ? currentUser.name : (currentUser.username.isNotEmpty ? currentUser.username : 'Host'));
+    final title = rawTitle.isNotEmpty ? rawTitle : "$hostDisplayName's Party";
     final coverUrl = _selectedCoverUrl ?? (currentUser.avatarUrl.isNotEmpty ? currentUser.avatarUrl : _dummyCovers[0]);
-    final isVideo = _roomType == 'LIVE_VIDEO';
+    final isVideo = _roomType == 'LIVE_VIDEO' || _roomType == 'GROUP_VIDEO';
 
     LiveRoomModel roomToJoin;
 
@@ -375,15 +407,15 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
 
       final errStr = e.toString();
       final errLower = errStr.toLowerCase();
-      final isApiErr = e is ApiException;
-
-      final isAlreadyActive = isApiErr || errLower.contains('active') || errLower.contains('chal rahi hai') || errLower.contains('exists');
+      final isAlreadyActive = (e is ApiException && (e.code == 'ROOM_ALREADY_ACTIVE' || e.message.toLowerCase().contains('already active'))) ||
+          errLower.contains('already active') ||
+          errLower.contains('chal rahi hai');
       if (isAlreadyActive) {
         if (mounted) {
           setState(() => _isCreating = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(e is ApiException ? e.message : 'Aapki pehle se ek party chal rahi hai. Nayi party banane se pehle purani party end karen.'),
+              content: Text(e is ApiException ? e.message : 'You already have an active party room. Please end your previous party before creating a new one.'),
               backgroundColor: Colors.redAccent,
               duration: const Duration(seconds: 4),
             ),
@@ -412,6 +444,10 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
       if (mounted) setState(() => _isCreating = false);
     }
 
+    if (isVideo && roomToJoin.roomType != 'GROUP_VIDEO') {
+      roomToJoin = roomToJoin.copyWith(roomType: 'GROUP_VIDEO');
+    }
+
     BackendRepository.instance.addLiveRoom(roomToJoin);
 
     if (mounted) {
@@ -419,7 +455,7 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => isVideo
-              ? LiveRoomScreen(room: roomToJoin, isHost: true)
+              ? GroupVideoPartyRoomScreen(room: roomToJoin, isHost: true)
               : LivePartyRoomScreen(room: roomToJoin),
         ),
       );
@@ -548,7 +584,7 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Room Type
+            // Room Type: Group Audio Live vs Group Video Live
             DropdownButtonFormField<String>(
               initialValue: _roomType,
               isExpanded: true,
@@ -561,7 +597,7 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          '🎙️ Voice Room (Multi-Seat Audio Party)',
+                          '🎙️ Group Audio Live (8 - 10 Seats)',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -569,14 +605,14 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
                   ),
                 ),
                 DropdownMenuItem(
-                  value: 'LIVE_VIDEO',
+                  value: 'GROUP_VIDEO',
                   child: Row(
                     children: [
                       Icon(Icons.videocam_rounded, color: Colors.pinkAccent, size: 20),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          '📹 Video Room (Live Camera Broadcast)',
+                          '📹 Group Video Live (8 - 10 Seats)',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -586,7 +622,8 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
               ],
               onChanged: (val) => setState(() => _roomType = val!),
               decoration: InputDecoration(
-                labelText: 'Room Type',
+                labelText: 'Group Live Format',
+                helperText: 'Select Audio or Video multi-seat live stream',
                 filled: true,
                 fillColor: AppColors.getCard(isDark),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -594,14 +631,15 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Capacity
+            // Capacity (Strictly 8 to 10 Seats)
             DropdownButtonFormField<int>(
-              initialValue: _capacity,
+              initialValue: _capacity > 10 ? 10 : (_capacity < 8 ? 8 : _capacity),
               isExpanded: true,
-              items: [10, 15, 20, 30].map((c) => DropdownMenuItem(value: c, child: Text('$c Seats'))).toList(),
+              items: [8, 10].map((c) => DropdownMenuItem(value: c, child: Text('$c Seats (Max 10)'))).toList(),
               onChanged: (val) => setState(() => _capacity = val!),
               decoration: InputDecoration(
-                labelText: 'Room Seat Capacity',
+                labelText: 'Group Live Seat Capacity',
+                helperText: 'Audio & Video group live allows max 8 to 10 people',
                 filled: true,
                 fillColor: AppColors.getCard(isDark),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

@@ -128,7 +128,7 @@ class _PremiumGiftAnimatorState extends State<PremiumGiftAnimator>
                       ],
                     ),
                     child: widget.event.giftIcon.startsWith('assets/')
-                        ? Image.asset(widget.event.giftIcon, width: 110, height: 110, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Text('🎁', style: TextStyle(fontSize: 88)))
+                        ? Image.asset(widget.event.giftIcon, width: 110, height: 110, fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) => const Text('🎁', style: TextStyle(fontSize: 88)))
                         : Text(
                             widget.event.giftIcon,
                             style: const TextStyle(fontSize: 88),

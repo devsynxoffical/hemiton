@@ -38,6 +38,51 @@ class _FloatingRoomOverlayState extends State<FloatingRoomOverlay> with SingleTi
     super.dispose();
   }
 
+  Future<void> _handleClose(BuildContext context, RoomOverlayProvider overlayProvider) async {
+    if (overlayProvider.isHost) {
+      final shouldLeave = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF161129),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+          ),
+          title: const Text(
+            'Leave Live Broadcast?',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
+          ),
+          content: const Text(
+            'Are you sure you want to leave your live broadcast?',
+            style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
+          ),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Continue Live', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      if (shouldLeave == true && context.mounted) {
+        overlayProvider.closeRoom(context);
+      }
+    } else {
+      overlayProvider.closeRoom(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<RoomOverlayProvider>(
@@ -175,9 +220,7 @@ class _FloatingRoomOverlayState extends State<FloatingRoomOverlay> with SingleTi
 
                                     // Close Button (X)
                                     GestureDetector(
-                                      onTap: () {
-                                        overlayProvider.closeRoom(context);
-                                      },
+                                      onTap: () => _handleClose(context, overlayProvider),
                                       child: Container(
                                         padding: const EdgeInsets.all(3),
                                         decoration: BoxDecoration(

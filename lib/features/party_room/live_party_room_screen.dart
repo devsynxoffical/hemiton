@@ -254,8 +254,9 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
 
       void attemptRoomEntry() {
         if (!mounted) return;
+        final isHost = widget.room.host.id == user.id || widget.room.creatorUserId == user.id;
         partyProv.joinParty(widget.room, user).then((success) {
-          if (!success && mounted) {
+          if (!success && mounted && !isHost) {
             if (partyProv.lastJoinFailureReason == 'ROOM_NOT_AVAILABLE') {
               _handlePartyRoomEnded('This party room is not available or has ended.');
             } else {
@@ -277,7 +278,7 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
       _partyRoomClosedSub = partyProv.onRoomClosed.listen((data) {
         final isHost = widget.room.host.id == user.id || widget.room.creatorUserId == user.id;
         final reason = data['reason']?.toString();
-        if ((!isHost || reason == 'ROOM_NOT_AVAILABLE') && mounted) {
+        if (!isHost && mounted) {
           _handlePartyRoomEnded(
             reason == 'HOST_ABSENT_TIMEOUT'
                 ? 'Party ended because the host was absent for 2 minutes.'
@@ -603,19 +604,10 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
       isScrollControlled: true,
       builder: (_) => GiftDialog(
         streamerName: widget.room.host.name,
-        targetReceiver: targetReceiver,
+        targetReceiver: targetReceiver ?? widget.room.host,
+        roomId: widget.room.id,
         onGiftSent: (gift) {
-          _giftOverlayKey.currentState?.playGiftAnimation(gift);
-          final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
           final provider = Provider.of<LivePartyProvider>(context, listen: false);
-          final emojiProvider = Provider.of<EmojiReactionProvider>(context, listen: false);
-          
-          emojiProvider.sendReaction(
-            roomId: widget.room.id,
-            senderId: user.id,
-            emoji: gift.icon,
-            senderName: user.name,
-          );
 
           if (provider.isPkActive) {
             provider.addPkScore(true, gift.diamondPrice);

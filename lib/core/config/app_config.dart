@@ -19,7 +19,7 @@ class AppConfig {
   static String get apiBaseUrl => _apiBaseUrl;
 
   /// Live Railway Backend URL (production)
-  static const String railwayApiUrl = 'https://HEMI TON-backend-production.up.railway.app/api';
+  static const String railwayApiUrl = 'https://zeparty-backend-production.up.railway.app/api';
 
   /// Staging API Base URL
   static const String stagingApiUrl = railwayApiUrl;

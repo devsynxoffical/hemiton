@@ -120,7 +120,7 @@ class _TitleScreenState extends State<TitleScreen> with SingleTickerProviderStat
     final svipList = <_TitleModel>[];
 
     for (int lvl = 1; lvl <= 9; lvl++) {
-      final badgeAsset = NobleBadgeHelper.getBadgeAsset('SVIP $lvl') ?? 'assets/svip/svip1_badge.webp';
+      final badgeAsset = NobleBadgeHelper.getBadgeAsset('SVIP $lvl') ?? 'assets/svip/svip/svip1_badge.webp';
       final isUnlocked = svipLevel >= lvl;
       svipList.add(_TitleModel(
         name: 'SVIP $lvl',

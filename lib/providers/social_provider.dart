@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/post_model.dart';
 import '../models/short_video_model.dart';
 import '../models/user_model.dart';
 import '../core/repositories/social_repository.dart';
 import '../core/services/socket_service.dart';
 import '../core/services/api_client.dart';
+import '../core/services/local_media_service.dart';
 
 // ─── Comment Model (for post & video comments) ────────────────────────────────
 
@@ -123,10 +126,56 @@ class SocialProvider extends ChangeNotifier {
     return List.unmodifiable(_postComments[videoId] ?? []);
   }
 
+  static const String _prefsPostsKey = 'hemiton_local_posts_v1';
+
   // ─── Initialise (called once when provider is attached) ───────────────────
 
   SocialProvider() {
+    _loadPostsFromLocalStorage();
     _listenToSocketEvents();
+  }
+
+  Future<void> _loadPostsFromLocalStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_prefsPostsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          for (final item in decoded) {
+            if (item is Map<String, dynamic>) {
+              try {
+                final post = PostModel.fromJson(item);
+                if (!_posts.any((p) => p.id == post.id)) {
+                  _posts.add(post);
+                }
+              } catch (_) {}
+            }
+          }
+          if (_posts.isNotEmpty) {
+            _feedLoaded = true;
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[SocialProvider] Error loading local posts: $e');
+    }
+  }
+
+  Future<void> _savePostsToLocalStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = _posts.map((p) => p.toJson()).toList();
+      await prefs.setString(_prefsPostsKey, jsonEncode(data));
+    } catch (e) {
+      debugPrint('[SocialProvider] Error saving local posts: $e');
+    }
+  }
+
+  void addTestPost(PostModel post) {
+    _posts.insert(0, post);
+    notifyListeners();
   }
 
   @override
@@ -143,8 +192,22 @@ class SocialProvider extends ChangeNotifier {
     _socketSubs.add(socket.onPostCreated.listen((data) {
       try {
         final post = PostModel.fromJson(Map<String, dynamic>.from(data));
-        if (!_posts.any((p) => p.id == post.id)) {
+        final exactIdx = _posts.indexWhere((p) => p.id == post.id);
+        if (exactIdx != -1) return;
+
+        final localIdx = _posts.indexWhere((p) =>
+            (p.id.startsWith('post_') || p.id.startsWith('video_')) &&
+            p.content == post.content &&
+            p.imageUrls.join(',') == post.imageUrls.join(',') &&
+            DateTime.now().difference(p.createdAt).inSeconds.abs() < 30);
+
+        if (localIdx != -1) {
+          _posts[localIdx] = post;
+          _savePostsToLocalStorage();
+          notifyListeners();
+        } else {
           _posts.insert(0, post);
+          _savePostsToLocalStorage();
           notifyListeners();
         }
       } catch (_) {}
@@ -238,7 +301,6 @@ class SocialProvider extends ChangeNotifier {
     }
 
     _feedLoading = true;
-    if (refresh) _posts.clear();
     notifyListeners();
 
     try {
@@ -249,20 +311,22 @@ class SocialProvider extends ChangeNotifier {
           .map(PostModel.fromJson)
           .toList();
 
-      if (refresh) {
-        _posts.clear();
+      for (final post in posts) {
+        if (!_posts.any((existing) => existing.id == post.id)) {
+          _posts.add(post);
+        }
       }
-      _posts.addAll(posts);
       _feedPage++;
       _feedHasMore = posts.length == 20;
       _feedLoaded = true;
       _feedError = null;
     } on ApiException catch (e) {
-      _feedError = e.message;
+      _feedError = _posts.isNotEmpty ? null : e.message;
     } catch (e) {
-      _feedError = 'Failed to load feed. Please try again.';
+      _feedError = _posts.isNotEmpty ? null : 'Failed to load feed. Please try again.';
     } finally {
       _feedLoading = false;
+      _feedLoaded = true;
       notifyListeners();
     }
   }
@@ -284,6 +348,7 @@ class SocialProvider extends ChangeNotifier {
           ? (post.likes > 0 ? post.likes - 1 : 0)
           : post.likes + 1,
     );
+    await _savePostsToLocalStorage();
     notifyListeners();
 
     try {
@@ -299,12 +364,14 @@ class SocialProvider extends ChangeNotifier {
           isLiked: targetLiked,
           likes: confirmedCount ?? _posts[idx].likes,
         );
+        await _savePostsToLocalStorage();
         notifyListeners();
       }
     } catch (_) {
       // Revert optimistic change if server request fails
       if (idx < _posts.length && _posts[idx].id == postId) {
         _posts[idx] = post;
+        await _savePostsToLocalStorage();
         notifyListeners();
       }
     }
@@ -316,6 +383,7 @@ class SocialProvider extends ChangeNotifier {
     final idx = _posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       _posts[idx] = _posts[idx].copyWith(shares: _posts[idx].shares + 1);
+      await _savePostsToLocalStorage();
       notifyListeners();
     }
 
@@ -326,6 +394,7 @@ class SocialProvider extends ChangeNotifier {
         _posts[idx] = _posts[idx].copyWith(
           shares: serverCount is int ? serverCount : int.tryParse(serverCount.toString()) ?? _posts[idx].shares,
         );
+        await _savePostsToLocalStorage();
         notifyListeners();
       }
     } catch (_) {}
@@ -334,10 +403,46 @@ class SocialProvider extends ChangeNotifier {
   // ─── Create Post ──────────────────────────────────────────────────────────
 
   Future<PostModel?> createPost({
+    String? id,
     required String content,
     List<String>? mediaUrls,
     String visibility = 'PUBLIC',
+    UserModel? author,
   }) async {
+    final postId = id ?? 'post_${DateTime.now().millisecondsSinceEpoch}';
+    final localPost = PostModel(
+      id: postId,
+      author: author ?? const UserModel(
+        id: 'me',
+        username: 'you',
+        name: 'You',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+        profileCompleted: true,
+      ),
+      content: content,
+      imageUrls: mediaUrls ?? [],
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      isLiked: false,
+      createdAt: DateTime.now(),
+      visibility: visibility,
+    );
+
+    // Save and display locally immediately (zero backend dependence), avoiding duplicate entries
+    _posts.removeWhere((p) =>
+        p.id == localPost.id ||
+        (mediaUrls != null &&
+            mediaUrls.isNotEmpty &&
+            p.imageUrls.isNotEmpty &&
+            p.imageUrls.first == mediaUrls.first &&
+            p.content == content));
+    _posts.insert(0, localPost);
+    _feedLoaded = true;
+    await _savePostsToLocalStorage();
+    notifyListeners();
+
+    // Async attempt backend sync if online
     try {
       final result = await _repo.createPost(
         content: content,
@@ -346,51 +451,46 @@ class SocialProvider extends ChangeNotifier {
       );
       final raw = result['data'];
       if (raw is Map<String, dynamic>) {
-        final post = PostModel.fromJson(raw);
-        _posts.insert(0, post);
-        notifyListeners();
-        return post;
+        final serverPost = PostModel.fromJson(raw);
+        final idx = _posts.indexWhere((p) => p.id == localPost.id);
+        if (idx != -1) {
+          _posts[idx] = serverPost;
+          await _savePostsToLocalStorage();
+          notifyListeners();
+        }
+        return serverPost;
       }
     } catch (e) {
-      debugPrint('[SocialProvider] createPost backend error: $e, using local optimistic fallback');
-      final fallbackPost = PostModel(
-        id: 'local_${DateTime.now().millisecondsSinceEpoch}',
-        author: const UserModel(
-          id: 'local_user',
-          username: 'you',
-          name: 'You',
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
-          profileCompleted: true,
-        ),
-        content: content,
-        imageUrls: mediaUrls ?? [],
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        isLiked: false,
-        createdAt: DateTime.now(),
-        visibility: visibility,
-      );
-      _posts.insert(0, fallbackPost);
-      notifyListeners();
-      return fallbackPost;
+      debugPrint('[SocialProvider] createPost backend error (local post retained): $e');
     }
-    return null;
+
+    return localPost;
   }
 
   /// Insert or update a post locally (for instant UI feedback when uploading stories or shorts)
   void addPostLocally(PostModel post) {
     _posts.removeWhere((p) => p.id == post.id);
     _posts.insert(0, post);
+    _feedLoaded = true;
+    _savePostsToLocalStorage();
     notifyListeners();
   }
 
   // ─── Delete Post ──────────────────────────────────────────────────────────
 
   Future<void> deletePost(String postId) async {
-    await _repo.deletePost(postId);
+    final post = _posts.where((p) => p.id == postId).firstOrNull;
+    if (post != null) {
+      for (final media in post.imageUrls) {
+        await LocalMediaService.instance.deleteMediaFile(media);
+      }
+    }
     _posts.removeWhere((p) => p.id == postId);
+    await _savePostsToLocalStorage();
     notifyListeners();
+    try {
+      await _repo.deletePost(postId);
+    } catch (_) {}
   }
 
   // ─── Comments ─────────────────────────────────────────────────────────────

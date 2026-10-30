@@ -18,7 +18,20 @@ class StoreProvider extends ChangeNotifier {
 
   final Set<String> _pendingPurchaseKeys = {};
 
-  List<String> get categories => ['All', 'Cars', 'Frame', 'Special card', 'Bubble', 'Background'];
+  List<String> get categories => [
+    'Entry',
+    'Frame',
+    'Special ID',
+    'Chat Bubble',
+    'Theme',
+    'Entry Strip',
+    'Profile Card',
+    'Room Frame',
+    'CP Theme',
+    'CP Profile',
+    'CP Token',
+    'CP Entry',
+  ];
 
   StoreProvider() {
     fetchStoreItems();
@@ -26,35 +39,57 @@ class StoreProvider extends ChangeNotifier {
 
   List<StoreItemModel> getItemsByCategory(String categoryId) {
     final nonRestricted = _items.where((item) => !StoreRepository.isRestrictedSpecialRoleAsset(item)).toList();
-    if (categoryId == 'All' || categoryId.isEmpty) {
+    if (categoryId.isEmpty) {
       return nonRestricted;
     }
 
     final target = categoryId.trim().toLowerCase();
 
-    return nonRestricted.where((item) {
+    final filtered = nonRestricted.where((item) {
       final cat = item.categoryId.trim().toLowerCase();
       final type = item.assetType.trim().toLowerCase();
 
-      // Flexible matching for categories and backend assetType enums
-      if (target == 'cars' || target == 'car') {
-        return cat.contains('car') || type.contains('car') || type.contains('mount');
+      if (target == 'entry' || target == 'cars' || target == 'car') {
+        return cat.contains('entry') || cat.contains('car') || type.contains('entry') || type.contains('car') || type.contains('mount');
       }
       if (target == 'frame' || target == 'frames') {
-        return cat.contains('frame') || type.contains('frame');
+        return (cat.contains('frame') || type.contains('frame')) && !cat.contains('room');
       }
-      if (target == 'special card' || target == 'special_card' || target == 'card') {
-        return cat.contains('card') || type.contains('card');
+      if (target == 'special id' || target == 'special card' || target == 'id') {
+        return cat.contains('id') || cat.contains('special') || cat.contains('card') || type.contains('id');
       }
-      if (target == 'bubble' || target == 'bubbles') {
+      if (target == 'chat bubble' || target == 'bubble' || target == 'bubbles') {
         return cat.contains('bubble') || type.contains('bubble');
       }
-      if (target == 'background' || target == 'backgrounds') {
-        return cat.contains('background') || cat.contains('theme') || type.contains('background') || type.contains('theme');
+      if (target == 'theme') {
+        return (cat.contains('theme') || type.contains('theme') || cat.contains('background')) && !cat.contains('cp');
+      }
+      if (target == 'entry strip' || target == 'strip') {
+        return cat.contains('strip') || type.contains('strip');
+      }
+      if (target == 'profile card' || target == 'profile') {
+        return (cat.contains('profile') || type.contains('profile')) && !cat.contains('cp');
+      }
+      if (target == 'room frame') {
+        return cat.contains('room frame') || type.contains('room_frame');
+      }
+      if (target == 'cp theme') {
+        return cat.contains('cp theme') || type.contains('cp_theme');
+      }
+      if (target == 'cp profile') {
+        return cat.contains('cp profile') || type.contains('cp_profile');
+      }
+      if (target == 'cp token') {
+        return cat.contains('cp token') || type.contains('cp_token');
+      }
+      if (target == 'cp entry') {
+        return cat.contains('cp entry') || type.contains('cp_entry');
       }
 
       return cat == target || type == target;
     }).toList();
+
+    return filtered;
   }
 
   /// Fetch active store items from backend

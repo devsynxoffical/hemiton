@@ -827,36 +827,35 @@ class _SVIPCenterScreenState extends State<SVIPCenterScreen> {
 
   // ─── Dedicated Privilege Asset Resolvers for SVIP 1..16 (Strict Category Isolation) ───
   String _getVipTagAsset(int level) {
-    if (level == 2) return ''; // SVIP 2 does not have an official VIP tag in source deliverables
     final clamped = level.clamp(1, 16);
-    return 'assets/svip/svip${clamped}_tag.png';
+    final pad2 = clamped.toString().padLeft(2, '0');
+    return 'assets/svip/svip/SVIP${pad2}_badge_live.webp';
   }
 
   String _getHomepageSkinAsset(int level) {
-    if (level == 1 || level == 2) return ''; // SVIP 1 & 2 do not have an official homepage skin in source deliverables
+    if (level == 1) return ''; // SVIP 1 does not have an official card in source deliverables
     final clamped = level.clamp(1, 16);
-    return 'assets/svip/svip${clamped}_card.webp';
+    return 'assets/svip/svip/svip${clamped}_card.webp';
   }
 
   String _getChatBubbleAsset(int level) {
     final clamped = level.clamp(1, 16);
-    return 'assets/svip/svip${clamped}_chat_bubble.webp';
+    return 'assets/svip/svip/svip${clamped}_chat_bubble.webp';
   }
 
   String _getAvatarFrameAsset(int level) {
     final clamped = level.clamp(1, 16);
-    return 'assets/svip/svip${clamped}_frame.webp';
+    return 'assets/svip/svip/svip${clamped}_frame.webp';
   }
 
   String _getEntranceEffectAsset(int level) {
     final clamped = level.clamp(1, 16);
-    if (clamped == 13) return 'assets/svip/ZP-124_svip-14_entry.webp';
-    return 'assets/svip/svip${clamped}_entry.webp';
+    return 'assets/svip/svip/svip${clamped}_entry.webp';
   }
 
   String _getSvipBadgeAsset(int level) {
     final clamped = level.clamp(1, 16);
-    return NobleBadgeHelper.getBadgeAsset('SVIP $clamped') ?? 'assets/svip/svip${clamped}_badge.webp';
+    return 'assets/svip/svip/svip${clamped}_badge.webp';
   }
 
   // ─── Privilege cards (3 per row, expandable, strictly category-correct) ───

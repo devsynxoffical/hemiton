@@ -25,6 +25,11 @@ class PostModel {
     this.visibility = 'PUBLIC',
   });
 
+  bool get isStory =>
+      visibility.toUpperCase() == 'STORY' ||
+      content.startsWith('[STORY]') ||
+      content.toLowerCase().contains('#story');
+
   factory PostModel.fromJson(Map<String, dynamic> json) {
     // Backend may return mediaUrls or imageUrls
     List<String> media = [];
@@ -66,6 +71,7 @@ class PostModel {
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'author': author.toJson(),
         'content': content,
         'mediaUrls': imageUrls,
         'visibility': visibility,

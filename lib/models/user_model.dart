@@ -1,4 +1,4 @@
-﻿enum UserRole { user, host, seller, agency, bd, admin }
+enum UserRole { user, host, seller, agency, bd, admin }
 
 class UserModel {
   final String id;
@@ -239,6 +239,9 @@ class UserModel {
 
   /// Effective cover image URL fallback
   String get effectiveCoverUrl => (coverUrl != null && coverUrl!.isNotEmpty) ? coverUrl! : avatarUrl;
+
+  /// Effective level getter (defaults to accountLevel or fallback)
+  int get level => accountLevel > 0 ? accountLevel : 12;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final profile = json['profile'] is Map<String, dynamic> ? json['profile'] as Map<String, dynamic> : {};

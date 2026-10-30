@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/design/gold_button.dart';
@@ -52,9 +52,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
-
     final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
+    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+
     final success = await auth.login(
       _emailController.text.trim(),
       _passwordController.text,
@@ -92,6 +94,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   Future<void> _handleGoogleSignIn() async {
     final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
+    FocusScope.of(context).unfocus();
     final success = await auth.loginWithGoogle();
 
     if (mounted) {
@@ -383,35 +387,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             onTap: () {
                               Navigator.push(context, MaterialPageRoute(builder: (c) => const SignupScreen()));
                             },
-                             child: Text(
+                            child: Text(
                               'Sign Up',
                               style: TextStyle(color: AppColors.getPrimary(isDark), fontWeight: FontWeight.bold),
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextButton.icon(
-                        onPressed: () {
-                          context.read<AuthProvider>().enterAsGuest();
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (_) => const MainLayout()),
-                            (route) => false,
-                          );
-                        },
-                        icon: const Icon(Icons.explore_outlined, size: 16),
-                        label: const Text(
-                          'Explore as Guest ➔',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.getTextSecondary(isDark),
-                        ),
                       ),
                     ],
                   ),

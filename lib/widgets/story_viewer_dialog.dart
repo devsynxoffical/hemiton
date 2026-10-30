@@ -184,7 +184,9 @@ class StoryService {
     // 1. Check real posts from SocialProvider
     if (allPosts != null && allPosts.isNotEmpty) {
       final realStories = allPosts.where((p) {
-        final matchesUser = (userId.isNotEmpty && p.author.id == userId) ||
+        final uid = userId.toLowerCase();
+        final pAuthorId = p.author.id.toLowerCase();
+        final matchesUser = (uid.isNotEmpty && (pAuthorId == uid || (uid == 'me' && (pAuthorId == 'me' || pAuthorId.startsWith('local_'))))) ||
             (userName.isNotEmpty &&
                 (p.author.displayName.toLowerCase() == userName.toLowerCase() ||
                     p.author.name.toLowerCase() == userName.toLowerCase() ||
@@ -197,10 +199,11 @@ class StoryService {
         return matchesUser && isStoryPost;
       }).map((p) {
         final media = p.imageUrls.isNotEmpty ? p.imageUrls.first : '';
-        final isVideo = media.endsWith('.mp4') ||
-            media.endsWith('.mov') ||
-            media.endsWith('.m4v') ||
-            media.endsWith('.webm');
+        final mediaLower = media.toLowerCase();
+        final isVideo = mediaLower.endsWith('.mp4') ||
+            mediaLower.endsWith('.mov') ||
+            mediaLower.endsWith('.m4v') ||
+            mediaLower.endsWith('.webm');
         return StoryItem(
           id: p.id,
           userId: p.author.id,

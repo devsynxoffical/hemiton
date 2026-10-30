@@ -6,6 +6,8 @@ import '../../core/theme/theme_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_logo.dart';
 import 'auth_screen.dart';
+import 'profile_setup_screen.dart';
+import '../main_layout.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -52,11 +54,25 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if (!mounted || _navigated) return;
     _navigated = true;
 
-    // After Splash, navigate to Login / Sign Up screen so client can review the auth UI
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const AuthScreen(initialMode: AuthMode.login)),
-      (route) => false,
-    );
+    // Route authenticated users to MainLayout / ProfileSetup, unauthenticated to AuthScreen
+    if (authProvider.isAuthenticated) {
+      if (authProvider.currentUser.profileCompleted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainLayout()),
+          (route) => false,
+        );
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
+          (route) => false,
+        );
+      }
+    } else {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthScreen(initialMode: AuthMode.login)),
+        (route) => false,
+      );
+    }
   }
 
   @override

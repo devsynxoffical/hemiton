@@ -86,14 +86,21 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   Future<void> _handleSubmit() async {
     FocusScope.of(context).unfocus();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.isLoading) return;
 
     if (_currentMode == AuthMode.login) {
-      final input = _emailOrPhoneController.text.trim().isNotEmpty
-          ? _emailOrPhoneController.text.trim()
-          : 'client@hemiton.com';
-      final pass = _passwordController.text.isNotEmpty
-          ? _passwordController.text
-          : 'hemiton123';
+      final input = _emailOrPhoneController.text.trim();
+      final pass = _passwordController.text;
+
+      if (input.isEmpty) {
+        _triggerErrorShake('Please enter your email address');
+        return;
+      }
+      if (pass.isEmpty) {
+        _triggerErrorShake('Please enter your password');
+        return;
+      }
+
       final success = await authProvider.login(input, pass);
       if (success && mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -101,22 +108,39 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           (route) => false,
         );
       } else if (mounted) {
-        _triggerErrorShake(authProvider.errorMessage ?? 'Login failed');
+        _triggerErrorShake(authProvider.errorMessage ?? 'Login failed. Please check your credentials.');
       }
     } else {
-      final name = _nameController.text.trim().isNotEmpty
-          ? _nameController.text.trim()
-          : 'HEMI TON User';
-      final input = _emailOrPhoneController.text.trim().isNotEmpty
-          ? _emailOrPhoneController.text.trim()
-          : 'client@hemiton.com';
-      final pass = _passwordController.text.isNotEmpty
-          ? _passwordController.text
-          : 'hemiton123';
+      final name = _nameController.text.trim();
+      final input = _emailOrPhoneController.text.trim();
+      final pass = _passwordController.text;
+      final confirmPass = _confirmPasswordController.text;
+
+      if (name.isEmpty) {
+        _triggerErrorShake('Please enter your full name');
+        return;
+      }
+      if (input.isEmpty) {
+        _triggerErrorShake('Please enter your email address');
+        return;
+      }
+      if (!input.contains('@')) {
+        _triggerErrorShake('Please enter a valid email address');
+        return;
+      }
+      if (pass.length < 6) {
+        _triggerErrorShake('Password must be at least 6 characters');
+        return;
+      }
+      if (pass != confirmPass) {
+        _triggerErrorShake('Passwords do not match');
+        return;
+      }
+
       final success = await authProvider.signup(name: name, email: input, password: pass);
       if (success && mounted) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainLayout()),
+          MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
           (route) => false,
         );
       } else if (mounted) {
@@ -128,6 +152,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   Future<void> _handleGoogleAuth() async {
     FocusScope.of(context).unfocus();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.isLoading) return;
     final success = await authProvider.loginWithGoogle();
     if (!mounted) return;
     if (success) {

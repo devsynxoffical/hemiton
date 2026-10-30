@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/user_model.dart';
 import '../../models/live_room_model.dart';
 
@@ -17,11 +19,14 @@ import '../config/app_config.dart';
 class BackendRepository extends ChangeNotifier {
   static final BackendRepository instance = BackendRepository._internal();
 
+  static const String _prefsVideosKey = 'hemiton_local_short_videos_v1';
+
   Timer? _autoRefreshTimer;
   StreamSubscription? _socketRoomCreatedSub;
   StreamSubscription? _socketRoomClosedSub;
 
   BackendRepository._internal() {
+    _loadPersistedVideos();
     if (!AppConfig.isBackendDisconnected) {
       SocketService.instance.connect();
       fetchLiveRooms();
@@ -110,6 +115,41 @@ class BackendRepository extends ChangeNotifier {
     );
   }
 
+  Future<void> _loadPersistedVideos() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_prefsVideosKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          for (final item in decoded) {
+            if (item is Map<String, dynamic>) {
+              try {
+                final video = ShortVideoModel.fromJson(item);
+                if (!_shortVideos.any((v) => v.id == video.id)) {
+                  _shortVideos.add(video);
+                }
+              } catch (_) {}
+            }
+          }
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('[BackendRepository] Error loading persisted videos: $e');
+    }
+  }
+
+  Future<void> _savePersistedVideos() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = _shortVideos.map((v) => v.toJson()).toList();
+      await prefs.setString(_prefsVideosKey, jsonEncode(data));
+    } catch (e) {
+      debugPrint('[BackendRepository] Error saving persisted videos: $e');
+    }
+  }
+
   // Dynamic Video Upload
   Future<ShortVideoModel> publishVideo({
     String? id,
@@ -132,6 +172,7 @@ class BackendRepository extends ChangeNotifier {
     );
     _shortVideos.removeWhere((v) => v.id == newVideo.id);
     _shortVideos.insert(0, newVideo);
+    await _savePersistedVideos();
     notifyListeners();
     return newVideo;
   }
@@ -144,6 +185,7 @@ class BackendRepository extends ChangeNotifier {
       final newLiked = !v.isLiked;
       final newLikes = newLiked ? v.likes + 1 : (v.likes > 0 ? v.likes - 1 : 0);
       _shortVideos[index] = v.copyWith(isLiked: newLiked, likes: newLikes);
+      _savePersistedVideos();
       notifyListeners();
     }
   }
@@ -216,7 +258,14 @@ class BackendRepository extends ChangeNotifier {
           uniqueRooms.add(r);
         }
       }
+
+      // Preserve active rooms (such as newly created rooms) not yet returned in remote query
+      final preservedRooms = _liveRooms
+          .where((r) => r.status.toUpperCase() == 'LIVE' && !seenIds.contains(r.id))
+          .toList();
+
       _liveRooms.clear();
+      _liveRooms.addAll(preservedRooms);
       _liveRooms.addAll(uniqueRooms);
       notifyListeners();
       return _liveRooms;

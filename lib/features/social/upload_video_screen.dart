@@ -1,23 +1,24 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import '../../core/repositories/backend_repository.dart';
-import '../../core/services/media_upload_service.dart';
+import '../../core/services/local_media_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/design/gold_button.dart';
 import '../../providers/social_provider.dart';
-import 'video_editor_screen.dart';
+import '../../models/user_model.dart';
 import 'music_picker_sheet.dart';
 import '../main_layout.dart';
 
 class UploadVideoScreen extends StatefulWidget {
   final String? videoPath;
-  const UploadVideoScreen({super.key, this.videoPath});
+  final bool isStory;
+  const UploadVideoScreen({super.key, this.videoPath, this.isStory = false});
 
   @override
   State<UploadVideoScreen> createState() => _UploadVideoScreenState();
@@ -25,6 +26,7 @@ class UploadVideoScreen extends StatefulWidget {
 
 class _UploadVideoScreenState extends State<UploadVideoScreen> {
   final _captionController = TextEditingController(text: 'Check out my new video! 🔥 #HEMI TON #trending');
+  bool _isStoryUpload = false;
   String _privacySetting = 'Public';
   final List<Map<String, dynamic>> _privacyOptions = [
     {'title': 'Public', 'icon': Icons.public_rounded, 'desc': 'Everyone can view this video'},
@@ -48,6 +50,10 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   @override
   void initState() {
     super.initState();
+    _isStoryUpload = widget.isStory;
+    if (_isStoryUpload) {
+      _captionController.text = 'My 24h video story ✨';
+    }
     _selectedVideoPath = widget.videoPath;
     _initThumbnailPlayer();
   }
@@ -56,12 +62,15 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
     final path = _selectedVideoPath;
     if (path != null && path.isNotEmpty) {
       try {
+        _previewController?.dispose();
         if (path.startsWith('http')) {
           _previewController = VideoPlayerController.networkUrl(Uri.parse(path));
         } else {
           _previewController = VideoPlayerController.file(File(path));
         }
         await _previewController?.initialize();
+        _previewController?.setLooping(true);
+        await _previewController?.play();
         if (mounted) setState(() {});
       } catch (e) {
         debugPrint('Thumbnail controller error: $e');
@@ -79,14 +88,17 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
 
   Future<void> _pickVideo() async {
     try {
-      final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
+      final XFile? video = await _picker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 5),
+      );
       if (video != null && mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => VideoEditorScreen(videoPath: video.path),
-          ),
-        );
+        _previewController?.dispose();
+        _previewController = null;
+        setState(() {
+          _selectedVideoPath = video.path;
+        });
+        await _initThumbnailPlayer();
       }
     } catch (e) {
       if (!mounted) return;
@@ -105,53 +117,83 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   }
 
   Future<void> _startUploadProcess() async {
+    if (_isUploading) return;
+
+    if (_selectedVideoPath == null || _selectedVideoPath!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a video from your gallery before publishing')),
+      );
+      return;
+    }
+
     setState(() {
       _isUploading = true;
       _uploadProgress = 0.2;
-      _uploadStatusText = 'Uploading video media to Cloudflare R2...';
+      _uploadStatusText = 'Saving video to persistent storage...';
     });
 
     try {
       final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
-      String targetVideoUrl = _selectedVideoPath ?? '';
+      final safeUser = currentUser.id.isNotEmpty
+          ? currentUser
+          : const UserModel(id: 'me', name: 'You', username: 'you', avatarUrl: '');
 
-      if (_selectedVideoPath != null &&
-          !_selectedVideoPath!.startsWith('http') &&
-          !_selectedVideoPath!.startsWith('assets/')) {
-        final uploadResult = await MediaUploadService.instance.uploadFile(
-          filePath: _selectedVideoPath!,
-          folder: 'videos',
+      // 1. Copy video to persistent storage so it survives cache cleanup & app restart
+      final subFolder = _isStoryUpload ? 'stories' : 'videos';
+      String targetVideoPath = _selectedVideoPath!;
+      try {
+        targetVideoPath = await LocalMediaService.instance.saveMediaFile(
+          _selectedVideoPath!,
+          subFolder: subFolder,
         );
-        targetVideoUrl = uploadResult.url;
+      } catch (saveErr) {
+        debugPrint('[UploadVideo] Persistent save error, using source: $saveErr');
       }
 
       setState(() {
         _uploadProgress = 0.75;
-        _uploadStatusText = 'Creating video post on server...';
+        _uploadStatusText = _isStoryUpload ? 'Publishing to 24h Status...' : 'Publishing to Moments...';
       });
 
       final caption = _captionController.text.trim();
-      final music = _selectedMusic == 'Original Sound' ? 'Original Sound - ${currentUser.name}' : _selectedMusic;
+      final music = _selectedMusic == 'Original Sound' ? 'Original Sound - ${safeUser.name}' : _selectedMusic;
+      final realPostId = 'video_${DateTime.now().millisecondsSinceEpoch}';
 
-      if (!mounted) return;
-      // Save to database via SocialProvider
-      final social = Provider.of<SocialProvider>(context, listen: false);
-      final createdPost = await social.createPost(
-        content: caption.isNotEmpty ? caption : 'Shared a new video! 🔥',
-        mediaUrls: targetVideoUrl.isNotEmpty ? [targetVideoUrl] : null,
-        visibility: _privacySetting.toUpperCase(),
-      );
+      if (_isStoryUpload) {
+        // 2a. Status / 24h Story: Isolate strictly to Story feed, DO NOT register in Reels / ShortVideos!
+        if (mounted) {
+          final social = Provider.of<SocialProvider>(context, listen: false);
+          final storyCaption = caption.isNotEmpty ? '[STORY] $caption' : '[STORY] Shared a 24h video story ✨';
+          await social.createPost(
+            id: realPostId,
+            content: storyCaption,
+            mediaUrls: [targetVideoPath],
+            visibility: 'STORY',
+            author: safeUser,
+          );
+        }
+      } else {
+        // 2b. Register in short video feed with local persistence & notify Moments immediately
+        await BackendRepository.instance.publishVideo(
+          id: realPostId,
+          creator: safeUser,
+          videoUrl: targetVideoPath,
+          caption: caption.isNotEmpty ? caption : 'Shared a new video! 🔥',
+          musicTitle: music,
+        );
 
-      final realPostId = createdPost?.id;
-
-      // Also register in short video feed with real post ID
-      await BackendRepository.instance.publishVideo(
-        id: realPostId,
-        creator: currentUser,
-        videoUrl: targetVideoUrl,
-        caption: caption,
-        musicTitle: music,
-      );
+        // 3. Register post model in SocialProvider using the same ID so it does not duplicate
+        if (mounted) {
+          final social = Provider.of<SocialProvider>(context, listen: false);
+          await social.createPost(
+            id: realPostId,
+            content: caption.isNotEmpty ? caption : 'Shared a new video! 🔥',
+            mediaUrls: [targetVideoPath],
+            visibility: _privacySetting.toUpperCase(),
+            author: safeUser,
+          );
+        }
+      }
 
       if (!mounted) return;
       setState(() {
@@ -161,13 +203,22 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('🎉 Your video was uploaded & published successfully!')),
+        SnackBar(
+          content: Text(_isStoryUpload
+              ? '🎉 Your video story was published to 24h Status!'
+              : '🎉 Your Reel was uploaded & published to Moments!'),
+          backgroundColor: AppColors.success,
+        ),
       );
 
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainLayout()),
-        (route) => false,
-      );
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context, true);
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainLayout()),
+          (route) => false,
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -201,6 +252,93 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Destination Selector: Reels/Moments vs 24h Story/Status
+            Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.getCard(isDark),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.getBorder(isDark)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isStoryUpload = false;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: !_isStoryUpload ? const Color(0xFFFF1493) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.movie_creation_rounded,
+                              size: 16,
+                              color: !_isStoryUpload ? Colors.white : AppColors.getTextSecondary(isDark),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Reel / Moments',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: !_isStoryUpload ? Colors.white : AppColors.getTextSecondary(isDark),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isStoryUpload = true;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _isStoryUpload ? const Color(0xFF00B0FF) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.history_edu_rounded,
+                              size: 16,
+                              color: _isStoryUpload ? Colors.white : AppColors.getTextSecondary(isDark),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '24h Story / Status',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: _isStoryUpload ? Colors.white : AppColors.getTextSecondary(isDark),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             // Video Preview & Caption Input Section
             Container(
               padding: const EdgeInsets.all(14),
@@ -402,54 +540,57 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.getBorder(isDark)),
               ),
-              child: Column(
-                children: _privacyOptions.map((opt) {
-                  final isSelected = _privacySetting == opt['title'];
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? primary.withValues(alpha: 0.15) : AppColors.getSurface(isDark),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        opt['icon'] as IconData,
-                        color: isSelected ? primary : AppColors.getTextSecondary(isDark),
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      opt['title'] as String,
-                      style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        fontSize: 14,
-                        color: AppColors.getTextPrimary(isDark),
-                      ),
-                    ),
-                    subtitle: Text(
-                      opt['desc'] as String,
-                      style: TextStyle(
-                        color: AppColors.getTextSecondary(isDark),
-                        fontSize: 11,
-                      ),
-                    ),
-                    trailing: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSelected ? primary : AppColors.getBorder(isDark),
-                          width: isSelected ? 6 : 1.5,
+              child: Material(
+                color: Colors.transparent,
+                child: Column(
+                  children: _privacyOptions.map((opt) {
+                    final isSelected = _privacySetting == opt['title'];
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? primary.withValues(alpha: 0.15) : AppColors.getSurface(isDark),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          opt['icon'] as IconData,
+                          color: isSelected ? primary : AppColors.getTextSecondary(isDark),
+                          size: 20,
                         ),
                       ),
-                    ),
-                    onTap: () {
-                      setState(() => _privacySetting = opt['title'] as String);
-                    },
-                  );
-                }).toList(),
+                      title: Text(
+                        opt['title'] as String,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          fontSize: 14,
+                          color: AppColors.getTextPrimary(isDark),
+                        ),
+                      ),
+                      subtitle: Text(
+                        opt['desc'] as String,
+                        style: TextStyle(
+                          color: AppColors.getTextSecondary(isDark),
+                          fontSize: 11,
+                        ),
+                      ),
+                      trailing: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? primary : AppColors.getBorder(isDark),
+                            width: isSelected ? 6 : 1.5,
+                          ),
+                        ),
+                      ),
+                      onTap: () {
+                        setState(() => _privacySetting = opt['title'] as String);
+                      },
+                    );
+                  }).toList(),
+                ),
               ),
             ),
 
@@ -462,38 +603,41 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.getBorder(isDark)),
               ),
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    title: Text(
-                      'Allow Comments',
-                      style: TextStyle(color: AppColors.getTextPrimary(isDark), fontSize: 13.5, fontWeight: FontWeight.w600),
+              child: Material(
+                color: Colors.transparent,
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: Text(
+                        'Allow Comments',
+                        style: TextStyle(color: AppColors.getTextPrimary(isDark), fontSize: 13.5, fontWeight: FontWeight.w600),
+                      ),
+                      value: _allowComments,
+                      activeTrackColor: primary,
+                      onChanged: (val) => setState(() => _allowComments = val),
                     ),
-                    value: _allowComments,
-                    activeTrackColor: primary,
-                    onChanged: (val) => setState(() => _allowComments = val),
-                  ),
-                  Divider(height: 1, color: AppColors.getBorder(isDark)),
-                  SwitchListTile(
-                    title: Text(
-                      'Allow Duet / Stitches',
-                      style: TextStyle(color: AppColors.getTextPrimary(isDark), fontSize: 13.5, fontWeight: FontWeight.w600),
+                    Divider(height: 1, color: AppColors.getBorder(isDark)),
+                    SwitchListTile(
+                      title: Text(
+                        'Allow Duet / Stitches',
+                        style: TextStyle(color: AppColors.getTextPrimary(isDark), fontSize: 13.5, fontWeight: FontWeight.w600),
+                      ),
+                      value: _allowDuet,
+                      activeTrackColor: primary,
+                      onChanged: (val) => setState(() => _allowDuet = val),
                     ),
-                    value: _allowDuet,
-                    activeTrackColor: primary,
-                    onChanged: (val) => setState(() => _allowDuet = val),
-                  ),
-                  Divider(height: 1, color: AppColors.getBorder(isDark)),
-                  SwitchListTile(
-                    title: Text(
-                      'Save Video to Device',
-                      style: TextStyle(color: AppColors.getTextPrimary(isDark), fontSize: 13.5, fontWeight: FontWeight.w600),
+                    Divider(height: 1, color: AppColors.getBorder(isDark)),
+                    SwitchListTile(
+                      title: Text(
+                        'Save Video to Device',
+                        style: TextStyle(color: AppColors.getTextPrimary(isDark), fontSize: 13.5, fontWeight: FontWeight.w600),
+                      ),
+                      value: _saveToDevice,
+                      activeTrackColor: primary,
+                      onChanged: (val) => setState(() => _saveToDevice = val),
                     ),
-                    value: _saveToDevice,
-                    activeTrackColor: primary,
-                    onChanged: (val) => setState(() => _saveToDevice = val),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 

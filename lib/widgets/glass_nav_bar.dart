@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/theme_provider.dart';
@@ -6,12 +7,13 @@ import '../providers/messaging_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// HEMI TON Custom Bottom Navigation Bar
-/// Matching the exact visual design reference:
-/// - Dark Mode:  PURE BLACK (#000000) background
-/// - Light Mode: PURE WHITE (#FFFFFF) background
+/// Matching original navigation bar with Games in center:
+/// - Tab 0: Home (Icons.home_rounded)
+/// - Tab 1: Explore (Icons.explore_outlined)
+/// - Tab 2: Games (Icons.sports_esports_rounded) - Center Games tab restored as requested
+/// - Tab 3: Chats (Icons.chat_bubble_rounded) with pink badge count
+/// - Tab 4: Profile (Icons.person_rounded)
 /// - Active Tab: Pink (#FF1493) with glowing horizontal underline bar
-/// - Center Button: Floating Hot Pink (#FF1493) to Neon Pink (#FF00FF) (+) button
-/// - Chats Tab: Notification badge in Hot Pink
 class GlassNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
@@ -35,7 +37,7 @@ class GlassNavBar extends StatelessWidget {
       unreadMessages = messaging.totalCombinedUnreadCount;
     } catch (_) {}
     if (unreadMessages <= 0) {
-      unreadMessages = 3; // Matches demonstration count from design reference
+      unreadMessages = 3;
     }
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -82,18 +84,18 @@ class GlassNavBar extends StatelessWidget {
               onTap: () => onTabSelected(0),
             ),
 
-            // Tab 1: Live
+            // Tab 1: Explore
             _buildNavItem(
               context: context,
               index: 1,
-              icon: Icons.sensors_rounded, // ((●)) Antenna Broadcast Waves
-              label: 'Live',
+              icon: Icons.explore_outlined,
+              label: 'Explore',
               isSelected: selectedIndex == 1,
               isDark: isDark,
               onTap: () => onTabSelected(1),
             ),
 
-            // Tab 2: Games (Replacing Center Plus Button)
+            // Tab 2: Games (Center Tab kept as requested)
             _buildNavItem(
               context: context,
               index: 2,
@@ -210,10 +212,10 @@ class GlassNavBar extends StatelessWidget {
             ),
             SizedBox(height: 2.h),
 
-            // Label Text
+            // Label Text with GoogleFonts.poppins
             Text(
               label,
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 fontSize: 10.5.sp,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? selectedColor : unselectedColor,
@@ -221,7 +223,7 @@ class GlassNavBar extends StatelessWidget {
               ),
             ),
 
-            // Active Underline Indicator Bar (Matching design in image)
+            // Active Underline Indicator Bar
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,

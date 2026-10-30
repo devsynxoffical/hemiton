@@ -23,8 +23,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _handleResetPassword() async {
+    FocusScope.of(context).unfocus();
     final email = _emailController.text.trim();
     final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your email address'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    if (!email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid email address'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     final success = await auth.forgotPassword(email);
 
@@ -32,7 +54,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Password reset link sent to your email address!'),
+            content: Text('If an account exists with this email, a password reset link has been sent.'),
             backgroundColor: AppColors.success,
           ),
         );
