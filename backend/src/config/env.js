@@ -15,9 +15,9 @@ const envSchema = z.object({
   REDIS_URL: z.string().default(process.env.REDIS_URL || process.env.REDIS_PUBLIC_URL || 'redis://localhost:6379'),
   
   // Public Domain & CORS
-  CORS_ORIGIN: z.string().default('http://localhost:5173'),
-  SOCKET_CORS_ORIGIN: z.string().default('http://localhost:5173'),
-  PUBLIC_API_URL: z.string().default('http://localhost:5000'),
+  CORS_ORIGIN: z.string().default('http://localhost:5173,http://localhost:5174,https://hemi-ton-backend-production.up.railway.app,https://hemiton.live,https://admin.hemiton.live,*'),
+  SOCKET_CORS_ORIGIN: z.string().default('http://localhost:5173,http://localhost:5174,https://hemi-ton-backend-production.up.railway.app,https://hemiton.live,https://admin.hemiton.live,*'),
+  PUBLIC_API_URL: z.string().default(process.env.PUBLIC_API_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'https://hemi-ton-backend-production.up.railway.app')),
 
   // Authentication & Security
   JWT_SECRET: z.string().min(16).default('super-secret-hemiton-jwt-key-change-in-prod-2026'),

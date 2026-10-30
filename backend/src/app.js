@@ -54,6 +54,7 @@ app.use(
         origin.includes('localhost') ||
         origin.endsWith('.vercel.app') ||
         origin.endsWith('.railway.app') ||
+        origin.includes('hemiton') ||
         origin.includes('zeparty')
       ) {
         return callback(null, true);
