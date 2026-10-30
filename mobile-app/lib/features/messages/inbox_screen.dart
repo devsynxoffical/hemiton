@@ -472,30 +472,35 @@ class _InboxScreenState extends State<InboxScreen> {
       }
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Horizontally Scrollable Cards Row
-        SizedBox(
-          height: 168.h,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: 12.w),
-            children: [
-              // ── 1. My Status / "Add status" Card ──────────────────────────
-              _buildAddStatusCard(isDark, auth, social),
-
-              // ── 2. Profile Cards (LIVE button for streamers, status ring for status users)
-              ...combinedCards.map((card) => _buildFriendStatusCard(card, isDark, social)),
-            ],
+    return Container(
+      padding: EdgeInsets.only(top: 6.h, bottom: 8.h),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+            width: 0.8,
           ),
         ),
-      ],
+      ),
+      child: SizedBox(
+        height: 98.h,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
+          children: [
+            // ── 1. "Your story" Instagram-style Circle ────────────────────
+            _buildAddStatusCard(isDark, auth, social),
+
+            // ── 2. Friends & Live Streamers Instagram-style Story Circles ─
+            ...combinedCards.map((card) => _buildFriendStatusCard(card, isDark, social)),
+          ],
+        ),
+      ),
     );
   }
 
-  /// My Status ("Add status" / "View Status") Card matching reference screenshot
+  /// Instagram-style "Your story" circle with gradient ring & bottom-right (+) badge
   Widget _buildAddStatusCard(bool isDark, AuthProvider auth, SocialProvider social) {
     final avatar = auth.currentUser.avatarUrl;
     final myStories = StoryService.instance.getActiveStoriesForUser(
@@ -504,6 +509,7 @@ class _InboxScreenState extends State<InboxScreen> {
       allPosts: social.posts,
     );
     final hasActiveStatus = myStories.isNotEmpty;
+    final bgColor = isDark ? const Color(0xFF07080C) : const Color(0xFFF8FAFC);
 
     return GestureDetector(
       onTap: () {
@@ -521,154 +527,120 @@ class _InboxScreenState extends State<InboxScreen> {
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 104.w,
-        margin: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F1117) : Colors.white,
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(
-            color: hasActiveStatus
-                ? const Color(0xFFFF1493).withValues(alpha: 0.6)
-                : (isDark ? const Color(0xFF1E2330) : const Color(0xFFE2E8F0)),
-            width: hasActiveStatus ? 1.5 : 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: hasActiveStatus
-                  ? const Color(0xFFFF1493).withValues(alpha: 0.25)
-                  : Colors.black.withValues(alpha: isDark ? 0.45 : 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Circular Avatar with prominent pink (+) button & optional active story ring
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2.5),
+        width: 76.w,
+        margin: EdgeInsets.symmetric(horizontal: 4.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                // Outer Instagram Gradient Ring (when active) or subtle border
+                Container(
+                  width: 68.w,
+                  height: 68.w,
+                  padding: EdgeInsets.all(2.5.w),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: hasActiveStatus
+                        ? const LinearGradient(
+                            colors: [
+                              Color(0xFFFEDA75),
+                              Color(0xFFFA7E1E),
+                              Color(0xFFD62976),
+                              Color(0xFF962FBF),
+                              Color(0xFF4F5BD5),
+                            ],
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                          )
+                        : null,
+                    border: hasActiveStatus
+                        ? null
+                        : Border.all(
+                            color: isDark ? Colors.white24 : Colors.grey.shade300,
+                            width: 1.5,
+                          ),
+                  ),
+                  child: Container(
+                    padding: EdgeInsets.all(2.2.w),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: hasActiveStatus
-                          ? const LinearGradient(
-                              colors: [Color(0xFFFF007F), Color(0xFFFF1493), Color(0xFF00E676)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      border: hasActiveStatus
-                          ? null
-                          : Border.all(
-                              color: const Color(0xFFFF1493),
-                              width: 1.8,
-                            ),
+                      color: bgColor,
                     ),
                     child: CircleAvatar(
-                      radius: 24.r,
+                      radius: 28.r,
                       backgroundColor: isDark ? const Color(0xFF1A1C24) : Colors.grey.shade200,
-                      backgroundImage: (hasActiveStatus && myStories.first.mediaUrl.isNotEmpty && !myStories.first.isVideo)
+                      backgroundImage: (hasActiveStatus &&
+                              myStories.first.mediaUrl.isNotEmpty &&
+                              !myStories.first.isVideo)
                           ? NetworkImage(myStories.first.mediaUrl)
                           : (avatar.isNotEmpty ? NetworkImage(avatar) : null),
                       child: avatar.isEmpty && !hasActiveStatus
-                          ? Icon(Icons.person, color: Colors.white60, size: 24.sp)
+                          ? Icon(Icons.person, color: Colors.white60, size: 26.sp)
                           : null,
                     ),
                   ),
+                ),
 
-                  // Pink Circular (+) Button for adding status
-                  Positioned(
-                    bottom: -2,
-                    right: -2,
-                    child: GestureDetector(
-                      onTap: () => _openAddStatusFlow(),
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        width: 22.w,
-                        height: 22.w,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF1493), Color(0xFFFF2A9D)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark ? const Color(0xFF0F1117) : Colors.white,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFF1493).withValues(alpha: 0.6),
-                              blurRadius: 6,
-                            ),
-                          ],
+                // Instagram-style Bottom-Right (+) Badge
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: () => _openAddStatusFlow(),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 22.w,
+                      height: 22.w,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0095F6), // Instagram signature blue
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: bgColor,
+                          width: 2.2,
                         ),
-                        child: Center(
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: Colors.white,
-                            size: 14.sp,
-                          ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 14.sp,
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
-
-              SizedBox(height: 8.h),
-
-              // Status Label
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  hasActiveStatus ? 'My Status' : 'Add status',
-                  style: TextStyle(
-                    color: hasActiveStatus ? const Color(0xFFFF1493) : (isDark ? Colors.white : AppColors.darkNavy),
-                    fontSize: 12.5.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
                 ),
+              ],
+            ),
+            SizedBox(height: 5.h),
+            Text(
+              'Your story',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w500,
               ),
-              if (hasActiveStatus)
-                Text(
-                  'Tap to view',
-                  style: TextStyle(
-                    color: isDark ? Colors.white54 : Colors.black45,
-                    fontSize: 10.sp,
-                  ),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  /// Unified Profile Card (Shows LIVE button if user is live, and status story ring if user has status)
+  /// Instagram-style Story / Live Circle Card
   Widget _buildFriendStatusCard(_StatusCardData card, bool isDark, SocialProvider social) {
     final isViewed = _viewedStatusKeys.contains(card.userId);
+    final bgColor = isDark ? const Color(0xFF07080C) : const Color(0xFFF8FAFC);
 
     return GestureDetector(
       onTap: () {
         if (card.isLive) {
           _joinLive(card);
-        } else if (card.hasStatus) {
-          _markStatusAsViewed(card.userId);
-          StoryService.handleAvatarTap(
-            context: context,
-            userId: card.userId,
-            userName: card.name,
-            avatarUrl: card.avatarUrl,
-            allPosts: social.posts,
-          );
         } else {
           _markStatusAsViewed(card.userId);
           StoryService.handleAvatarTap(
@@ -682,206 +654,115 @@ class _InboxScreenState extends State<InboxScreen> {
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 108.w,
-        margin: EdgeInsets.symmetric(horizontal: 5.w, vertical: 4.h),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
-          gradient: card.isLive
-              ? const LinearGradient(
-                  colors: [
-                    Color(0xFFB0068D),
-                    Color(0xFF6B027B),
-                    Color(0xFF1E0729),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                )
-              : null,
-          color: card.isLive ? null : (isDark ? const Color(0xFF12151D) : Colors.white),
-          boxShadow: [
-            BoxShadow(
-              color: card.isLive
-                  ? const Color(0xFFB0068D).withValues(alpha: 0.35)
-                  : Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16.r),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Thumbnail background (if not live or if live has cover)
-              if (!card.isLive && card.thumbnailUrl.isNotEmpty)
-                Image.network(
-                  card.thumbnailUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(color: const Color(0xFF161922)),
-                ),
-
-              // Gradient Overlay for readability
-              Positioned.fill(
-                child: DecoratedBox(
+        width: 76.w,
+        margin: EdgeInsets.symmetric(horizontal: 4.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                // Instagram Multi-Stop Gradient Ring
+                Container(
+                  width: 68.w,
+                  height: 68.w,
+                  padding: EdgeInsets.all(2.6.w),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withValues(alpha: 0.15),
-                        Colors.black.withValues(alpha: 0.4),
-                        Colors.black.withValues(alpha: 0.9),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0.1, 0.5, 1.0],
+                    shape: BoxShape.circle,
+                    gradient: (!isViewed || card.isLive)
+                        ? LinearGradient(
+                            colors: card.isLive
+                                ? const [
+                                    Color(0xFFFF0055),
+                                    Color(0xFFFF007F),
+                                    Color(0xFF962FBF),
+                                  ]
+                                : const [
+                                    Color(0xFFFEDA75),
+                                    Color(0xFFFA7E1E),
+                                    Color(0xFFD62976),
+                                    Color(0xFF962FBF),
+                                    Color(0xFF4F5BD5),
+                                  ],
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                          )
+                        : null,
+                    border: (isViewed && !card.isLive)
+                        ? Border.all(
+                            color: isDark ? Colors.white24 : Colors.grey.shade400,
+                            width: 1.6,
+                          )
+                        : null,
+                  ),
+                  child: Container(
+                    padding: EdgeInsets.all(2.2.w),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: bgColor,
+                    ),
+                    child: CircleAvatar(
+                      radius: 28.r,
+                      backgroundColor: Colors.black26,
+                      backgroundImage: NetworkImage(card.avatarUrl),
                     ),
                   ),
                 ),
-              ),
 
-              // Content inside Card
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 10.h),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Top Avatar (with status story ring if user has status)
-                    GestureDetector(
-                      onTap: () {
-                        if (card.hasStatus) {
-                          _markStatusAsViewed(card.userId);
-                          StoryService.handleAvatarTap(
-                            context: context,
-                            userId: card.userId,
-                            userName: card.name,
-                            avatarUrl: card.avatarUrl,
-                            allPosts: social.posts,
-                          );
-                        } else if (card.isLive) {
-                          _joinLive(card);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(2.2),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: (card.hasStatus && !isViewed)
-                              ? LinearGradient(
-                                  colors: card.ringColors,
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          border: (!card.hasStatus || isViewed)
-                              ? Border.all(color: Colors.white60, width: 1.5)
-                              : null,
-                          boxShadow: (card.hasStatus && !isViewed)
-                              ? [
-                                  BoxShadow(
-                                    color: card.ringColors.first.withValues(alpha: 0.6),
-                                    blurRadius: 8,
-                                  ),
-                                ]
-                              : null,
+                // Instagram-style overlapping "LIVE" badge at bottom center OR green online dot
+                if (card.isLive)
+                  Positioned(
+                    bottom: -3.h,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.5.h),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE1306C), Color(0xFFFF0055)],
                         ),
-                        child: CircleAvatar(
-                          radius: 20.r,
-                          backgroundColor: Colors.black45,
-                          backgroundImage: NetworkImage(card.avatarUrl),
+                        borderRadius: BorderRadius.circular(5.r),
+                        border: Border.all(color: bgColor, width: 1.8),
+                      ),
+                      child: Text(
+                        'LIVE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8.5.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
-
-                    // User Name
-                    Text(
-                      card.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.bold,
-                        shadows: const [
-                          Shadow(color: Colors.black87, blurRadius: 4),
-                        ],
+                  )
+                else if (card.isOnline)
+                  Positioned(
+                    bottom: 2,
+                    right: 2,
+                    child: Container(
+                      width: 13.w,
+                      height: 13.w,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E676),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: bgColor, width: 2.0),
                       ),
                     ),
-
-                    // Bottom Pill: LIVE Button or Status Pill
-                    if (card.isLive) ...[
-                      // Prominent Green LIVE Button (Clicking directly joins live stream)
-                      GestureDetector(
-                        onTap: () => _joinLive(card),
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00E676),
-                            borderRadius: BorderRadius.circular(5.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00E676).withValues(alpha: 0.6),
-                                blurRadius: 8,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            'LIVE',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Location Pin + City
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.location_on, color: Colors.white70, size: 9.5.w),
-                          SizedBox(width: 2.w),
-                          Flexible(
-                            child: Text(
-                              card.location,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 9.5.sp,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else ...[
-                      // Non-Live Status User: Display status indicator
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.5.h),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Text(
-                          card.hasStatus ? 'Status' : 'Active',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9.5.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 2.h),
-                    ],
-                  ],
-                ),
+                  ),
+              ],
+            ),
+            SizedBox(height: 5.h),
+            Text(
+              card.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? Colors.white : AppColors.darkNavy,
+                fontSize: 11.sp,
+                fontWeight: (!isViewed || card.isLive) ? FontWeight.w600 : FontWeight.w400,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

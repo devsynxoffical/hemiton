@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/services/room_share_service.dart';
 import '../../core/services/socket_service.dart';
+import '../../core/repositories/backend_repository.dart';
 import '../../core/repositories/room_repository.dart';
 import '../../models/live_room_model.dart';
 import '../../providers/auth_provider.dart';
@@ -1233,7 +1234,7 @@ class _LiveBroadcastScreenState extends State<LiveBroadcastScreen> {
     if (_isExitDialogShowing || _isEndingBroadcast) return;
     _isExitDialogShowing = true;
 
-    final shouldLeave = await showDialog<bool>(
+    final action = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -1243,28 +1244,38 @@ class _LiveBroadcastScreenState extends State<LiveBroadcastScreen> {
           side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
         ),
         title: const Text(
-          'Leave Live Broadcast?',
+          'Live Broadcast Options',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
         ),
         content: const Text(
-          'Are you sure you want to leave your live broadcast?',
+          'Would you like to continue your live stream, leave the room, or end the live broadcast?',
           style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Navigator.pop(ctx, 'continue'),
             child: const Text('Continue Live', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+          ),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            onPressed: () => Navigator.pop(ctx, 'leave'),
+            child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.bold)),
+            onPressed: () => Navigator.pop(ctx, 'end'),
+            child: const Text('End Live', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1272,17 +1283,35 @@ class _LiveBroadcastScreenState extends State<LiveBroadcastScreen> {
 
     _isExitDialogShowing = false;
 
-    if (shouldLeave == true && mounted) {
-      _isEndingBroadcast = true;
-      if (widget.isHost) {
+    if (!mounted || action == null || action == 'continue') return;
+
+    _isEndingBroadcast = true;
+    if (action == 'end') {
+      try {
+        BackendRepository.instance.removeLiveRoom(widget.room.id);
+      } catch (_) {}
+      try {
+        await RoomRepository.instance.closeRoom(widget.room.id);
+      } catch (_) {}
+      if (mounted) {
         try {
-          await RoomRepository.instance.closeRoom(widget.room.id);
-        } catch (_) {}
-      } else {
-        try {
-          await RoomRepository.instance.leaveRoom(widget.room.id);
+          await Provider.of<RoomOverlayProvider>(context, listen: false).closeRoom(context);
         } catch (_) {}
       }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Live broadcast has ended.'),
+            backgroundColor: Colors.redAccent,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } else if (action == 'leave') {
+      try {
+        await RoomRepository.instance.leaveRoom(widget.room.id);
+      } catch (_) {}
       if (mounted) {
         Navigator.pop(context);
       }

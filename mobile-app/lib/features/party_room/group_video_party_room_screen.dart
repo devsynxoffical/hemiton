@@ -18,7 +18,6 @@ import '../../widgets/hangout_games_sheet.dart';
 import '../../widgets/profile_frame_picker_sheet.dart';
 import '../../widgets/live_toolbar_icons.dart';
 import '../messages/inbox_screen.dart';
-import '../profile/modules/outfit_screen.dart';
 
 /// A sleek, high-end Multi-Guest Video Grid Room for Group Video Live broadcasts.
 /// Supports 8 to 10 video guest seats arranged in neat camera grid boxes with
@@ -422,42 +421,75 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
   }
 
   void _leaveRoom() {
-    if (widget.isHost) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1B1433),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-          title: Text('End Group Video Live?', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: Text('Are you sure you want to end this group video live session for all participants?',
-              style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13.sp)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.white54)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                BackendRepository.instance.removeLiveRoom(widget.room.id);
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              child: Text('End Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1B1433),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
         ),
-      );
-    } else {
-      Navigator.pop(context);
-    }
+        title: Text(
+          'Live Broadcast Options',
+          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16.sp),
+        ),
+        content: Text(
+          'Would you like to continue in this group video live, leave the room, or end the live session?',
+          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13.sp),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Continue Live', style: GoogleFonts.poppins(color: Colors.white70, fontWeight: FontWeight.w600)),
+          ),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            child: Text('Leave Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              BackendRepository.instance.removeLiveRoom(widget.room.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Group video live has ended.'),
+                  backgroundColor: Colors.redAccent,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+            ),
+            child: Text('End Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF090A14),
-      body: Stack(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _leaveRoom();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF090A14),
+        body: Stack(
         children: [
           // Background Gradient
           Positioned.fill(
@@ -511,7 +543,8 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   // ===========================================================================

@@ -56,6 +56,8 @@ import '../../providers/emoji_reaction_provider.dart';
 import '../profile/user_profile_details_screen.dart';
 import '../messages/chat_screen.dart';
 import '../live/widgets/live_viewers_sheet.dart';
+import '../../core/repositories/backend_repository.dart';
+import '../../core/repositories/room_repository.dart';
 
 class LivePartyRoomScreen extends StatefulWidget {
   final LiveRoomModel room;
@@ -482,55 +484,72 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
 
   void _leaveRoom() {
     final provider = Provider.of<LivePartyProvider>(context, listen: false);
-    final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
-    final isHost = widget.room.host.id == currentUser.id || widget.room.creatorUserId == currentUser.id;
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (d) => AlertDialog(
         backgroundColor: const Color(0xFF1E1B2E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Leave Party Room?',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          'Live Broadcast Options',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
         ),
-        content: Text(
-          isHost
-              ? 'You are about to leave this party room. The room will stay active so other speakers and listeners can continue chatting.'
-              : 'Are you sure you want to leave this party room?',
-          style: const TextStyle(color: Colors.white70),
+        content: const Text(
+          'Would you like to continue live, leave this live room, or completely end the live broadcast?',
+          style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
         ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(d),
-            child: const Text('Stay', style: TextStyle(color: Colors.white60)),
-          ),
-          if (isHost)
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(d);
-                await provider.closeRoom();
-                if (mounted) {
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('End Room for All', style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+            child: const Text(
+              'Continue Live',
+              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
             ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFB524E4),
+          ),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () async {
               Navigator.pop(d);
-              // Leave without closing room so other users can stay inside
               await provider.leaveParty();
               if (mounted) {
                 Navigator.pop(context);
               }
             },
-            child: const Text('Leave Room'),
+            child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.pop(d);
+              BackendRepository.instance.removeLiveRoom(widget.room.id);
+              await RoomRepository.instance.closeRoom(widget.room.id);
+              await provider.closeRoom();
+              if (mounted) {
+                final overlayProv = Provider.of<RoomOverlayProvider>(context, listen: false);
+                if (overlayProv.activeRoom?.id == widget.room.id) {
+                  overlayProv.closeRoom(context);
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Live broadcast has ended.'),
+                    backgroundColor: Colors.redAccent,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('End Live', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

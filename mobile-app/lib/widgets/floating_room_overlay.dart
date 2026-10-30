@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/services/room_config_manager.dart';
+import '../core/repositories/backend_repository.dart';
+import '../core/repositories/room_repository.dart';
 import '../providers/room_overlay_provider.dart';
 import '../providers/live_provider.dart';
 import '../providers/live_party_provider.dart';
@@ -39,47 +41,69 @@ class _FloatingRoomOverlayState extends State<FloatingRoomOverlay> with SingleTi
   }
 
   Future<void> _handleClose(BuildContext context, RoomOverlayProvider overlayProvider) async {
-    if (overlayProvider.isHost) {
-      final shouldLeave = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF161129),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-          ),
-          title: const Text(
-            'Leave Live Broadcast?',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
-          ),
-          content: const Text(
-            'Are you sure you want to leave your live broadcast?',
-            style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
-          ),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Continue Live', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
+    final activeRoomId = overlayProvider.activeRoom?.id;
+    final action = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF161129),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
         ),
-      );
-      if (shouldLeave == true && context.mounted) {
-        overlayProvider.closeRoom(context);
-      }
-    } else {
+        title: const Text(
+          'Live Broadcast Options',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
+        ),
+        content: const Text(
+          'Would you like to continue live, leave this live room, or completely end the live broadcast?',
+          style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'continue'),
+            child: const Text('Continue Live', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+          ),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, 'leave'),
+            child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, 'end'),
+            child: const Text('End Live', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (action == 'leave' && context.mounted) {
       overlayProvider.closeRoom(context);
+    } else if (action == 'end' && context.mounted) {
+      if (activeRoomId != null) {
+        BackendRepository.instance.removeLiveRoom(activeRoomId);
+        await RoomRepository.instance.closeRoom(activeRoomId);
+      }
+      if (context.mounted) {
+        overlayProvider.closeRoom(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Live broadcast has ended.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
