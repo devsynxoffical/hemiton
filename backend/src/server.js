@@ -47,7 +47,7 @@ async function connectDatabaseWithRetry(maxRetries = 20, delayMs = 3000) {
 
 async function startServer() {
   try {
-    console.log('🔄 Initializing ZeParty Backend Foundation...');
+    console.log('🔄 Initializing HEMI TON Backend Foundation...');
 
     // 1. Create HTTP Server and bind immediately to prevent cold boot 502 Bad Gateway
     const port = Number(process.env.PORT) || Number(env.PORT) || 8080;
@@ -86,7 +86,7 @@ async function startServer() {
     })();
 
   } catch (error) {
-    console.error('❌ Failed to start ZeParty server:', error);
+    console.error('❌ Failed to start HEMI TON server:', error);
     process.exit(1);
   }
 }

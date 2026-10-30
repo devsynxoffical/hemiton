@@ -7,7 +7,7 @@ dotenv.config();
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(8080),
-  DATABASE_URL: z.string().default(process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL || 'postgresql://postgres:postgres@localhost:5432/zeparty'),
+  DATABASE_URL: z.string().default(process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL || 'postgresql://postgres:postgres@localhost:5432/hemiton'),
   PRISMA_LOG_QUERIES: z.preprocess((val) => {
     if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
     return Boolean(val);
@@ -20,7 +20,7 @@ const envSchema = z.object({
   PUBLIC_API_URL: z.string().default('http://localhost:5000'),
 
   // Authentication & Security
-  JWT_SECRET: z.string().min(16).default('super-secret-zeparty-jwt-key-change-in-prod-2026'),
+  JWT_SECRET: z.string().min(16).default('super-secret-hemiton-jwt-key-change-in-prod-2026'),
   JWT_EXPIRES_IN: z.string().default('15m'),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
 
@@ -31,10 +31,10 @@ const envSchema = z.object({
   OTP_RATE_LIMIT_MAX: z.coerce.number().default(5),
 
   // Cryptography & Financial
-  PAYMENT_ENCRYPTION_KEY: z.string().min(16).default('zeparty-payment-encryption-master-key-32b!'),
-  OTP_ENCRYPTION_KEY: z.string().min(16).default('zeparty-otp-encryption-master-key-32b!'),
+  PAYMENT_ENCRYPTION_KEY: z.string().min(16).default('hemiton-payment-encryption-master-key-32b!'),
+  OTP_ENCRYPTION_KEY: z.string().min(16).default('hemiton-otp-encryption-master-key-32b!'),
 
-  // Agora Realtime Streaming
+  // Agora Realtime Streaming & Calling
   AGORA_APP_ID: z.string().default('mock_agora_app_id_test_environment_12345'),
   AGORA_APP_CERTIFICATE: z.string().default('mock_agora_app_cert_test_environment_67890'),
   AGORA_TOKEN_EXPIRY_SECONDS: z.coerce.number().min(60).max(86400).default(3600),
@@ -45,9 +45,9 @@ const envSchema = z.object({
 
   // Bootstrap Administrative Credentials
   SUPER_ADMIN_USERNAME: z.string().default('admin'),
-  SUPER_ADMIN_EMAIL: z.string().email().default('admin@zeparty.app'),
+  SUPER_ADMIN_EMAIL: z.string().email().default('admin@hemiton.live'),
   SUPER_ADMIN_PASSWORD: z.string().min(6).default('admin123'),
-  OWNER_EMAIL: z.string().email().default('owner@zeparty.app'),
+  OWNER_EMAIL: z.string().email().default('owner@hemiton.live'),
   OWNER_PASSWORD: z.string().min(6).default('owner123'),
 });
 
