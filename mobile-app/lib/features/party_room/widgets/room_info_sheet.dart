@@ -320,123 +320,217 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
     if (_currentCoverUrl.startsWith('http')) {
       return Image.network(
         _currentCoverUrl,
-        width: 90,
-        height: 90,
+        width: 96,
+        height: 96,
         fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _coverFallback(primaryColor);
+        },
         errorBuilder: (_, _, _) => _coverFallback(primaryColor),
       );
     } else if (_currentCoverUrl.startsWith('assets')) {
       return Image.asset(
         _currentCoverUrl,
-        width: 90,
-        height: 90,
+        width: 96,
+        height: 96,
         fit: BoxFit.cover,
         errorBuilder: (_, _, _) => _coverFallback(primaryColor),
       );
     } else {
-      final file = File(_currentCoverUrl);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          width: 90,
-          height: 90,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => _coverFallback(primaryColor),
-        );
+      if (_currentCoverUrl.isNotEmpty) {
+        final file = File(_currentCoverUrl);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            width: 96,
+            height: 96,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _coverFallback(primaryColor),
+          );
+        }
       }
       return _coverFallback(primaryColor);
     }
   }
 
   Widget _coverFallback(Color primaryColor) {
+    final initial = _currentTitle.trim().isNotEmpty ? _currentTitle.trim()[0].toUpperCase() : 'H';
     return Container(
-      width: 90,
-      height: 90,
-      color: primaryColor.withValues(alpha: 0.2),
-      child: Icon(Icons.music_note, color: primaryColor, size: 40),
+      width: 96,
+      height: 96,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            right: -10,
+            bottom: -10,
+            child: Icon(
+              Icons.graphic_eq_rounded,
+              color: Colors.white.withValues(alpha: 0.18),
+              size: 64,
+            ),
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.podcasts_rounded, color: Colors.white, size: 30),
+              const SizedBox(height: 2),
+              Text(
+                initial,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final textColor = AppColors.getTextPrimary(widget.isDark);
-    final secondaryColor = AppColors.getTextSecondary(widget.isDark);
-    final primaryColor = AppColors.getPrimary(widget.isDark);
-    final cardColor = AppColors.getCard(widget.isDark);
+    const textColor = Colors.white;
+    final secondaryColor = Colors.white.withValues(alpha: 0.68);
+    const primaryColor = Color(0xFFFF007F);
+    const cardColor = Color(0xFF1B1033);
 
     return Container(
       decoration: BoxDecoration(
-        color: widget.isDark ? AppColors.getCard(true) : Colors.white,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF21123E),
+            Color(0xFF130B26),
+            Color(0xFF0A0614),
+          ],
+        ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        border: Border(
+          top: BorderSide(
+            color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+            width: 1.3,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
+            color: const Color(0xFFFF007F).withValues(alpha: 0.18),
+            blurRadius: 28,
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.7),
+            blurRadius: 24,
             spreadRadius: 5,
           ),
         ],
       ),
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.70,
+        maxHeight: MediaQuery.of(context).size.height * 0.74,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag Handle
-          const SizedBox(height: 12),
+          // Glowing Drag Handle
+          const SizedBox(height: 10),
           Container(
-            width: 40,
-            height: 5,
+            width: 44,
+            height: 4.5,
             decoration: BoxDecoration(
-              color: secondaryColor.withValues(alpha: 0.3),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+              ),
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          
+
           // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const SizedBox(width: 24),
-                Text(
-                  'Room Information',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: textColor,
-                    letterSpacing: 0.5,
-                  ),
+                const SizedBox(width: 32),
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: Color(0xFFFF007F), size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'Room Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
                 ),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: secondaryColor.withValues(alpha: 0.1),
+                      color: Colors.white.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                     ),
-                    child: Icon(Icons.close_rounded, color: secondaryColor, size: 20),
+                    child: const Icon(Icons.close_rounded, color: Colors.white70, size: 19),
                   ),
                 ),
               ],
             ),
           ),
-          
-          // Tabs
-          TabBar(
-            controller: _tabController,
-            indicatorColor: primaryColor,
-            labelColor: textColor,
-            unselectedLabelColor: secondaryColor,
-            labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            tabs: const [
-              Tab(text: 'Profile'),
-              Tab(text: 'Member'),
-            ],
+
+          // Segmented Glass Pill Tabs (Profile | Member)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 28, vertical: 4),
+            padding: const EdgeInsets.all(4),
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFF140B29),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              indicator: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
+                ),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF007F).withValues(alpha: 0.35),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor: secondaryColor,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+              tabs: const [
+                Tab(text: 'Profile'),
+                Tab(text: 'Member'),
+              ],
+            ),
           ),
-          
+
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -453,13 +547,13 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
 
   Widget _buildProfileTab(Color textColor, Color secondaryColor, Color primaryColor, Color cardColor) {
     final memberCount = widget.participants?.length ?? 1;
-    
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 14.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Cover & Icons
+          // Cover & Floating Glass Action Icons
           Stack(
             clipBehavior: Clip.none,
             alignment: Alignment.center,
@@ -467,46 +561,60 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
               GestureDetector(
                 onTap: widget.canManage ? _onChangeCoverPhoto : null,
                 child: Container(
+                  padding: const EdgeInsets.all(2.5),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(26),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: primaryColor.withValues(alpha: 0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
+                        color: const Color(0xFFFF007F).withValues(alpha: 0.38),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(23.5),
                     child: _buildCoverImage(primaryColor),
                   ),
                 ),
               ),
               if (widget.canManage)
                 Positioned(
-                  bottom: 0,
-                  right: 0,
+                  bottom: -4,
+                  right: -4,
                   child: GestureDetector(
                     onTap: _onChangeCoverPhoto,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: primaryColor,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
+                        ),
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.getCard(widget.isDark), width: 2),
+                        border: Border.all(color: const Color(0xFF130B26), width: 2.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
                       child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
                     ),
                   ),
                 ),
               Positioned(
-                right: -45,
-                top: 5,
+                right: -54,
+                top: 4,
                 child: Column(
                   children: [
                     if (widget.canManage)
-                      _buildActionIcon(Icons.settings_outlined, secondaryColor, () async {
+                      _buildActionIcon(Icons.settings_outlined, const Color(0xFF00E5FF), () async {
                         final updated = await Navigator.push<LiveRoomModel>(
                           context,
                           MaterialPageRoute(builder: (_) => RoomSettingsScreen(room: widget.room)),
@@ -518,9 +626,11 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
                           });
                         }
                       }),
-                    if (widget.canManage) const SizedBox(height: 12),
-                    _buildActionIcon(Icons.star_border_rounded, secondaryColor, () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to Favorites')));
+                    if (widget.canManage) const SizedBox(height: 10),
+                    _buildActionIcon(Icons.star_rounded, const Color(0xFFFFD54F), () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('✨ Added to Favorites')),
+                      );
                     }),
                   ],
                 ),
@@ -528,18 +638,18 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
             ],
           ),
           const SizedBox(height: 16),
-          
-          // Room Name
+
+          // Room Name + Diamond + Edit Pill
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Flexible(
                 child: Text(
                   _currentTitle,
-                  style: TextStyle(
-                    fontSize: 17,
+                  style: const TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: textColor,
+                    color: Colors.white,
                     letterSpacing: 0.3,
                   ),
                   maxLines: 1,
@@ -547,64 +657,124 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
                 ),
               ),
               const SizedBox(width: 6),
-              Icon(Icons.diamond_outlined, color: primaryColor, size: 18),
+              const Icon(Icons.diamond_rounded, color: Color(0xFFFF007F), size: 18),
               if (widget.canManage) ...[
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: _onEditRoomName,
-                  child: Icon(Icons.edit_rounded, color: secondaryColor, size: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(4.5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.edit_rounded, color: Color(0xFF00E5FF), size: 14),
+                  ),
                 ),
               ],
             ],
           ),
-          const SizedBox(height: 4),
-          
-          // Room ID
+          const SizedBox(height: 6),
+
+          // Room ID Glass Pill
           GestureDetector(
             onTap: _copyRoomId,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Room ID: ${widget.room.id.length > 8 ? widget.room.id.substring(0, 8) : widget.room.id}',
-                  style: TextStyle(fontSize: 13, color: secondaryColor, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(width: 4),
-                Icon(Icons.copy_rounded, color: secondaryColor, size: 13),
-              ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Room ID: ${widget.room.id.length > 8 ? widget.room.id.substring(0, 8) : widget.room.id}',
+                    style: TextStyle(fontSize: 12, color: secondaryColor, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 5),
+                  const Icon(Icons.copy_rounded, color: Color(0xFF00E5FF), size: 12.5),
+                ],
+              ),
             ),
           ),
-          
-          const SizedBox(height: 24),
-          
-          // Details List wrapped in a neat card
+
+          const SizedBox(height: 18),
+
+          // Details List wrapped in a sleek HemiTon Cyber-Glass Card
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: cardColor.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: primaryColor.withValues(alpha: 0.1)),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF231442).withValues(alpha: 0.85),
+                  const Color(0xFF150C2A).withValues(alpha: 0.9),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFFF007F).withValues(alpha: 0.25)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
-                _buildDetailRow('Country', 'Pakistan', textColor, secondaryColor),
-                const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(height: 1, thickness: 0.5)),
+                _buildDetailRow(
+                  'Country',
+                  '🇵🇰 Pakistan',
+                  textColor,
+                  secondaryColor,
+                  leadingIcon: Icons.public_rounded,
+                  iconColor: const Color(0xFF00E5FF),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Divider(height: 1, thickness: 0.6, color: Colors.white.withValues(alpha: 0.08)),
+                ),
                 _buildLevelRow(textColor, secondaryColor, primaryColor),
-                const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(height: 1, thickness: 0.5)),
-                _buildDetailRow('Member', '$memberCount/200', textColor, secondaryColor, highlightValue: '$memberCount', highlightColor: primaryColor),
-                const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(height: 1, thickness: 0.5)),
-                _buildDetailRow('Room mode', widget.room.roomMode.isNotEmpty ? widget.room.roomMode : 'Friend mode', textColor, secondaryColor, showArrow: widget.canManage),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Divider(height: 1, thickness: 0.6, color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                _buildDetailRow(
+                  'Member',
+                  '$memberCount/200',
+                  textColor,
+                  secondaryColor,
+                  highlightValue: '$memberCount',
+                  highlightColor: const Color(0xFFFF007F),
+                  leadingIcon: Icons.groups_rounded,
+                  iconColor: const Color(0xFFB388FF),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Divider(height: 1, thickness: 0.6, color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                _buildDetailRow(
+                  'Room mode',
+                  widget.room.roomMode.isNotEmpty ? widget.room.roomMode : 'Friend mode',
+                  textColor,
+                  secondaryColor,
+                  showArrow: widget.canManage,
+                  leadingIcon: Icons.tune_rounded,
+                  iconColor: const Color(0xFFFFD54F),
+                ),
               ],
             ),
           ),
-          
-          const SizedBox(height: 20),
 
+          const SizedBox(height: 18),
 
-
-          // CR 36 Side-by-Side Follow & Join Bottom Actions
+          // CR 36 Side-by-Side Follow & Join / Room Owner Bottom Actions
           _buildFollowAndJoinSection(textColor, primaryColor),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -614,27 +784,57 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(9),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.05),
+          color: const Color(0xFF231442),
           shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.4), width: 1.0),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 8),
+          ],
         ),
-        child: Icon(icon, color: color, size: 24),
+        child: Icon(icon, color: color, size: 20),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value, Color textColor, Color secondaryColor, {String? highlightValue, Color? highlightColor, bool showArrow = false}) {
+  Widget _buildDetailRow(
+    String label,
+    String value,
+    Color textColor,
+    Color secondaryColor, {
+    String? highlightValue,
+    Color? highlightColor,
+    bool showArrow = false,
+    IconData? leadingIcon,
+    Color? iconColor,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: secondaryColor,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (leadingIcon != null) ...[
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: (iconColor ?? const Color(0xFFFF007F)).withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(leadingIcon, color: iconColor ?? const Color(0xFFFF007F), size: 15),
+              ),
+              const SizedBox(width: 10),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: secondaryColor,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
         Row(
           children: [
@@ -660,7 +860,7 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
                 value,
                 style: TextStyle(
                   color: textColor,
-                  fontSize: 14,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -678,20 +878,29 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
   Widget _buildLevelRow(Color textColor, Color secondaryColor, Color primaryColor) {
     return Row(
       children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF007F).withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: const Icon(Icons.bolt_rounded, color: Color(0xFFFF007F), size: 15),
+        ),
+        const SizedBox(width: 10),
         Text(
           'Level',
           style: TextStyle(
             color: secondaryColor,
-            fontSize: 14,
+            fontSize: 13.5,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(width: 16),
-        Text(
+        const SizedBox(width: 14),
+        const Text(
           'LV.8',
           style: TextStyle(
-            color: primaryColor,
-            fontSize: 14,
+            color: Color(0xFFFF007F),
+            fontSize: 13.5,
             fontWeight: FontWeight.w900,
             fontStyle: FontStyle.italic,
           ),
@@ -701,29 +910,39 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: 0.54,
-                  minHeight: 4,
-                  backgroundColor: secondaryColor.withValues(alpha: 0.1),
-                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: 0.54,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF007F), Color(0xFF00E5FF)],
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
-                '5422/10k',
-                style: TextStyle(color: secondaryColor, fontSize: 9, fontWeight: FontWeight.bold),
+                '5,422 / 10k EXP',
+                style: TextStyle(color: secondaryColor, fontSize: 9.5, fontWeight: FontWeight.bold),
               ),
             ],
           ),
         ),
         const SizedBox(width: 8),
-        Text(
+        const Text(
           'LV.9',
           style: TextStyle(
-            color: secondaryColor.withValues(alpha: 0.4),
-            fontSize: 14,
+            color: Color(0xFF00E5FF),
+            fontSize: 13.5,
             fontWeight: FontWeight.w900,
             fontStyle: FontStyle.italic,
           ),
@@ -1202,18 +1421,37 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
     if (isOwner) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 13),
         decoration: BoxDecoration(
-          color: Colors.amber.withValues(alpha: 0.15),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF3A1858), Color(0xFF7B1FA2), Color(0xFFFF007F)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+          border: Border.all(color: const Color(0xFFFF80AB).withValues(alpha: 0.6), width: 1.1),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF007F).withValues(alpha: 0.3),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
+            Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD54F), size: 20),
             SizedBox(width: 8),
-            Text('Room Owner', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14)),
+            Text(
+              'Room Owner',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 14.5,
+                letterSpacing: 0.4,
+              ),
+            ),
           ],
         ),
       );

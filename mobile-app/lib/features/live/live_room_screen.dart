@@ -1,5 +1,3 @@
-import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -48,9 +46,6 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
   bool _isMuted = false;
   bool _isInputExpanded = false;
   int _viewerCount = 2400;
-  final List<_FloatingHeart> _floatingHearts = [];
-  Timer? _heartStreamTimer;
-  final List<Timer> _heartTimers = [];
 
   // Camera fields for host live broadcasting
   CameraController? _cameraController;
@@ -76,53 +71,146 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
     if (_isExitDialogShowing) return;
     _isExitDialogShowing = true;
 
+    final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final isHostUser = widget.isHost ||
+        (currentUser.id.isNotEmpty &&
+            (widget.room.host.id == currentUser.id || widget.room.creatorUserId == currentUser.id)) ||
+        (currentUser.username.trim().isNotEmpty &&
+            widget.room.host.username.trim().isNotEmpty &&
+            widget.room.host.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase());
+
     final action = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF161129),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-        ),
-        title: const Text(
-          'Live Broadcast Options',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
-        ),
-        content: const Text(
-          'Would you like to continue watching/streaming, leave the room, or end the live broadcast?',
-          style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'continue'),
-            child: const Text(
-              'Continue Live',
-              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF22133D),
+                Color(0xFF130B24),
+                Color(0xFF0B0616),
+              ],
             ),
-          ),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+              width: 1.3,
             ),
-            onPressed: () => Navigator.pop(ctx, 'leave'),
-            child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.w600)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF007F).withValues(alpha: 0.22),
+                blurRadius: 28,
+                spreadRadius: 2,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.65),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            ),
-            onPressed: () => Navigator.pop(ctx, 'end'),
-            child: const Text('End Live', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: const Icon(Icons.sensors_rounded, color: Colors.white, size: 28),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                isHostUser ? 'Live Broadcast Options' : 'Leave Live Stream?',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isHostUser
+                    ? 'Would you like to continue streaming, leave the room, or end the live broadcast?'
+                    : 'Would you like to continue watching or leave this live stream?',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx, 'continue'),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF8A2BE2), Color(0xFF00E5FF)]),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Continue Live', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx, 'leave'),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Leave Live', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+              if (isHostUser) ...[
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () => Navigator.pop(ctx, 'end'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFFFF1744), Color(0xFFFF007F)]),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.power_settings_new_rounded, color: Colors.white, size: 18),
+                        SizedBox(width: 8),
+                        Text('End Live', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
 
@@ -224,13 +312,6 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
             'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=120&q=80',
       ),
     ];
-
-    // Continuous rising hearts stream matching Image 1
-    _heartStreamTimer = Timer.periodic(const Duration(milliseconds: 750), (timer) {
-      if (mounted) {
-        _addRandomFloatingHeart();
-      }
-    });
   }
 
   @override
@@ -239,48 +320,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
     _commentController.dispose();
     _commentFocusNode.dispose();
     _scrollController.dispose();
-    _heartStreamTimer?.cancel();
-    for (final t in _heartTimers) {
-      t.cancel();
-    }
-    _heartTimers.clear();
     super.dispose();
-  }
-
-  void _addRandomFloatingHeart() {
-    final rand = Random();
-    final id = UniqueKey();
-    final double startX = 310.w + rand.nextDouble() * 25.w;
-    final heart = _FloatingHeart(
-      id: id,
-      startX: startX,
-      color: [
-        Colors.white,
-        const Color(0xFFFFB6C1),
-        const Color(0xFFFF4081),
-        const Color(0xFFFF007F),
-        const Color(0xFFFF1744),
-      ][rand.nextInt(5)],
-      icon: rand.nextBool() ? Icons.favorite_rounded : Icons.favorite,
-    );
-
-    setState(() {
-      _floatingHearts.add(heart);
-      if (_floatingHearts.length > 20) {
-        _floatingHearts.removeAt(0);
-      }
-    });
-
-    Timer? t;
-    t = Timer(const Duration(milliseconds: 2200), () {
-      _heartTimers.remove(t);
-      if (mounted) {
-        setState(() {
-          _floatingHearts.removeWhere((h) => h.id == id);
-        });
-      }
-    });
-    _heartTimers.add(t);
   }
 
   void _sendMessage() {
@@ -403,10 +443,7 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
         backgroundColor: Colors.black,
         body: DoubleTapLikeOverlay(
           roomId: widget.room.id,
-          onLiked: () {
-            _addRandomFloatingHeart();
-            _addRandomFloatingHeart();
-          },
+          onLiked: () {},
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -461,18 +498,6 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
             ),
           ),
 
-          // Double-Tap anywhere to send live heart likes
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onDoubleTap: () {
-                _addRandomFloatingHeart();
-                _addRandomFloatingHeart();
-              },
-              child: const SizedBox.expand(),
-            ),
-          ),
-
           // ── 2. Top Header Bar (Priya Host Capsule + PiP + Exit) ───────────
           SafeArea(
             child: Align(
@@ -511,9 +536,6 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
               ),
             ),
           ),
-
-          // ── 4. Floating Hearts Continuous Rising Stream (Right Edge) ────────
-          ..._floatingHearts.map((h) => _buildAnimatedHeart(h)),
 
           // ── Live Animated Gifts Overlay ──────────────────────────────────────
           TikTokGiftOverlay(roomId: widget.room.id),
@@ -845,42 +867,6 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
   );
 }
 
-  // ── Animated Heart Floating Widget ──────────────────────────────────────────
-  Widget _buildAnimatedHeart(_FloatingHeart heart) {
-    return TweenAnimationBuilder<double>(
-      key: heart.id,
-      tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 2000),
-      builder: (context, value, child) {
-        final double bottom = 70.h + (value * 300.h);
-        final double opacity = value < 0.2 ? (value / 0.2) : (1.0 - value);
-        final double wobble = sin(value * pi * 3) * 12.w;
-
-        return Positioned(
-          left: heart.startX + wobble,
-          bottom: bottom,
-          child: Opacity(
-            opacity: opacity.clamp(0.0, 1.0),
-            child: Transform.scale(
-              scale: 0.7 + (value * 0.5),
-              child: Icon(
-                heart.icon,
-                color: heart.color,
-                size: 24.w,
-                shadows: [
-                  Shadow(
-                    color: heart.color.withValues(alpha: 0.8),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   // ── Bottom Interactive Control Bar (7 items matching reference image exactly) ───
   Widget _buildBottomControlBar() {
     MessagingProvider? messaging;
@@ -1081,7 +1067,6 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
                 final hostName = widget.room.host.name.isNotEmpty
                     ? widget.room.host.name
                     : 'Priya';
-                _addRandomFloatingHeart();
                 showModalBottomSheet(
                   context: context,
                   backgroundColor: Colors.transparent,
@@ -1279,20 +1264,6 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
       ),
     );
   }
-}
-
-class _FloatingHeart {
-  final Key id;
-  final double startX;
-  final Color color;
-  final IconData icon;
-
-  _FloatingHeart({
-    required this.id,
-    required this.startX,
-    required this.color,
-    required this.icon,
-  });
 }
 
 class _LiveChatMessage {

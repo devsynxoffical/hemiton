@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/emoji_reaction_provider.dart';
 
 class _FloatingHeart {
   final int id;
@@ -80,16 +78,6 @@ class _DoubleTapLikeOverlayState extends State<DoubleTapLikeOverlay> {
         ),
       );
     });
-
-    try {
-      if (widget.roomId != null && widget.roomId!.isNotEmpty) {
-        context.read<EmojiReactionProvider>().sendReaction(
-          roomId: widget.roomId!,
-          senderId: 'double_tap_like',
-          emoji: '❤️',
-        );
-      }
-    } catch (_) {}
 
     widget.onLiked?.call();
   }

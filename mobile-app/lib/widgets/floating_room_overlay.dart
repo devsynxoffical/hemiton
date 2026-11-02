@@ -9,6 +9,7 @@ import '../core/repositories/room_repository.dart';
 import '../providers/room_overlay_provider.dart';
 import '../providers/live_provider.dart';
 import '../providers/live_party_provider.dart';
+import '../providers/auth_provider.dart';
 
 class FloatingRoomOverlay extends StatefulWidget {
   const FloatingRoomOverlay({super.key});
@@ -41,49 +42,219 @@ class _FloatingRoomOverlayState extends State<FloatingRoomOverlay> with SingleTi
   }
 
   Future<void> _handleClose(BuildContext context, RoomOverlayProvider overlayProvider) async {
-    final activeRoomId = overlayProvider.activeRoom?.id;
+    final activeRoom = overlayProvider.activeRoom;
+    final activeRoomId = activeRoom?.id;
+    final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final isHostUser = activeRoom != null &&
+        ((currentUser.id.isNotEmpty && (activeRoom.host.id == currentUser.id || activeRoom.creatorUserId == currentUser.id)) ||
+            (currentUser.username.trim().isNotEmpty &&
+                activeRoom.host.username.trim().isNotEmpty &&
+                activeRoom.host.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase()));
+
     final action = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF161129),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-        ),
-        title: const Text(
-          'Live Broadcast Options',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
-        ),
-        content: const Text(
-          'Would you like to continue live, leave this live room, or completely end the live broadcast?',
-          style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'continue'),
-            child: const Text('Continue Live', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-          ),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF22133D),
+                Color(0xFF130B24),
+                Color(0xFF0B0616),
+              ],
             ),
-            onPressed: () => Navigator.pop(ctx, 'leave'),
-            child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+              width: 1.3,
             ),
-            onPressed: () => Navigator.pop(ctx, 'end'),
-            child: const Text('End Live', style: TextStyle(fontWeight: FontWeight.bold)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF007F).withValues(alpha: 0.22),
+                blurRadius: 28,
+                spreadRadius: 2,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.65),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.sensors_rounded,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isHostUser ? 'Live Broadcast Options' : 'Leave Live Room?',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isHostUser
+                    ? 'Would you like to continue in this live room, leave temporarily, or end the live broadcast for everyone?'
+                    : 'Would you like to stay and continue watching, or leave this live room?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  fontSize: 13,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 22),
+
+              // 1. Continue Live
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx, 'continue'),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF8A2BE2).withValues(alpha: 0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 19),
+                      SizedBox(width: 8),
+                      Text(
+                        'Continue Live',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // 2. Leave Live
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx, 'leave'),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      width: 1.1,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Leave Live',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. End Live (ONLY visible to Host)
+              if (isHostUser) ...[
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () => Navigator.pop(ctx, 'end'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF1744), Color(0xFFFF007F)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF1744).withValues(alpha: 0.38),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.power_settings_new_rounded, color: Colors.white, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'End Live',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
 

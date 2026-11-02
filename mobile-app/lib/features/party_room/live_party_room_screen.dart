@@ -79,13 +79,13 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
 
   // ─── Room Tools State ───
   List<Color> _roomBackgroundGradient = [
-    const Color(0xFF2B1055),
-    const Color(0xFF130924),
-    const Color(0xFF080411),
+    const Color(0xFF1A0B36),
+    const Color(0xFF0E0720),
+    const Color(0xFF060310),
   ];
   String? _customBackgroundPath;
-  Color _ambientGlowColor1 = const Color(0xFF9C27B0);
-  Color _ambientGlowColor2 = const Color(0xFFFF4081);
+  Color _ambientGlowColor1 = const Color(0xFFFF007F);
+  Color _ambientGlowColor2 = const Color(0xFF00E5FF);
 
   // Music Player State
   bool _isPlayingMusic = false;
@@ -485,74 +485,246 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
 
   void _leaveRoom() {
     final provider = Provider.of<LivePartyProvider>(context, listen: false);
+    final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final activeRoom = provider.activeRoom ?? widget.room;
+    final isHostUser = (currentUser.id.isNotEmpty &&
+            (activeRoom.host.id == currentUser.id || activeRoom.creatorUserId == currentUser.id)) ||
+        (currentUser.username.trim().isNotEmpty &&
+            activeRoom.host.username.trim().isNotEmpty &&
+            activeRoom.host.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase()) ||
+        (provider.isHost &&
+            (currentUser.id.isNotEmpty && activeRoom.host.id == currentUser.id));
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (d) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1B2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Live Broadcast Options',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
-        ),
-        content: const Text(
-          'Would you like to continue live, leave this live room, or completely end the live broadcast?',
-          style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(d),
-            child: const Text(
-              'Continue Live',
-              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+      builder: (d) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF22133D),
+                Color(0xFF130B24),
+                Color(0xFF0B0616),
+              ],
             ),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+              width: 1.3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF007F).withValues(alpha: 0.22),
+                blurRadius: 28,
+                spreadRadius: 2,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.65),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () async {
-              Navigator.pop(d);
-              await provider.leaveParty();
-              if (mounted) {
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () async {
-              Navigator.pop(d);
-              BackendRepository.instance.removeLiveRoom(widget.room.id);
-              await RoomRepository.instance.closeRoom(widget.room.id);
-              await provider.closeRoom();
-              if (mounted) {
-                final overlayProv = Provider.of<RoomOverlayProvider>(context, listen: false);
-                if (overlayProv.activeRoom?.id == widget.room.id) {
-                  overlayProv.closeRoom(context);
-                }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Live broadcast has ended.'),
-                    backgroundColor: Colors.redAccent,
-                    behavior: SnackBarBehavior.floating,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Glowing Top Broadcast Icon Badge
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                );
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('End Live', style: TextStyle(fontWeight: FontWeight.bold)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.sensors_rounded,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isHostUser ? 'Live Broadcast Options' : 'Leave Party Room?',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isHostUser
+                    ? 'Would you like to continue in this live room, leave temporarily, or end the live broadcast for everyone?'
+                    : 'Would you like to stay and continue listening, or leave this live party room?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  fontSize: 13,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 22),
+
+              // 1. Continue Live (Primary Cyan-Purple Gradient Pill)
+              GestureDetector(
+                onTap: () => Navigator.pop(d),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF8A2BE2).withValues(alpha: 0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 19),
+                      SizedBox(width: 8),
+                      Text(
+                        'Continue Live',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // 2. Leave Live (Sleek Glass Outlined Pill)
+              GestureDetector(
+                onTap: () async {
+                  Navigator.pop(d);
+                  await provider.leaveParty();
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      width: 1.1,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Leave Live',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. End Live (ONLY visible to the Host!)
+              if (isHostUser) ...[
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () async {
+                    Navigator.pop(d);
+                    BackendRepository.instance.removeLiveRoom(widget.room.id);
+                    await RoomRepository.instance.closeRoom(widget.room.id);
+                    await provider.closeRoom();
+                    if (mounted) {
+                      final overlayProv = Provider.of<RoomOverlayProvider>(context, listen: false);
+                      if (overlayProv.activeRoom?.id == widget.room.id) {
+                        overlayProv.closeRoom(context);
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Live broadcast has ended.'),
+                          backgroundColor: Color(0xFFFF007F),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF1744), Color(0xFFFF007F)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF1744).withValues(alpha: 0.38),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.power_settings_new_rounded, color: Colors.white, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'End Live',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -704,28 +876,42 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                     // Default Neon Glow Shapes (only shown if NO custom background theme is equipped)
                     if (bgImage == null) ...[
                       Positioned(
-                        top: -60,
-                        left: -40,
+                        top: -70,
+                        left: -50,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 500),
-                          width: 260,
-                          height: 260,
+                          width: 300,
+                          height: 300,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _ambientGlowColor1.withValues(alpha: 0.28),
+                            gradient: RadialGradient(
+                              colors: [
+                                _ambientGlowColor1.withValues(alpha: 0.24),
+                                _ambientGlowColor1.withValues(alpha: 0.08),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.55, 1.0],
+                            ),
                           ),
                         ),
                       ),
                       Positioned(
-                        top: 120,
-                        right: -60,
+                        top: 110,
+                        right: -70,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 500),
-                          width: 220,
-                          height: 220,
+                          width: 280,
+                          height: 280,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _ambientGlowColor2.withValues(alpha: 0.2),
+                            gradient: RadialGradient(
+                              colors: [
+                                _ambientGlowColor2.withValues(alpha: 0.20),
+                                _ambientGlowColor2.withValues(alpha: 0.06),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.55, 1.0],
+                            ),
                           ),
                         ),
                       ),
@@ -1000,111 +1186,127 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                     child: Builder(
                       builder: (context) {
                         final activeRoom = RoomConfigManager.instance.applyOverrides(provider.activeRoom ?? widget.room);
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Room Avatar (Square with rounded corners)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: _buildHeaderCover(activeRoom.coverUrl),
+                        return Container(
+                          padding: const EdgeInsets.only(left: 4, right: 10, top: 4, bottom: 4),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF241342).withValues(alpha: 0.85),
+                                const Color(0xFF140B28).withValues(alpha: 0.85),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-                            // Room Name and ID
-                            Flexible(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    activeRoom.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      if (activeRoom.host.svipLevel > 0 ||
-                                          (activeRoom.host.nobleTitle != null &&
-                                              activeRoom.host.nobleTitle!.isNotEmpty &&
-                                              activeRoom.host.nobleTitle!.toLowerCase() != 'none') ||
-                                          (activeRoom.nobleTitle.isNotEmpty &&
-                                              activeRoom.nobleTitle.toLowerCase() != 'none' &&
-                                              NobleBadgeHelper.getTierFromTitle(activeRoom.nobleTitle) != NobleTier.none)) ...[
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                          decoration: BoxDecoration(
-                                            color: Colors.amber.withValues(alpha: 0.25),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: Colors.amber.withValues(alpha: 0.5), width: 0.5),
-                                          ),
-                                          child: Text(
-                                            '👑 ${activeRoom.host.svipLevel > 0 ? (activeRoom.host.nobleTitle != null && activeRoom.host.nobleTitle!.toLowerCase().contains("svip") ? activeRoom.host.nobleTitle! : "SVIP ${activeRoom.host.svipLevel}") : (activeRoom.host.nobleTitle?.isNotEmpty == true ? activeRoom.host.nobleTitle! : activeRoom.nobleTitle)}',
-                                            style: const TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                      ],
-                                      Expanded(
-                                        child: Builder(
-                                          builder: (_) {
-                                            final audienceCount = provider.participants
-                                                .where((p) => p.seatNumber == null)
-                                                .map((p) => p.user.id)
-                                                .where((id) => id.isNotEmpty)
-                                                .toSet()
-                                                .length;
-                                            final headerViewerCount = math.max(activeRoom.viewerCount, audienceCount);
-                                            return Text(
-                                              'ID:${activeRoom.id.length > 6 ? activeRoom.id.substring(0, 6) : activeRoom.id} • 👥 $headerViewerCount',
-                                              style: TextStyle(
-                                                color: Colors.white.withValues(alpha: 0.6),
-                                                fontSize: 10,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      if (provider.isRoomLocked) ...[
-                                        const SizedBox(width: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                          decoration: BoxDecoration(
-                                            color: Colors.cyan.withValues(alpha: 0.2),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.6), width: 0.8),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(Icons.lock_rounded, color: Colors.cyanAccent, size: 9),
-                                              const SizedBox(width: 2),
-                                              Text(
-                                                'Locked (${provider.roomLockMode})',
-                                                style: const TextStyle(color: Colors.cyanAccent, fontSize: 8, fontWeight: FontWeight.bold),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ],
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(
+                              color: const Color(0xFFFF007F).withValues(alpha: 0.35),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Room Avatar (Square with rounded corners)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: _buildHeaderCover(activeRoom.coverUrl),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              // Room Name and ID
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      activeRoom.title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        if (activeRoom.host.svipLevel > 0 ||
+                                            (activeRoom.host.nobleTitle != null &&
+                                                activeRoom.host.nobleTitle!.isNotEmpty &&
+                                                activeRoom.host.nobleTitle!.toLowerCase() != 'none') ||
+                                            (activeRoom.nobleTitle.isNotEmpty &&
+                                                activeRoom.nobleTitle.toLowerCase() != 'none' &&
+                                                NobleBadgeHelper.getTierFromTitle(activeRoom.nobleTitle) != NobleTier.none)) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: Colors.amber.withValues(alpha: 0.25),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: Colors.amber.withValues(alpha: 0.5), width: 0.5),
+                                            ),
+                                            child: Text(
+                                              '👑 ${activeRoom.host.svipLevel > 0 ? (activeRoom.host.nobleTitle != null && activeRoom.host.nobleTitle!.toLowerCase().contains("svip") ? activeRoom.host.nobleTitle! : "SVIP ${activeRoom.host.svipLevel}") : (activeRoom.host.nobleTitle?.isNotEmpty == true ? activeRoom.host.nobleTitle! : activeRoom.nobleTitle)}',
+                                              style: const TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                        ],
+                                        Expanded(
+                                          child: Builder(
+                                            builder: (_) {
+                                              final audienceCount = provider.participants
+                                                  .where((p) => p.seatNumber == null)
+                                                  .map((p) => p.user.id)
+                                                  .where((id) => id.isNotEmpty)
+                                                  .toSet()
+                                                  .length;
+                                              final headerViewerCount = math.max(activeRoom.viewerCount, audienceCount);
+                                              return Text(
+                                                'ID:${activeRoom.id.length > 6 ? activeRoom.id.substring(0, 6) : activeRoom.id} • 👥 $headerViewerCount',
+                                                style: TextStyle(
+                                                  color: Colors.white.withValues(alpha: 0.65),
+                                                  fontSize: 10,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        if (provider.isRoomLocked) ...[
+                                          const SizedBox(width: 4),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                              color: Colors.cyan.withValues(alpha: 0.2),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.6), width: 0.8),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.lock_rounded, color: Colors.cyanAccent, size: 9),
+                                                const SizedBox(width: 2),
+                                                Text(
+                                                  'Locked (${provider.roomLockMode})',
+                                                  style: const TextStyle(color: Colors.cyanAccent, fontSize: 8, fontWeight: FontWeight.bold),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 // Follow Button (+)
                 if (!isHost)
                   GestureDetector(
@@ -1118,11 +1320,21 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                     child: Container(
                       width: 30,
                       height: 30,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFB524E4), // bright purple matching screenshot
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF007F).withValues(alpha: 0.4),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.add, color: Colors.white, size: 22),
+                      child: const Icon(Icons.add, color: Colors.white, size: 21),
                     ),
                   ),
               ],
@@ -1621,16 +1833,21 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
             ],
           ),
 
-          // Coordinated Room Guidelines Notice (Ahlan Reference Match)
+          // Coordinated Room Guidelines Notice
           if (_isNoticeExpanded) ...[
             const SizedBox(height: 5),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1338).withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.deepOrangeAccent.withValues(alpha: 0.25)),
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF21123D).withValues(alpha: 0.82),
+                    const Color(0xFF140B29).withValues(alpha: 0.82),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFF007F).withValues(alpha: 0.32)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1639,7 +1856,7 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                   Text(
                     'Welcome to ${activeRoom.title}: please respect each other, no vulgar words, no politics, no religion, no violence, no sexual topic etc.',
                     style: const TextStyle(
-                      color: Color(0xFFFFB74D),
+                      color: Color(0xFFFF80AB),
                       fontSize: 11,
                       height: 1.3,
                       fontWeight: FontWeight.w500,
@@ -1755,8 +1972,8 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF140D24).withValues(alpha: 0.96),
-            border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
+            color: const Color(0xFF0E081C).withValues(alpha: 0.96),
+            border: Border(top: BorderSide(color: const Color(0xFFFF007F).withValues(alpha: 0.18))),
           ),
           child: Row(
             children: [
@@ -1773,14 +1990,14 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                       center: Alignment(-0.3, -0.4),
                       radius: 0.9,
                       colors: [
-                        Color(0xFF5A447E),
-                        Color(0xFF2C194D),
-                        Color(0xFF190C30),
+                        Color(0xFFFF2E93),
+                        Color(0xFF8A2BE2),
+                        Color(0xFF28104E),
                       ],
                     ),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      width: 1.5,
+                      color: const Color(0xFFFF80AB).withValues(alpha: 0.65),
+                      width: 1.4,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -1789,7 +2006,7 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                         offset: const Offset(0, 3),
                       ),
                       BoxShadow(
-                        color: const Color(0xFF7E57C2).withValues(alpha: 0.3),
+                        color: const Color(0xFFFF007F).withValues(alpha: 0.32),
                         blurRadius: 8,
                         spreadRadius: 0.5,
                       ),
@@ -4436,32 +4653,49 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
   }
 
   Widget _buildHeaderCover(String coverUrl) {
+    Widget fallbackBadge() {
+      return Container(
+        width: 38,
+        height: 38,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: const Icon(Icons.graphic_eq_rounded, color: Colors.white, size: 20),
+      );
+    }
+
     if (coverUrl.startsWith('http')) {
       return Image.network(
         coverUrl,
-        width: 42,
-        height: 42,
+        width: 38,
+        height: 38,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          width: 42,
-          height: 42,
-          color: Colors.purple.withValues(alpha: 0.5),
-          child: const Icon(Icons.music_note, color: Colors.white, size: 20),
-        ),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return fallbackBadge();
+        },
+        errorBuilder: (_, _, _) => fallbackBadge(),
       );
     } else if (coverUrl.startsWith('assets')) {
-      return Image.asset(coverUrl, width: 42, height: 42, fit: BoxFit.cover);
-    } else {
-      final file = File(coverUrl);
-      if (file.existsSync()) {
-        return Image.file(file, width: 42, height: 42, fit: BoxFit.cover);
-      }
-      return Container(
-        width: 42,
-        height: 42,
-        color: Colors.purple.withValues(alpha: 0.5),
-        child: const Icon(Icons.music_note, color: Colors.white, size: 20),
+      return Image.asset(
+        coverUrl,
+        width: 38,
+        height: 38,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallbackBadge(),
       );
+    } else {
+      if (coverUrl.isNotEmpty) {
+        final file = File(coverUrl);
+        if (file.existsSync()) {
+          return Image.file(file, width: 38, height: 38, fit: BoxFit.cover);
+        }
+      }
+      return fallbackBadge();
     }
   }
 }

@@ -137,9 +137,9 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
           isMuted: false,
           isCameraOff: false,
           isSpeaking: true,
-          giftCoinsReceived: 520,
+          giftCoinsReceived: widget.isHost ? 0 : 520,
         );
-      } else if (index == 1) {
+      } else if (!widget.isHost && index == 1) {
         return const _GroupVideoGuestSeat(
           seatIndex: 1,
           user: UserModel(
@@ -154,7 +154,7 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
           isSpeaking: false,
           giftCoinsReceived: 240,
         );
-      } else if (index == 2) {
+      } else if (!widget.isHost && index == 2) {
         return const _GroupVideoGuestSeat(
           seatIndex: 2,
           user: UserModel(
@@ -385,7 +385,20 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
     final isHostUser = widget.isHost || widget.room.host.id == currentUser.id;
 
     if (seat.user == null) {
-      // 1. PUBLIC GROUP LIVE (or Host): Any user can immediately join if seat is available!
+      // Host is already broadcasting from the main Host Seat (index == 0)
+      if (isHostUser && index != 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You are the Host on the main stage! Guest seats are for viewers.'),
+            backgroundColor: Color(0xFF8A2BE2),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // 1. PUBLIC GROUP LIVE (or Host on seat 0): Any user can immediately join if seat is available!
       if (!_isPrivateRoom || isHostUser) {
         _joinSeatDirectly(index, currentUser);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -588,60 +601,189 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
   }
 
   void _leaveRoom() {
+    final currentUser = context.read<AuthProvider>().currentUser;
+    final isHostUser = widget.isHost ||
+        (currentUser.id.isNotEmpty &&
+            (widget.room.host.id == currentUser.id || widget.room.creatorUserId == currentUser.id)) ||
+        (currentUser.username.trim().isNotEmpty &&
+            widget.room.host.username.trim().isNotEmpty &&
+            widget.room.host.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase());
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1B1433),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-        ),
-        title: Text(
-          'Live Broadcast Options',
-          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16.sp),
-        ),
-        content: Text(
-          'Would you like to continue in this group video live, leave the room, or end the live session?',
-          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13.sp),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Continue Live', style: GoogleFonts.poppins(color: Colors.white70, fontWeight: FontWeight.w600)),
-          ),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
+        child: Container(
+          padding: EdgeInsets.fromLTRB(22.w, 24.h, 22.w, 20.h),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF22133D),
+                Color(0xFF130B24),
+                Color(0xFF0B0616),
+              ],
             ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: Text('Leave Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+            borderRadius: BorderRadius.circular(26.r),
+            border: Border.all(
+              color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+              width: 1.3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF007F).withValues(alpha: 0.22),
+                blurRadius: 28,
+                spreadRadius: 2,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.65),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              BackendRepository.instance.removeLiveRoom(widget.room.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Group video live has ended.'),
-                  backgroundColor: Colors.redAccent,
-                  duration: Duration(seconds: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56.w,
+                height: 56.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+                      blurRadius: 16,
+                    ),
+                  ],
                 ),
-              );
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-            ),
-            child: Text('End Live', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Icon(Icons.sensors_rounded, color: Colors.white, size: 28),
+              ),
+              SizedBox(height: 14.h),
+              Text(
+                isHostUser ? 'Live Broadcast Options' : 'Leave Group Live?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 17.sp,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                isHostUser
+                    ? 'Would you like to continue in this group video live, leave the room, or end the live session?'
+                    : 'Would you like to continue watching this group video live or leave the room?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12.5.sp, height: 1.4),
+              ),
+              SizedBox(height: 20.h),
+
+              // 1. Continue Live
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx),
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(vertical: 11.h),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                    ),
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 7.w),
+                      Text(
+                        'Continue Live',
+                        style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5.sp),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 9.h),
+
+              // 2. Leave Live
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(vertical: 11.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 7.w),
+                      Text(
+                        'Leave Live',
+                        style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5.sp),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. End Live (ONLY visible to Host!)
+              if (isHostUser) ...[
+                SizedBox(height: 9.h),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    BackendRepository.instance.removeLiveRoom(widget.room.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Group video live has ended.'),
+                        backgroundColor: Color(0xFFFF007F),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: 11.h),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF1744), Color(0xFFFF007F)],
+                      ),
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.power_settings_new_rounded, color: Colors.white, size: 18),
+                        SizedBox(width: 7.w),
+                        Text(
+                          'End Live',
+                          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5.sp),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1092,6 +1234,9 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
     final isOccupied = seat.user != null;
     final isSpeaking = seat.isSpeaking;
     final isPendingApproval = _pendingPermissionSeats.contains(index);
+    final currentUserId = context.read<AuthProvider>().currentUser.id;
+    final shouldShowLocalCamera = (isHostSeat && (widget.isHost || widget.room.host.id == currentUserId)) ||
+        (!isHostSeat && !widget.isHost && seat.user != null && seat.user!.id == currentUserId);
 
     final borderColor = isHostSeat
         ? const Color(0xFFFFD700)
@@ -1157,7 +1302,7 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                         ),
                       ),
                     )
-                  : ((isHostSeat || widget.isHost) &&
+                  : (shouldShowLocalCamera &&
                           _isCameraInitialized &&
                           _cameraController != null &&
                           _cameraController!.value.isInitialized

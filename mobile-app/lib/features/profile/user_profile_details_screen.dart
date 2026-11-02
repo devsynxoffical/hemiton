@@ -18,6 +18,7 @@ import '../profile/level_center_screen.dart';
 import '../live_host/live_host_center_screen.dart';
 import '../live/live_room_screen.dart';
 import '../../widgets/user_list_sheet.dart';
+import 'widgets/tiktok_fullscreen_preview_screen.dart';
 
 /// UserProfileDetailsScreen
 /// Layout & Features:
@@ -65,7 +66,7 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
   @override
   void initState() {
     super.initState();
-    _mediaTabController = TabController(length: 2, vsync: this);
+    _mediaTabController = TabController(length: 4, vsync: this);
 
     if (widget.user != null) {
       _user = widget.user!;
@@ -387,13 +388,17 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                   // Name + Blue Verified Badge
                   Row(
                     children: [
-                      Text(
-                        displayName,
-                        style: TextStyle(
-                          fontSize: 20.sp,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
-                          letterSpacing: -0.3,
+                      Flexible(
+                        child: Text(
+                          displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            letterSpacing: -0.3,
+                          ),
                         ),
                       ),
                       SizedBox(width: 5.w),
@@ -406,12 +411,16 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                   // ID + Copy Icon + Settings Icon
                   Row(
                     children: [
-                      Text(
-                        'ID: $displayId',
-                        style: TextStyle(
-                          fontSize: 12.5.sp,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFFE91E63),
+                      Flexible(
+                        child: Text(
+                          'ID: $displayId',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.5.sp,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFE91E63),
+                          ),
                         ),
                       ),
                       SizedBox(width: 6.w),
@@ -555,12 +564,16 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
                     children: [
                       Icon(Icons.location_on_rounded, size: 14.sp, color: Colors.grey.shade400),
                       SizedBox(width: 4.w),
-                      Text(
-                        location,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                          fontWeight: FontWeight.w500,
+                      Flexible(
+                        child: Text(
+                          location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                       SizedBox(width: 8.w),
@@ -740,38 +753,76 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
 
                   SizedBox(height: 16.h),
 
-                  // ── Lower Half: Photos & Videos Media Tabs ─────────────────
+                  // ── Lower Half: TikTok-Style Media Tabs (Videos, Photos, Favorites, Liked) ─
                   Container(
-                    height: 42.h,
+                    height: 44.h,
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF161928) : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(10.r),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black12,
+                        width: 1,
+                      ),
                     ),
                     child: TabBar(
                       controller: _mediaTabController,
-                      indicatorColor: const Color(0xFFFF1493),
-                      indicatorWeight: 2.5,
-                      labelColor: const Color(0xFFFF1493),
+                      indicatorColor: const Color(0xFFFF007F),
+                      indicatorWeight: 2.8,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      labelPadding: EdgeInsets.symmetric(horizontal: 2.w),
+                      labelColor: const Color(0xFFFF007F),
                       unselectedLabelColor: isDark ? Colors.white60 : const Color(0xFF64748B),
                       tabs: const [
                         Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.photo_library_rounded, size: 16),
-                              SizedBox(width: 6),
-                              Text('Photos', style: TextStyle(fontWeight: FontWeight.w600)),
-                            ],
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.grid_on_rounded, size: 14),
+                                SizedBox(width: 3),
+                                Text('Videos', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11)),
+                              ],
+                            ),
                           ),
                         ),
                         Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.videocam_rounded, size: 16),
-                              SizedBox(width: 6),
-                              Text('Videos', style: TextStyle(fontWeight: FontWeight.w600)),
-                            ],
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.photo_library_outlined, size: 14),
+                                SizedBox(width: 3),
+                                Text('Photos', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Tab(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.bookmark_outline_rounded, size: 14),
+                                SizedBox(width: 3),
+                                Text('Favorite', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Tab(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.favorite_border_rounded, size: 14),
+                                SizedBox(width: 3),
+                                Text('Liked', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11)),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -780,14 +831,16 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
 
                   SizedBox(height: 12.h),
 
-                  // Scrollable Grid inside Lower Half
+                  // TikTok-Style Media Grid View inside Lower Half
                   SizedBox(
-                    height: 380.h,
+                    height: 520.h,
                     child: TabBarView(
                       controller: _mediaTabController,
                       children: [
-                        _buildPhotosGrid(isDark),
-                        _buildVideosGrid(isDark),
+                        _buildVideosGrid(isDark, displayName, avatarUrl),
+                        _buildPhotosGrid(isDark, displayName, avatarUrl),
+                        _buildFavoritesGrid(isDark, displayName, avatarUrl),
+                        _buildLikedGrid(isDark, displayName, avatarUrl),
                       ],
                     ),
                   ),
@@ -945,81 +998,575 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
   }
 
   // ===========================================================================
-  // Photos & Videos Grid Views
   // ===========================================================================
-  Widget _buildPhotosGrid(bool isDark) {
-    final List<String> photos = [
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-      'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400&q=80',
-      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&q=80',
-      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&q=80',
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
-    ];
-
-    return GridView.builder(
-      physics: const BouncingScrollPhysics(),
-      itemCount: photos.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 6.w,
-        mainAxisSpacing: 6.h,
-        childAspectRatio: 0.95,
+  // TikTok-Style Media Section (Videos, Photos, Favorites, Liked)
+  // ===========================================================================
+  void _openFullScreenMedia({
+    required BuildContext context,
+    required List<TikTokMediaItem> playlist,
+    required int initialIndex,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TikTokFullScreenPreviewScreen(
+          item: playlist[initialIndex],
+          playlist: playlist,
+          initialIndex: initialIndex,
+        ),
       ),
-      itemBuilder: (context, index) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(10.r),
-          child: Image.network(
-            photos[index],
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade800),
-          ),
-        );
-      },
     );
   }
 
-  Widget _buildVideosGrid(bool isDark) {
-    final List<Map<String, String>> videos = [
-      {'thumb': 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&q=80', 'duration': '00:15'},
-      {'thumb': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80', 'duration': '00:28'},
-      {'thumb': 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=400&q=80', 'duration': '01:02'},
+  Widget _buildVideosGrid(bool isDark, String displayName, String avatarUrl) {
+    final List<Map<String, dynamic>> videos = [
+      {
+        'thumb': 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&q=80',
+        'views': '124.5K',
+        'isPinned': true,
+        'likes': '8.4K',
+        'duration': '00:15',
+        'title': 'Saturday Night Vibe in HemiTon 🔥',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
+        'views': '45.2K',
+        'isPinned': true,
+        'likes': '3.1K',
+        'duration': '00:28',
+        'title': 'Sunset at the beach with friends 🌅',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=500&q=80',
+        'views': '89.1K',
+        'isPinned': false,
+        'likes': '6.9K',
+        'duration': '01:02',
+        'title': 'Motorcycle ride across the city 🏍️',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
+        'views': '12.8K',
+        'isPinned': false,
+        'likes': '1.2K',
+        'duration': '00:45',
+        'title': 'Late night neon room chill 🎧',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&q=80',
+        'views': '210.4K',
+        'isPinned': false,
+        'likes': '19.8K',
+        'duration': '00:22',
+        'title': 'Concert stage light show 💥',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+        'views': '34.6K',
+        'isPinned': false,
+        'likes': '2.9K',
+        'duration': '00:30',
+        'title': 'Acoustic guitar live acoustic jam 🎸',
+      },
     ];
+
+    final playlist = videos.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final item = entry.value;
+      return TikTokMediaItem(
+        id: 'video_$idx',
+        mediaUrl: item['thumb'] as String,
+        title: item['title'] as String,
+        creatorName: displayName,
+        creatorAvatar: avatarUrl,
+        views: item['views'] as String,
+        initialLikes: item['likes'] as String,
+        isVideo: true,
+      );
+    }).toList();
 
     return GridView.builder(
       physics: const BouncingScrollPhysics(),
       itemCount: videos.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        crossAxisSpacing: 8.w,
-        mainAxisSpacing: 8.h,
-        childAspectRatio: 0.9,
+        crossAxisSpacing: 3.w,
+        mainAxisSpacing: 3.h,
+        childAspectRatio: 0.72,
       ),
       itemBuilder: (context, index) {
         final v = videos[index];
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(10.r),
+        return GestureDetector(
+          onTap: () => _openFullScreenMedia(
+            context: context,
+            playlist: playlist,
+            initialIndex: index,
+          ),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(v['thumb']!, fit: BoxFit.cover),
-              Center(
+              Image.network(
+                v['thumb'] as String,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900),
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.05),
+                        Colors.black.withValues(alpha: 0.8),
+                      ],
+                      stops: const [0.45, 0.7, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              if (v['isPinned'] == true)
+                Positioned(
+                  top: 5.h,
+                  left: 5.w,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF007F),
+                      borderRadius: BorderRadius.circular(3.r),
+                    ),
+                    child: Text(
+                      'Pinned',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.5.sp,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 5.h,
+                right: 5.w,
                 child: Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: const BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
-                  child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(3.r),
+                  ),
+                  child: Text(
+                    v['duration'] as String,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8.5.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               Positioned(
-                bottom: 4.h,
-                right: 6.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.5.h),
-                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4.r)),
-                  child: Text(
-                    v['duration']!,
-                    style: TextStyle(color: Colors.white, fontSize: 9.sp, fontWeight: FontWeight.bold),
+                bottom: 5.h,
+                left: 6.w,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.play_arrow_outlined, color: Colors.white, size: 14.sp),
+                    SizedBox(width: 2.w),
+                    Text(
+                      v['views'] as String,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10.5.sp,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPhotosGrid(bool isDark, String displayName, String avatarUrl) {
+    final List<Map<String, dynamic>> photos = [
+      {
+        'thumb': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
+        'likes': '4.2K',
+        'multi': 3,
+        'title': 'New studio photoshoot session ✨',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500&q=80',
+        'likes': '1.8K',
+        'multi': 1,
+        'title': 'Weekend coffee & coding ☕',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
+        'likes': '950',
+        'multi': 4,
+        'title': 'Mountains trip memories 🏔️',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&q=80',
+        'likes': '7.1K',
+        'multi': 2,
+        'title': 'Concert night vibes 🎶',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&q=80',
+        'likes': '3.3K',
+        'multi': 1,
+        'title': 'Street fashion in neon lights 🌆',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
+        'likes': '12.4K',
+        'multi': 5,
+        'title': 'Summer memories album 🌴',
+      },
+    ];
+
+    final playlist = photos.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final item = entry.value;
+      final multi = item['multi'] as int? ?? 1;
+      return TikTokMediaItem(
+        id: 'photo_$idx',
+        mediaUrl: item['thumb'] as String,
+        photoUrls: List.generate(multi, (_) => item['thumb'] as String),
+        title: item['title'] as String,
+        creatorName: displayName,
+        creatorAvatar: avatarUrl,
+        views: '35.4K',
+        initialLikes: item['likes'] as String,
+        isVideo: false,
+      );
+    }).toList();
+
+    return GridView.builder(
+      physics: const BouncingScrollPhysics(),
+      itemCount: photos.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 3.w,
+        mainAxisSpacing: 3.h,
+        childAspectRatio: 0.72,
+      ),
+      itemBuilder: (context, index) {
+        final p = photos[index];
+        final multi = p['multi'] as int? ?? 1;
+        return GestureDetector(
+          onTap: () => _openFullScreenMedia(
+            context: context,
+            playlist: playlist,
+            initialIndex: index,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                p['thumb'] as String,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900),
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.05),
+                        Colors.black.withValues(alpha: 0.8),
+                      ],
+                      stops: const [0.45, 0.7, 1.0],
+                    ),
                   ),
+                ),
+              ),
+              if (multi > 1)
+                Positioned(
+                  top: 5.h,
+                  right: 5.w,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.layers_rounded, color: Colors.white, size: 10.sp),
+                        SizedBox(width: 2.w),
+                        Text(
+                          '$multi',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              Positioned(
+                bottom: 5.h,
+                left: 6.w,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.favorite_rounded, color: const Color(0xFFFF007F), size: 12.sp),
+                    SizedBox(width: 3.w),
+                    Text(
+                      p['likes'] as String,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10.5.sp,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFavoritesGrid(bool isDark, String displayName, String avatarUrl) {
+    final List<Map<String, dynamic>> favorites = [
+      {
+        'thumb': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
+        'views': '58.2K',
+        'likes': '7.4K',
+        'title': 'Night Vibes & Chill Beats ✨',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&q=80',
+        'views': '19.4K',
+        'likes': '2.1K',
+        'title': 'Gaming Room Setup Tour 🎮',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
+        'views': '73.1K',
+        'likes': '9.8K',
+        'title': 'Tropical Sunset Live Mix 🌅',
+      },
+    ];
+
+    final playlist = favorites.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final item = entry.value;
+      return TikTokMediaItem(
+        id: 'fav_$idx',
+        mediaUrl: item['thumb'] as String,
+        title: item['title'] as String,
+        creatorName: displayName,
+        creatorAvatar: avatarUrl,
+        views: item['views'] as String,
+        initialLikes: item['likes'] as String,
+        isVideo: true,
+      );
+    }).toList();
+
+    return GridView.builder(
+      physics: const BouncingScrollPhysics(),
+      itemCount: favorites.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 3.w,
+        mainAxisSpacing: 3.h,
+        childAspectRatio: 0.72,
+      ),
+      itemBuilder: (context, index) {
+        final fav = favorites[index];
+        return GestureDetector(
+          onTap: () => _openFullScreenMedia(
+            context: context,
+            playlist: playlist,
+            initialIndex: index,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                fav['thumb'] as String,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900),
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.05),
+                        Colors.black.withValues(alpha: 0.8),
+                      ],
+                      stops: const [0.45, 0.7, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 5.h,
+                right: 5.w,
+                child: Container(
+                  padding: const EdgeInsets.all(3.5),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.bookmark_rounded,
+                    color: const Color(0xFFFFD700),
+                    size: 13.sp,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 5.h,
+                left: 6.w,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.play_arrow_outlined, color: Colors.white, size: 14.sp),
+                    SizedBox(width: 2.w),
+                    Text(
+                      fav['views'] as String,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10.5.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLikedGrid(bool isDark, String displayName, String avatarUrl) {
+    final List<Map<String, dynamic>> liked = [
+      {
+        'thumb': 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&q=80',
+        'views': '88.3K',
+        'likes': '14.2K',
+        'title': 'Best live festival crowd ever! 🎉',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500&q=80',
+        'views': '41.6K',
+        'likes': '5.8K',
+        'title': 'Cozy coffee shop acoustics ☕',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=500&q=80',
+        'views': '104.9K',
+        'likes': '22.1K',
+        'title': 'Golden hour motorcycle run 🚀',
+      },
+      {
+        'thumb': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
+        'views': '31.0K',
+        'likes': '3.9K',
+        'title': 'Studio portrait series 📸',
+      },
+    ];
+
+    final playlist = liked.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final item = entry.value;
+      return TikTokMediaItem(
+        id: 'liked_$idx',
+        mediaUrl: item['thumb'] as String,
+        title: item['title'] as String,
+        creatorName: displayName,
+        creatorAvatar: avatarUrl,
+        views: item['views'] as String,
+        initialLikes: item['likes'] as String,
+        isVideo: true,
+      );
+    }).toList();
+
+    return GridView.builder(
+      physics: const BouncingScrollPhysics(),
+      itemCount: liked.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 3.w,
+        mainAxisSpacing: 3.h,
+        childAspectRatio: 0.72,
+      ),
+      itemBuilder: (context, index) {
+        final item = liked[index];
+        return GestureDetector(
+          onTap: () => _openFullScreenMedia(
+            context: context,
+            playlist: playlist,
+            initialIndex: index,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                item['thumb'] as String,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900),
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.05),
+                        Colors.black.withValues(alpha: 0.8),
+                      ],
+                      stops: const [0.45, 0.7, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 5.h,
+                left: 6.w,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.favorite_rounded, color: const Color(0xFFFF1744), size: 12.sp),
+                    SizedBox(width: 3.w),
+                    Text(
+                      item['likes'] as String,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10.5.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1071,24 +1618,32 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> wit
   }
 
   Widget _buildClickableStatItem(String count, String label, IconData icon, Color iconColor, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: iconColor, size: 17.sp),
-          SizedBox(height: 3.h),
-          Text(
-            count,
-            style: TextStyle(fontSize: 14.5.sp, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          SizedBox(height: 1.5.h),
-          Text(
-            label,
-            style: TextStyle(fontSize: 10.5.sp, color: Colors.grey.shade400),
-          ),
-        ],
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: iconColor, size: 17.sp),
+            SizedBox(height: 3.h),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                count,
+                style: TextStyle(fontSize: 14.5.sp, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+            SizedBox(height: 1.5.h),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 10.5.sp, color: Colors.grey.shade400),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

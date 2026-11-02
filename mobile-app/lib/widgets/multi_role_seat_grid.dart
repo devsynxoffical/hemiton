@@ -243,14 +243,17 @@ class MultiRoleSeatGrid extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isHostUser
-                                ? const Color(0xFFFFD700)
-                                : (isMod ? const Color(0xFF40C4FF) : const Color(0xFFAB47BC).withValues(alpha: 0.8)),
-                            width: 2,
+                                ? const Color(0xFFFF007F)
+                                : (isMod ? const Color(0xFF00E5FF) : const Color(0xFFB388FF).withValues(alpha: 0.9)),
+                            width: 2.2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: (isHostUser ? Colors.amber : const Color(0xFFAB47BC)).withValues(alpha: 0.3),
-                              blurRadius: 8,
+                              color: (isHostUser
+                                      ? const Color(0xFFFF007F)
+                                      : (isMod ? const Color(0xFF00E5FF) : const Color(0xFF8A2BE2)))
+                                  .withValues(alpha: 0.42),
+                              blurRadius: 10,
                             ),
                           ],
                         ),
@@ -420,7 +423,7 @@ class MultiRoleSeatGrid extends StatelessWidget {
       );
     }
 
-    // Empty Seat with Sleek Cushioned Chair Graphic (Ahlan Reference Match)
+    // Empty Seat with HemiTon Neon Pink-Purple-Cyan Glass Circle Graphic
     return GestureDetector(
       key: seatKey,
       onTap: () => onSeatTap(seatIndex),
@@ -430,33 +433,61 @@ class MultiRoleSeatGrid extends StatelessWidget {
           Container(
             width: radius * 2,
             height: radius * 2,
+            padding: const EdgeInsets.all(1.6),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF4A3468).withValues(alpha: 0.45),
-                  const Color(0xFF281C40).withValues(alpha: 0.65),
-                ],
+                colors: isHostRow
+                    ? const [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)]
+                    : [
+                        const Color(0xFFFF007F).withValues(alpha: 0.65),
+                        const Color(0xFF8A2BE2).withValues(alpha: 0.65),
+                        const Color(0xFF00E5FF).withValues(alpha: 0.55),
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.22),
-                width: 1.2,
-              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 6,
+                  color: (isHostRow ? const Color(0xFFFF007F) : const Color(0xFF8A2BE2))
+                      .withValues(alpha: isHostRow ? 0.28 : 0.20),
+                  blurRadius: isHostRow ? 10 : 7,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Center(
-              child: Icon(
-                Icons.weekend_rounded,
-                color: Colors.white.withValues(alpha: 0.55),
-                size: radius * 0.9,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: isHostRow
+                      ? [
+                          const Color(0xFF28144D).withValues(alpha: 0.92),
+                          const Color(0xFF120924).withValues(alpha: 0.96),
+                        ]
+                      : [
+                          const Color(0xFF21123E).withValues(alpha: 0.88),
+                          const Color(0xFF0F0820).withValues(alpha: 0.94),
+                        ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Center(
+                child: ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: isHostRow
+                        ? const [Color(0xFFFF6EC7), Color(0xFF00E5FF)]
+                        : const [Color(0xFFE089FF), Color(0xFF80DEEA)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: Icon(
+                    Icons.weekend_rounded,
+                    color: Colors.white,
+                    size: radius * 0.88,
+                  ),
+                ),
               ),
             ),
           ),
@@ -464,7 +495,9 @@ class MultiRoleSeatGrid extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.65),
+              color: isHostRow
+                  ? const Color(0xFFFFB2DF)
+                  : Colors.white.withValues(alpha: 0.82),
               fontSize: isHostRow ? 10 : 9.5,
               fontWeight: FontWeight.w600,
             ),

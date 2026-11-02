@@ -165,46 +165,72 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
     final outfitCount = user.customTitles.length;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF141024),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF22123F),
+            Color(0xFF130B26),
+            Color(0xFF0A0614),
+          ],
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        border: Border(
+          top: BorderSide(
+            color: const Color(0xFFFF007F).withValues(alpha: 0.48),
+            width: 1.4,
+          ),
+        ),
         boxShadow: [
-          BoxShadow(color: Colors.black87, blurRadius: 30, spreadRadius: 5),
+          BoxShadow(
+            color: const Color(0xFFFF007F).withValues(alpha: 0.2),
+            blurRadius: 28,
+            spreadRadius: 2,
+          ),
+          const BoxShadow(color: Colors.black87, blurRadius: 30, spreadRadius: 5),
         ],
       ),
       child: SafeArea(
         top: false,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.58,
+            maxHeight: MediaQuery.of(context).size.height * 0.62,
           ),
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Top Bar with 3-dot overflow menu & grabber bar
+                // Top Bar with 3-dot overflow menu & HemiTon neon grabber bar
                 Padding(
-                  padding: const EdgeInsets.only(top: 4, left: 12, right: 12, bottom: 2),
+                  padding: const EdgeInsets.only(top: 6, left: 14, right: 14, bottom: 2),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.more_horiz_rounded, color: Colors.white70, size: 22),
-                        tooltip: 'More Options',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => _showOverflowMenu(context, user, isMe),
-                      ),
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(2),
+                      GestureDetector(
+                        onTap: () => _showOverflowMenu(context, user, isMe),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+                          ),
+                          child: const Icon(Icons.more_horiz_rounded, color: Colors.white70, size: 18),
                         ),
                       ),
-                      const SizedBox(width: 24), // Spacer to balance 3-dot menu
+                      Container(
+                        width: 44,
+                        height: 4.5,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 30), // Spacer to balance 3-dot menu
                     ],
                   ),
                 ),
@@ -218,7 +244,7 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                   Center(
                     child: Column(
                       children: [
-                        // Avatar with glowing ring / frame
+                        // Avatar with HemiTon Neon Pink-Purple-Cyan glowing ring / frame
                         GestureDetector(
                           onTap: () {
                             Navigator.pop(context);
@@ -233,23 +259,30 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                             alignment: Alignment.center,
                             children: [
                               Container(
-                                width: 66,
-                                height: 66,
-                                decoration: const BoxDecoration(
+                                width: 70,
+                                height: 70,
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  gradient: SweepGradient(
+                                  gradient: const SweepGradient(
                                     colors: [
-                                      Colors.amber,
-                                      Colors.pinkAccent,
-                                      Colors.cyanAccent,
-                                      Colors.amber,
+                                      Color(0xFFFF007F),
+                                      Color(0xFF8A2BE2),
+                                      Color(0xFF00E5FF),
+                                      Color(0xFFFF007F),
                                     ],
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFF007F).withValues(alpha: 0.4),
+                                      blurRadius: 16,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
                                 ),
                               ),
                               UserAvatar(
                                 imageUrl: user.avatarUrl,
-                                radius: 30,
+                                radius: 31,
                                 showVipFrame: user.isVip,
                                 frameAsset: NobleBadgeHelper.getFrameAsset(
                                   user.nobleTitle ??
@@ -261,7 +294,7 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
 
                         // Name, Gender/Age badge, Home icon
                         Row(
@@ -271,8 +304,8 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                               child: Text(
                                 user.displayName,
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
                                   color: NobleBadgeHelper.getColoredNicknameColor(
                                     NobleBadgeHelper.getTierFromTitle(user.nobleTitle),
                                   ),
@@ -282,13 +315,15 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            // Gender & Age Chip
+                            // Gender & Age Chip (HemiTon Gradient)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                               decoration: BoxDecoration(
-                                color: user.gender.toLowerCase() == 'female'
-                                    ? Colors.pinkAccent
-                                    : Colors.blueAccent,
+                                gradient: LinearGradient(
+                                  colors: user.gender.toLowerCase() == 'female'
+                                      ? const [Color(0xFFFF007F), Color(0xFFFF5286)]
+                                      : const [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                                ),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
@@ -307,7 +342,7 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
                                 ],
@@ -316,9 +351,11 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                             const SizedBox(width: 6),
                             // Home Icon
                             Container(
-                              padding: const EdgeInsets.all(3),
+                              padding: const EdgeInsets.all(3.5),
                               decoration: const BoxDecoration(
-                                color: Colors.purpleAccent,
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
+                                ),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.home_rounded, size: 12, color: Colors.white),
@@ -326,42 +363,53 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                           ],
                         ),
 
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
 
-                        // Numeric ID, Copy button, Country flag & name
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'ID: ${user.id}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.getTextSecondary(widget.isDark),
+                        // Numeric ID, Copy button, Country flag & name inside a glass pill
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'ID: ${user.id}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            GestureDetector(
-                              onTap: () {
-                                Clipboard.setData(ClipboardData(text: user.id));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('ID copied to clipboard 📋')),
-                                );
-                              },
-                              child: Icon(
-                                Icons.copy_rounded,
-                                size: 12,
-                                color: AppColors.getTextSecondary(widget.isDark),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: user.id));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('ID copied to clipboard 📋')),
+                                  );
+                                },
+                                child: const Icon(
+                                  Icons.copy_rounded,
+                                  size: 12,
+                                  color: Color(0xFF00E5FF),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '|  ${user.countryFlag} ${user.cleanCountryName}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.getTextSecondary(widget.isDark),
+                              const SizedBox(width: 8),
+                              Text(
+                                '|  ${user.countryFlag} ${user.cleanCountryName}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
 
                         // Feature 5: Friendship Level Badge (Visible for other users)
@@ -417,11 +465,16 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
 
                   // 2. ONE COMPACT ROW OF 4 LEVEL BADGES (Sending, Receiving, Game, Account)
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                     decoration: BoxDecoration(
-                      color: widget.isDark ? const Color(0xFF1E1A33) : const Color(0xFFF2EFFC),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white12),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF251545).withValues(alpha: 0.9),
+                          const Color(0xFF160C2B).withValues(alpha: 0.9),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFF007F).withValues(alpha: 0.22)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -440,7 +493,7 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                           level: charmLv,
                           assetPath: 'assets/images/level_logo_charm.png',
                           fallbackIcon: Icons.favorite_rounded,
-                          accentColor: const Color(0xFFFF4081),
+                          accentColor: const Color(0xFFFF007F),
                         ),
                         // 3. Game
                         _buildCompactLevelBadge(
@@ -464,19 +517,19 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
 
                   const SizedBox(height: 8),
 
-                  // 3. SVIP (ONLY if active/assigned) & Quick Action Pills
+                  // 3. SVIP (ONLY if active/assigned) & HemiTon Neon Quick Action Pills
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Show SVIP ONLY if active; otherwise show nothing (leave no empty slot)
                       if (isSvipActive) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFF8D5B00), Color(0xFFFFC107), Color(0xFF8D5B00)],
                             ),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.amberAccent, width: 0.8),
                           ),
                           child: Row(
@@ -495,47 +548,59 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                       ],
 
-                      // Gift Wall Button (Real user data)
+                      // Gift Wall Button (HemiTon Cyber Cyan-Blue Gradient)
                       GestureDetector(
                         onTap: () => _showGiftWallModal(context, user),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.teal.shade700, Colors.tealAccent.shade400],
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
                             ),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.card_giftcard_rounded, size: 12, color: Colors.black),
+                              const Icon(Icons.card_giftcard_rounded, size: 12, color: Colors.white),
                               const SizedBox(width: 4),
                               Text(
                                 'Gift Wall $giftWallCount/23',
                                 style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
 
-                      // Outfit Button (Real user data)
+                      // Outfit Button (HemiTon Neon Pink-Purple Gradient)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.red.shade700, Colors.orangeAccent.shade400],
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
                           ),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF007F).withValues(alpha: 0.28),
+                              blurRadius: 8,
+                            ),
+                          ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -546,8 +611,8 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                               'Outfit $outfitCount/1954',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
@@ -558,34 +623,43 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
 
                   const SizedBox(height: 8),
 
-                  // 4. Medals Section (Real counts, 0 artwork when 0 assigned)
+                  // 4. Medals Section (HemiTon Glass Bar)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
-                      color: widget.isDark ? const Color(0xFF1B162E) : const Color(0xFFF7F5FE),
+                      color: const Color(0xFF1D1136),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(color: const Color(0xFF8A2BE2).withValues(alpha: 0.32)),
                     ),
                     child: Row(
                       children: [
-                        Text(
-                          'medals',
+                        const Icon(Icons.military_tech_rounded, color: Color(0xFFFFD54F), size: 16),
+                        const SizedBox(width: 5),
+                        const Text(
+                          'Medals',
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.getTextSecondary(widget.isDark),
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          '$medalCount/323',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.purpleAccent,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF007F).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$medalCount/323',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFFF6EC7),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
 
                         // Display ONLY actual assigned medals (no default fake artwork)
                         Expanded(
@@ -618,29 +692,35 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                                   'No medals assigned',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey.shade500,
+                                    color: Colors.white.withValues(alpha: 0.45),
                                     fontStyle: FontStyle.italic,
                                   ),
                                 ),
                         ),
-                        const Icon(Icons.chevron_right_rounded, size: 16, color: Colors.grey),
+                        const Icon(Icons.chevron_right_rounded, size: 16, color: Colors.white54),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
 
                   // 5. Send Gift Section (Available for other users & self-gifting)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        isMe ? 'Send gift to yourself' : 'Send gift',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.getTextPrimary(widget.isDark),
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.redeem_rounded, size: 14, color: Color(0xFFFF007F)),
+                          const SizedBox(width: 5),
+                          Text(
+                            isMe ? 'Send gift to yourself' : 'Send gift',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                       GestureDetector(
                         onTap: () {
@@ -652,16 +732,23 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                           );
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                           decoration: BoxDecoration(
-                            color: Colors.purpleAccent.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Row(
                             children: [
-                              Icon(Icons.card_giftcard_rounded, size: 12, color: Colors.purpleAccent),
+                              Icon(Icons.card_giftcard_rounded, size: 12, color: Colors.white),
+                              SizedBox(width: 3),
+                              Text(
+                                'Gift Box',
+                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                              ),
                               SizedBox(width: 2),
-                              Icon(Icons.chevron_right_rounded, size: 12, color: Colors.purpleAccent),
+                              Icon(Icons.chevron_right_rounded, size: 12, color: Colors.white),
                             ],
                           ),
                         ),
@@ -894,15 +981,15 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFFE53935), Color(0xFFD81B60)],
+                                  colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
                                 ),
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.redAccent.withValues(alpha: 0.35),
-                                    blurRadius: 10,
+                                    color: const Color(0xFFFF007F).withValues(alpha: 0.38),
+                                    blurRadius: 12,
                                     spreadRadius: -1,
                                     offset: const Offset(0, 3),
                                   ),
@@ -1292,29 +1379,34 @@ class _InRoomProfileCardSheetState extends State<InRoomProfileCardSheet> {
           );
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 5),
+          padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: widget.isDark ? const Color(0xFF221C3B) : const Color(0xFFF3EFFF),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.purple.withValues(alpha: 0.2)),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF28164A), Color(0xFF170D2E)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFF007F).withValues(alpha: 0.28)),
           ),
           child: Column(
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 2),
+              Text(emoji, style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 3),
               Text(
                 tagText,
                 style: const TextStyle(
-                  color: Colors.amber,
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFFD54F),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               Text(
                 subText,
                 style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 7.5,
+                  color: Colors.white60,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

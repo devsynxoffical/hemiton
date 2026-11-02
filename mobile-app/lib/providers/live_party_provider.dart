@@ -88,11 +88,15 @@ class LivePartyProvider extends ChangeNotifier {
     final room = _activeRoom;
     final user = _currentUser;
     if (room == null || user == null) return false;
-    return (room.host.id == user.id) ||
-        (room.creatorUserId == user.id) ||
-        (room.host.name.trim().toLowerCase() == user.name.trim().toLowerCase()) ||
-        (room.host.username.trim().toLowerCase() == user.username.trim().toLowerCase()) ||
-        (user.name.trim().isNotEmpty && room.title.toLowerCase().contains(user.name.trim().toLowerCase()));
+    if (user.id.isNotEmpty && (room.host.id == user.id || room.creatorUserId == user.id)) {
+      return true;
+    }
+    if (user.username.trim().isNotEmpty &&
+        room.host.username.trim().isNotEmpty &&
+        room.host.username.trim().toLowerCase() == user.username.trim().toLowerCase()) {
+      return true;
+    }
+    return false;
   }
 
   // Admin Moderation State

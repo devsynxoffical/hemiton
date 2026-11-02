@@ -19,6 +19,7 @@ import 'widgets/broadcast_gifters_section.dart';
 import 'widgets/broadcast_host_header.dart';
 import 'widgets/broadcast_video_area.dart';
 import '../../widgets/emoji_picker_sheet.dart';
+import '../../widgets/double_tap_like_overlay.dart';
 import '../../widgets/gift_dialog.dart';
 import '../../widgets/level_and_trophy_sheet.dart';
 import '../../widgets/tiktok_gift_overlay.dart';
@@ -1234,50 +1235,143 @@ class _LiveBroadcastScreenState extends State<LiveBroadcastScreen> {
     if (_isExitDialogShowing || _isEndingBroadcast) return;
     _isExitDialogShowing = true;
 
+    final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final isHostUser = widget.isHost ||
+        widget.room.host.id == currentUser.id ||
+        widget.room.creatorUserId == currentUser.id;
+
     final action = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF161129),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-        ),
-        title: const Text(
-          'Live Broadcast Options',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
-        ),
-        content: const Text(
-          'Would you like to continue your live stream, leave the room, or end the live broadcast?',
-          style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'continue'),
-            child: const Text('Continue Live', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-          ),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF22133D),
+                Color(0xFF130B24),
+                Color(0xFF0B0616),
+              ],
             ),
-            onPressed: () => Navigator.pop(ctx, 'leave'),
-            child: const Text('Leave Live', style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: const Color(0xFFFF007F).withValues(alpha: 0.45),
+              width: 1.3,
             ),
-            onPressed: () => Navigator.pop(ctx, 'end'),
-            child: const Text('End Live', style: TextStyle(fontWeight: FontWeight.bold)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF007F).withValues(alpha: 0.22),
+                blurRadius: 28,
+                spreadRadius: 2,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.65),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFFF007F), Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: const Icon(Icons.sensors_rounded, color: Colors.white, size: 28),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                isHostUser ? 'Live Broadcast Options' : 'Leave Live Room?',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isHostUser
+                    ? 'Would you like to continue your live stream, leave the room, or end the live broadcast?'
+                    : 'Would you like to continue watching or leave this live broadcast?',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx, 'continue'),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF8A2BE2), Color(0xFF00E5FF)]),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Continue Live', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx, 'leave'),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Leave Live', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+              if (isHostUser) ...[
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () => Navigator.pop(ctx, 'end'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFFFF1744), Color(0xFFFF007F)]),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.power_settings_new_rounded, color: Colors.white, size: 18),
+                        SizedBox(width: 8),
+                        Text('End Live', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
 
@@ -1329,8 +1423,10 @@ class _LiveBroadcastScreenState extends State<LiveBroadcastScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFF070B18), // Deep luxury dark navy background
         resizeToAvoidBottomInset: true,
-        body: Stack(
-          children: [
+        body: DoubleTapLikeOverlay(
+          roomId: widget.room.id,
+          child: Stack(
+            children: [
             Container(
           decoration: const BoxDecoration(
             gradient: RadialGradient(
@@ -1461,9 +1557,10 @@ class _LiveBroadcastScreenState extends State<LiveBroadcastScreen> {
         TikTokGiftOverlay(roomId: widget.room.id),
         // Emoji Reaction Overlay Layer
         EmojiReactionOverlay(roomId: widget.room.id),
-      ],
+          ],
+        ),
+      ),
     ),
-  ),
-);
+  );
   }
 }
