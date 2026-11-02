@@ -10,6 +10,7 @@ import '../../core/repositories/backend_repository.dart';
 import '../../models/live_room_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/live_gift_provider.dart';
 import '../../providers/messaging_provider.dart';
 import '../../widgets/double_tap_like_overlay.dart';
 import '../../widgets/gift_dialog.dart';
@@ -176,14 +177,20 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
     _messages.addAll([
       {
         'user': 'System',
-        'text': _isPrivateRoom
-            ? 'Welcome to ${widget.room.title} (Private Group Live 🔒 — Host permission required for seats)'
-            : 'Welcome to ${widget.room.title} (Public Group Live 🔓 — Tap any open seat to join!)',
+        'text': 'Welcome to ${widget.room.title} ✨ Tap any open seat to join the stage!',
         'isSystem': 'true',
       },
       {'user': 'Maya ✨', 'text': 'Hey everyone! Double tap the screen to send likes! ❤️', 'isSystem': 'false'},
       {'user': 'Sara_K', 'text': 'Sending gifts to everyone on stage! 🎁💖', 'isSystem': 'false'},
     ]);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          context.read<LiveGiftProvider>().setActiveRoom(widget.room.id);
+        } catch (_) {}
+      }
+    });
 
     _viewerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (mounted) {
@@ -699,21 +706,17 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                 ),
               ),
 
-              // Gift & Emoji Overlays
-              TikTokGiftOverlay(roomId: widget.room.id),
-              EmojiReactionOverlay(roomId: widget.room.id),
-
               SafeArea(
                 child: Column(
                   children: [
-                    // ── 1. Sleek Top Header & Room Status Strip ─────────────
+                    // ── 1. Sleek Top Header & Stage Energy Ribbon ───────────
                     _buildTopHeader(),
 
                     SizedBox(height: 6.h),
 
-                    // ── 2. Multi-Guest Video Grid Stage (8 Seats) ───────────
+                    // ── 2. Unique Asymmetric 8-Seat Stage (Hero + VIP + 5 Pods) ──
                     Expanded(
-                      flex: 13,
+                      flex: 14,
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 10.w),
                         child: _buildVideoGrid(),
@@ -731,10 +734,18 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                       ),
                     ),
 
-                    // ── 4. Bottom Interactive Control Bar ───────────────────
+                    // ── 4. Bottom Interactive Control Bar (Unchanged) ───────
                     _buildBottomControlBar(),
                   ],
                 ),
+              ),
+
+              // Gift & Emoji Overlays rendered ON TOP of the stage so MP4 animations are clearly visible
+              Positioned.fill(
+                child: TikTokGiftOverlay(roomId: widget.room.id),
+              ),
+              Positioned.fill(
+                child: EmojiReactionOverlay(roomId: widget.room.id),
               ),
             ],
           ),
@@ -922,30 +933,162 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
   }
 
   // ===========================================================================
-  // MULTI-GUEST VIDEO GRID BOXES (ATTRACTIVE NEON STAGE)
+  // UNIQUE ASYMMETRIC BENTO STAGE (1 HERO HOST + 2 VIP CO-HOSTS + 5 PODS)
   // ===========================================================================
   Widget _buildVideoGrid() {
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _seats.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.22,
-        crossAxisSpacing: 8.w,
-        mainAxisSpacing: 8.h,
-      ),
-      itemBuilder: (context, index) {
-        final seat = _seats[index];
-        return GestureDetector(
-          onTap: () => _onSeatTap(index),
-          child: _buildVideoCard(seat, index),
-        );
-      },
+    final totalStageCoins = _seats.fold<int>(0, (sum, s) => sum + s.giftCoinsReceived);
+    final openSeatsCount = _seats.where((s) => s.user == null).length;
+
+    return Column(
+      children: [
+        // ── Stage Energy & Quick-Join Ribbon ─────────────────────────────────
+        Container(
+          margin: EdgeInsets.only(bottom: 7.h),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFFFF007F).withValues(alpha: 0.16),
+                const Color(0xFF8A2BE2).withValues(alpha: 0.14),
+                const Color(0xFF00E5FF).withValues(alpha: 0.12),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.8),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFFFF007F), Color(0xFFFF8C00)]),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.bolt_rounded, color: Colors.white, size: 11.sp),
+                    SizedBox(width: 2.w),
+                    Text(
+                      'STAGE',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 8.5.sp,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Icon(Icons.monetization_on_rounded, color: const Color(0xFFFFD700), size: 13.sp),
+              SizedBox(width: 3.w),
+              Text(
+                '$totalStageCoins',
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 10.5.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _joinFirstAvailableSeat,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.videocam_rounded, color: const Color(0xFF00E5FF), size: 12.sp),
+                      SizedBox(width: 4.w),
+                      Text(
+                        openSeatsCount > 0 ? 'Join Stage ($openSeatsCount)' : 'Stage Full',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 9.5.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // ── Top Section: Hero Host Stage (Left) + 2 Stacked VIP Co-Hosts (Right) ──
+        Expanded(
+          flex: 11,
+          child: Row(
+            children: [
+              // Seat 0: Hero Host Spotlight Stage
+              Expanded(
+                flex: 12,
+                child: GestureDetector(
+                  onTap: () => _onSeatTap(0),
+                  child: _buildVideoCard(_seats[0], 0, isCompactPod: false),
+                ),
+              ),
+              SizedBox(width: 7.w),
+              // Seats 1 & 2: VIP Co-Host Stacked Pods
+              Expanded(
+                flex: 9,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onSeatTap(1),
+                        child: _buildVideoCard(_seats[1], 1, isCompactPod: false),
+                      ),
+                    ),
+                    SizedBox(height: 7.h),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onSeatTap(2),
+                        child: _buildVideoCard(_seats[2], 2, isCompactPod: false),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 7.h),
+
+        // ── Bottom Section: 5 Sleek Cyber-Guest Video Pods (Seats 4..8) ──────
+        Expanded(
+          flex: 6,
+          child: Row(
+            children: List.generate(5, (i) {
+              final seatIndex = i + 3;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: i < 4 ? 6.w : 0),
+                  child: GestureDetector(
+                    onTap: () => _onSeatTap(seatIndex),
+                    child: _buildVideoCard(_seats[seatIndex], seatIndex, isCompactPod: true),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildVideoCard(_GroupVideoGuestSeat seat, int index) {
+  Widget _buildVideoCard(_GroupVideoGuestSeat seat, int index, {bool isCompactPod = false}) {
     final isHostSeat = index == 0;
+    final isVipCoHost = index == 1 || index == 2;
     final isOccupied = seat.user != null;
     final isSpeaking = seat.isSpeaking;
     final isPendingApproval = _pendingPermissionSeats.contains(index);
@@ -955,46 +1098,50 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
         : (isSpeaking
             ? const Color(0xFF00E5FF)
             : (isOccupied
-                ? const Color(0xFFFF007F).withValues(alpha: 0.7)
+                ? (isVipCoHost
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.75)
+                    : const Color(0xFFFF007F).withValues(alpha: 0.7))
                 : (_isPrivateRoom
-                    ? Colors.amber.withValues(alpha: 0.25)
-                    : const Color(0xFF8A2BE2).withValues(alpha: 0.35))));
+                    ? Colors.amber.withValues(alpha: 0.28)
+                    : const Color(0xFF8A2BE2).withValues(alpha: 0.4))));
+
+    final radius = isHostSeat ? 20.r : (isCompactPod ? 14.r : 16.r);
 
     final card = Container(
       decoration: BoxDecoration(
         gradient: isOccupied
             ? const LinearGradient(
-                colors: [Color(0xFF1D1536), Color(0xFF0E0B1E)],
+                colors: [Color(0xFF21153D), Color(0xFF0D0A1C)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
             : LinearGradient(
                 colors: [
-                  const Color(0xFF16112B).withValues(alpha: 0.85),
-                  const Color(0xFF0C0919).withValues(alpha: 0.85),
+                  const Color(0xFF17112E).withValues(alpha: 0.88),
+                  const Color(0xFF0B0818).withValues(alpha: 0.88),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: borderColor,
-          width: isHostSeat ? 1.8 : (isSpeaking ? 1.6 : 1.1),
+          width: isHostSeat ? 2.0 : (isSpeaking ? 1.6 : 1.1),
         ),
         boxShadow: [
           BoxShadow(
             color: isHostSeat
-                ? const Color(0xFFFFD700).withValues(alpha: 0.25)
+                ? const Color(0xFFFFD700).withValues(alpha: 0.22)
                 : (isSpeaking
-                    ? const Color(0xFF00E5FF).withValues(alpha: 0.3)
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.28)
                     : Colors.black.withValues(alpha: 0.35)),
-            blurRadius: 10,
+            blurRadius: isHostSeat ? 14 : 8,
             offset: const Offset(0, 3),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(15.r),
+        borderRadius: BorderRadius.circular(radius - 1),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -1005,7 +1152,7 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                       color: const Color(0xFF191630),
                       child: Center(
                         child: CircleAvatar(
-                          radius: 26.r,
+                          radius: isCompactPod ? 16.r : 26.r,
                           backgroundImage: NetworkImage(seat.user!.avatarUrl),
                         ),
                       ),
@@ -1036,9 +1183,9 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withValues(alpha: 0.35),
+                      Colors.black.withValues(alpha: 0.38),
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.82),
+                      Colors.black.withValues(alpha: 0.85),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -1047,35 +1194,40 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                 ),
               ),
 
-              // Top Left: Host Crown or Seat Number + Gift Counter
+              // Top Row: Role/Seat Badge + Quick Send Gift Pill
               Positioned(
-                top: 6.h,
-                left: 6.w,
-                right: 6.w,
+                top: isCompactPod ? 4.h : 6.h,
+                left: isCompactPod ? 4.w : 6.w,
+                right: isCompactPod ? 4.w : 6.w,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompactPod ? 4.5.w : 7.w,
+                        vertical: isCompactPod ? 1.5.h : 2.h,
+                      ),
                       decoration: BoxDecoration(
                         gradient: isHostSeat
                             ? const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFF8C00)])
-                            : null,
-                        color: isHostSeat ? null : Colors.black54,
-                        borderRadius: BorderRadius.circular(10.r),
+                            : (isVipCoHost
+                                ? const LinearGradient(colors: [Color(0xFF00E5FF), Color(0xFF8A2BE2)])
+                                : null),
+                        color: (isHostSeat || isVipCoHost) ? null : Colors.black54,
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (isHostSeat) ...[
-                            const Text('👑', style: TextStyle(fontSize: 9.5)),
-                            SizedBox(width: 3.w),
+                            const Text('👑', style: TextStyle(fontSize: 9)),
+                            SizedBox(width: 2.w),
                           ],
                           Text(
-                            isHostSeat ? 'HOST' : '#${index + 1}',
+                            isHostSeat ? 'HOST' : (isVipCoHost ? 'VIP #${index + 1}' : '#${index + 1}'),
                             style: GoogleFonts.poppins(
                               color: isHostSeat ? Colors.black : Colors.white,
-                              fontSize: 8.5.sp,
+                              fontSize: isCompactPod ? 7.5.sp : 8.5.sp,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -1083,36 +1235,35 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                       ),
                     ),
 
-                    // Quick Send Gift Pill on every occupied seat!
+                    // Quick Send Gift Pill
                     GestureDetector(
                       onTap: () => _openGiftDialogForUser(targetUser: seat.user),
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.5.h),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isCompactPod ? 4.5.w : 7.w,
+                          vertical: isCompactPod ? 1.5.h : 2.5.h,
+                        ),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
                           ),
-                          borderRadius: BorderRadius.circular(10.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFF007F).withValues(alpha: 0.45),
-                              blurRadius: 6,
-                            ),
-                          ],
+                          borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('🎁', style: TextStyle(fontSize: 9.5)),
-                            SizedBox(width: 3.w),
-                            Text(
-                              seat.giftCoinsReceived > 0 ? '${seat.giftCoinsReceived}' : 'Gift',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 8.5.sp,
-                                fontWeight: FontWeight.bold,
+                            Text('🎁', style: TextStyle(fontSize: isCompactPod ? 8 : 9.5)),
+                            if (!isCompactPod || seat.giftCoinsReceived > 0) ...[
+                              SizedBox(width: 2.w),
+                              Text(
+                                seat.giftCoinsReceived > 0 ? '${seat.giftCoinsReceived}' : 'Gift',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: isCompactPod ? 7.sp : 8.5.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -1121,11 +1272,11 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                 ),
               ),
 
-              // Bottom Glass User Bar & Mic Status
+              // Bottom User Bar & Mic Status
               Positioned(
-                bottom: 6.h,
-                left: 7.w,
-                right: 7.w,
+                bottom: isCompactPod ? 4.h : 6.h,
+                left: isCompactPod ? 5.w : 7.w,
+                right: isCompactPod ? 5.w : 7.w,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1139,20 +1290,20 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.poppins(
                                 color: Colors.white,
-                                fontSize: 10.5.sp,
+                                fontSize: isCompactPod ? 8.5.sp : (isHostSeat ? 11.5.sp : 10.sp),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          if (isSpeaking && !seat.isMuted) ...[
-                            SizedBox(width: 4.w),
-                            Icon(Icons.graphic_eq_rounded, color: const Color(0xFF00E5FF), size: 13.sp),
+                          if (isSpeaking && !seat.isMuted && !isCompactPod) ...[
+                            SizedBox(width: 3.w),
+                            Icon(Icons.graphic_eq_rounded, color: const Color(0xFF00E5FF), size: 12.sp),
                           ],
                         ],
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.all(3.5.w),
+                      padding: EdgeInsets.all(isCompactPod ? 2.5.w : 3.5.w),
                       decoration: BoxDecoration(
                         color: seat.isMuted ? Colors.redAccent : const Color(0xFF00E676),
                         shape: BoxShape.circle,
@@ -1160,26 +1311,30 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                       child: Icon(
                         seat.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
                         color: Colors.white,
-                        size: 10.5.sp,
+                        size: isCompactPod ? 8.5.sp : 10.sp,
                       ),
                     ),
                   ],
                 ),
               ),
             ] else ...[
-              // Empty Video Slot (Top-right lock icon if Private)
+              // Empty Video Pod (Top-right lock icon ONLY if Private)
               if (_isPrivateRoom)
                 Positioned(
-                  top: 6.h,
-                  right: 6.w,
+                  top: isCompactPod ? 4.h : 6.h,
+                  right: isCompactPod ? 4.w : 6.w,
                   child: Container(
-                    padding: EdgeInsets.all(4.w),
+                    padding: EdgeInsets.all(isCompactPod ? 3.w : 4.w),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.amber.withValues(alpha: 0.6), width: 0.8),
                     ),
-                    child: Icon(Icons.lock_rounded, color: Colors.amber, size: 11.sp),
+                    child: Icon(
+                      Icons.lock_rounded,
+                      color: Colors.amber,
+                      size: isCompactPod ? 9.sp : 11.sp,
+                    ),
                   ),
                 ),
               Center(
@@ -1187,41 +1342,41 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 38.w,
-                      height: 38.w,
+                      width: isCompactPod ? 26.w : 34.w,
+                      height: isCompactPod ? 26.w : 34.w,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
                             const Color(0xFFFF007F).withValues(alpha: 0.22),
-                            const Color(0xFF8A2BE2).withValues(alpha: 0.22),
+                            const Color(0xFF00E5FF).withValues(alpha: 0.18),
                           ],
                         ),
                         border: Border.all(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
-                          width: 1.2,
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.55),
+                          width: 1.1,
                         ),
                       ),
                       child: Icon(
                         isPendingApproval ? Icons.hourglass_top_rounded : Icons.videocam_rounded,
                         color: const Color(0xFF00E5FF),
-                        size: 18.sp,
+                        size: isCompactPod ? 13.sp : 16.sp,
                       ),
                     ),
-                    SizedBox(height: 5.h),
+                    SizedBox(height: isCompactPod ? 3.h : 4.h),
                     Text(
-                      'Seat ${index + 1}',
+                      isCompactPod ? '#${index + 1}' : 'Seat ${index + 1}',
                       style: GoogleFonts.poppins(
                         color: Colors.white70,
-                        fontSize: 10.5.sp,
+                        fontSize: isCompactPod ? 8.5.sp : 10.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      isPendingApproval ? 'Pending...' : '+ Join Video',
+                      isPendingApproval ? 'Wait...' : '+ Join',
                       style: GoogleFonts.poppins(
                         color: const Color(0xFFFF007F),
-                        fontSize: 9.sp,
+                        fontSize: isCompactPod ? 7.5.sp : 8.5.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

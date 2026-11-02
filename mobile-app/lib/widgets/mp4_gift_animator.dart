@@ -6,11 +6,36 @@ import 'package:video_player/video_player.dart';
 import '../models/live_gift_event_model.dart';
 import 'user_avatar.dart';
 
-/// Screen Blend Compositor for MP4 Video Gifts.
-/// Mathematically removes black video background (0x000000) using BlendMode.screen
-/// so gift animations, 3D models, glows, and particles float seamlessly over the live room.
-class ScreenBlendWidget extends SingleChildRenderObjectWidget {
-  const ScreenBlendWidget({super.key, required Widget super.child});
+/// Luminance-Key Alpha & Screen Blend Compositor for MP4 Video Gifts.
+/// Directly zeroes out the alpha channel of black/near-black video pixels (R,G,B -> 0)
+/// on the GPU shader so MP4 gift animations play with 100% transparent backgrounds
+/// on both Impeller and Skia without any black box.
+class ScreenBlendWidget extends StatelessWidget {
+  final Widget child;
+
+  const ScreenBlendWidget({super.key, required this.child});
+
+  // Maps pixel brightness (R + G + B) directly into Alpha while ignoring the opaque 255 video alpha:
+  // - Pure black / dark compression noise (R+G+B <= 22) -> Alpha = 0 (completely transparent)
+  // - Colored / bright gift pixels -> Alpha = 255 (completely opaque & vibrant)
+  static const ColorFilter _blackToAlphaFilter = ColorFilter.matrix(<double>[
+    1.08, 0.0,  0.0,  0.0, -8.0,
+    0.0,  1.08, 0.0,  0.0, -8.0,
+    0.0,  0.0,  1.08, 0.0, -8.0,
+    2.4,  2.4,  2.4,  0.0, -52.0,
+  ]);
+
+  @override
+  Widget build(BuildContext context) {
+    return ColorFiltered(
+      colorFilter: _blackToAlphaFilter,
+      child: _ScreenBlendRenderWidget(child: child),
+    );
+  }
+}
+
+class _ScreenBlendRenderWidget extends SingleChildRenderObjectWidget {
+  const _ScreenBlendRenderWidget({required Widget super.child});
 
   @override
   RenderObject createRenderObject(BuildContext context) => _RenderScreenBlend();
@@ -22,7 +47,7 @@ class _RenderScreenBlend extends RenderProxyBox {
     if (child != null) {
       context.canvas.saveLayer(
         offset & size,
-        Paint()..blendMode = BlendMode.screen,
+        Paint()..blendMode = BlendMode.plus,
       );
       context.paintChild(child!, offset);
       context.canvas.restore();

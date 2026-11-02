@@ -773,20 +773,35 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
     );
   }
 
+  static const ColorFilter _nonLuckyIconKeyFilter = ColorFilter.matrix(<double>[
+    1.06, 0.0,  0.0,  0.0, -5.0,
+    0.0,  1.06, 0.0,  0.0, -5.0,
+    0.0,  0.0,  1.06, 0.0, -5.0,
+    2.8,  2.8,  2.8,  0.0, -45.0,
+  ]);
+
   Widget _buildGiftIconWidget(String icon) {
+    final isLuckyAsset = icon.contains('/lucky/');
     if (icon.startsWith('assets/')) {
-      return Image.asset(
+      final img = Image.asset(
         icon,
-        width: 38,
-        height: 38,
+        width: 44,
+        height: 44,
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => Text(icon.length < 4 ? icon : '🎁', style: const TextStyle(fontSize: 26)),
+        errorBuilder: (context, error, stackTrace) =>
+            Text(icon.length < 4 ? icon : '🎁', style: const TextStyle(fontSize: 26)),
       );
+      return isLuckyAsset
+          ? img
+          : ColorFiltered(
+              colorFilter: _nonLuckyIconKeyFilter,
+              child: img,
+            );
     } else if (icon.startsWith('http')) {
       return Image.network(
         icon,
-        width: 38,
-        height: 38,
+        width: 44,
+        height: 44,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => const Text('🎁', style: TextStyle(fontSize: 26)),
       );

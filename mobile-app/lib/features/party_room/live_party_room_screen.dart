@@ -673,8 +673,6 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
           roomId: widget.room.id,
           child: Stack(
             children: [
-              // TikTok Live Gifting Overlay
-              TikTokGiftOverlay(roomId: widget.room.id),
           // Ambient Gradient, Equipped Room Theme, or Custom Background Image
           Positioned.fill(
             child: Builder(
@@ -878,8 +876,10 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
           // Realtime Animated Emoji Reaction Overlay Layer (Top of Stack)
           EmojiReactionOverlay(roomId: provider.activeRoom?.id ?? widget.room.id),
 
-          // Onscreen 3D Gift Animation Overlay
-          GiftAnimationOverlay(key: _giftOverlayKey),
+          // Onscreen MP4 & 3D Gift Animation Overlay (Top of Stack)
+          Positioned.fill(
+            child: TikTokGiftOverlay(roomId: provider.activeRoom?.id ?? widget.room.id),
+          ),
 
           // Admin Moderation Warning Banner (Floats in FRONT of seats and all stage layers)
           if (provider.activeWarningMessage != null)
