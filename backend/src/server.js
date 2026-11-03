@@ -50,7 +50,11 @@ async function connectDatabaseWithRetry(maxRetries = 20, delayMs = 3000) {
       console.log('✅ Database connected and verified successfully');
       return;
     } catch (err) {
-      console.warn(`⚠️ Database connection attempt ${attempt}/${maxRetries} failed: ${err.message}`);
+      const firstLine = (err?.message || 'Unknown error').split('\n').pop();
+      console.warn(`⚠️ Database connection attempt ${attempt}/${maxRetries} failed: ${firstLine}`);
+      if (attempt === 1 && String(env.DATABASE_URL).includes('localhost:5432')) {
+        console.warn('💡 Tip: Local PostgreSQL is not running on localhost:5432. Set DATABASE_URL in backend/.env to your Railway PostgreSQL Public URL (DATABASE_PUBLIC_URL) or start local PostgreSQL.');
+      }
       if (attempt === maxRetries) {
         console.error('❌ Maximum database connection attempts reached. Will continue retrying in background.');
         setTimeout(() => connectDatabaseWithRetry(maxRetries, delayMs).catch(() => {}), 10000);
@@ -89,15 +93,25 @@ async function startServer() {
 
     // 3. Initialize Redis connection and Realtime Socket.IO
     (async () => {
-      try {
-        console.log('🔄 Connecting to Redis...');
-        if (!redisClient.isOpen) {
-          await redisClient.connect();
+      if (env.SOCKET_REDIS_ENABLED) {
+        try {
+          console.log('🔄 Connecting to Redis...');
+          if (!redisClient.isOpen) {
+            await redisClient.connect();
+          }
+        } catch (redisErr) {
+          const msg = redisErr?.message || redisErr?.code || 'Redis unavailable';
+          console.warn(`⚠️ Redis unavailable (${msg}) — continuing with in-memory store.`);
         }
+      } else {
+        console.log('ℹ️ Redis disabled via SOCKET_REDIS_ENABLED=false — using in-memory store.');
+      }
+
+      try {
         io = await initSocketServer(server);
         console.log('✅ Realtime Socket.IO server initialized');
-      } catch (redisErr) {
-        console.warn('⚠️ Redis / Socket.IO connection warning:', redisErr.message);
+      } catch (socketErr) {
+        console.warn('⚠️ Socket.IO initialization warning:', socketErr.message);
       }
     })();
 

@@ -12,6 +12,18 @@ const sanitizedProcessEnv = Object.fromEntries(
   ])
 );
 
+const booleanFromEnv = (defaultValue) =>
+  z.preprocess((val) => {
+    if (val === undefined || val === null) return defaultValue;
+    if (typeof val === 'boolean') return val;
+    if (typeof val === 'string') {
+      const normalized = val.trim().toLowerCase();
+      if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+      if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+    }
+    return Boolean(val);
+  }, z.boolean()).default(defaultValue).catch(defaultValue);
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('production').catch('production'),
   PORT: z.coerce.number().positive().default(8080).catch(8080),
@@ -20,10 +32,7 @@ const envSchema = z.object({
     sanitizedProcessEnv.DATABASE_PUBLIC_URL ||
     'postgresql://postgres:postgres@localhost:5432/hemiton'
   ),
-  PRISMA_LOG_QUERIES: z.preprocess((val) => {
-    if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
-    return Boolean(val);
-  }, z.boolean()).default(false).catch(false),
+  PRISMA_LOG_QUERIES: booleanFromEnv(false),
   REDIS_URL: z.string().default(
     sanitizedProcessEnv.REDIS_URL ||
     sanitizedProcessEnv.REDIS_PUBLIC_URL ||
@@ -57,10 +66,10 @@ const envSchema = z.object({
   AGORA_APP_ID: z.string().default('mock_agora_app_id_test_environment_12345').catch('mock_agora_app_id_test_environment_12345'),
   AGORA_APP_CERTIFICATE: z.string().default('mock_agora_app_cert_test_environment_67890').catch('mock_agora_app_cert_test_environment_67890'),
   AGORA_TOKEN_EXPIRY_SECONDS: z.coerce.number().min(60).max(86400).default(3600).catch(3600),
-  AGORA_MOCK_MODE: z.coerce.boolean().default(false).catch(false),
+  AGORA_MOCK_MODE: booleanFromEnv(false),
 
   // Socket.IO & Redis Adapter
-  SOCKET_REDIS_ENABLED: z.coerce.boolean().default(true).catch(true),
+  SOCKET_REDIS_ENABLED: booleanFromEnv(true),
 
   // Bootstrap Administrative Credentials
   SUPER_ADMIN_USERNAME: z.string().default('admin').catch('admin'),

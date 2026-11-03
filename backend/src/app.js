@@ -102,6 +102,20 @@ app.use(serializerMiddleware);
 // Static uploads serving for media assets (CDN origin)
 app.use('/uploads', express.static('public/uploads'));
 
+// Root API Status Endpoint
+app.get('/', (req, res) => {
+  return res.status(200).json({
+    success: true,
+    service: 'HEMI TON Backend API',
+    status: 'online',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      api: '/api/v1',
+    },
+  });
+});
+
 // Top-level Health Checks (Liveness & Readiness)
 app.get('/health/ping', (req, res) => {
   return res.status(200).json({
