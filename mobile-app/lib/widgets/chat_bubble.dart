@@ -362,10 +362,30 @@ class _ChatBubbleState extends State<ChatBubble> {
                       color: Colors.purple.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: Text(
-                      widget.message.mediaUrl ?? '🎁',
-                      style: const TextStyle(fontSize: 24),
-                    ),
+                    child: (widget.message.mediaUrl != null && widget.message.mediaUrl!.startsWith('assets/'))
+                        ? Image.asset(
+                            widget.message.mediaUrl!,
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Text('🎁', style: TextStyle(fontSize: 22)),
+                          )
+                        : (widget.message.mediaUrl != null &&
+                                (widget.message.mediaUrl!.startsWith('http://') ||
+                                    widget.message.mediaUrl!.startsWith('https://')))
+                            ? Image.network(
+                                widget.message.mediaUrl!,
+                                width: 28,
+                                height: 28,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Text('🎁', style: TextStyle(fontSize: 22)),
+                              )
+                            : Text(
+                                (widget.message.mediaUrl != null && widget.message.mediaUrl!.length < 5)
+                                    ? widget.message.mediaUrl!
+                                    : '🎁',
+                                style: const TextStyle(fontSize: 24),
+                              ),
                   ),
                   const SizedBox(width: 10),
                   Column(

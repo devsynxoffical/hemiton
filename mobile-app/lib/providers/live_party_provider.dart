@@ -331,11 +331,14 @@ class LivePartyProvider extends ChangeNotifier {
       return false;
     }
 
-    final isHost = (room.host.id == currentUser.id) ||
-        (room.creatorUserId == currentUser.id) ||
-        (room.host.name.trim().toLowerCase() == currentUser.name.trim().toLowerCase()) ||
-        (room.host.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase()) ||
-        (currentUser.name.trim().isNotEmpty && room.title.toLowerCase().contains(currentUser.name.trim().toLowerCase()));
+    final curId = currentUser.id.trim();
+    final rHostId = room.host.id.trim();
+    final rCreatorId = room.creatorUserId?.trim() ?? '';
+    final curUsername = currentUser.username.trim().toLowerCase();
+    final rHostUsername = room.host.username.trim().toLowerCase();
+
+    final isHost = (curId.isNotEmpty && (rHostId == curId || rCreatorId == curId)) ||
+        (curUsername.isNotEmpty && rHostUsername.isNotEmpty && curUsername == rHostUsername);
 
     try {
       // 1. Connect Socket.IO

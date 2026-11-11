@@ -10,7 +10,6 @@ import '../../../../models/party_participant_model.dart';
 import '../../../../providers/live_party_provider.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../providers/wallet_provider.dart';
-import '../../../../core/services/room_share_service.dart';
 import '../../../../core/services/media_upload_service.dart';
 import '../../recharge/recharge_screen.dart';
 import '../room_settings_screen.dart';
@@ -197,12 +196,12 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
 
   void _showPresetAvatarsDialog() {
     final presets = [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300',
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300',
-      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=300',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300',
-      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300',
+      'assets/images/party_gift_box.jpg',
+      'assets/images/game_treasure_chest.jpg',
+      'assets/images/gift_supercar.jpg',
+      'assets/images/party_rocket_icon.jpg',
+      'assets/images/party_games_icon.jpg',
+      'assets/images/gift_gold_crown.jpg',
     ];
 
     showDialog(
@@ -241,7 +240,9 @@ class _RoomInfoSheetState extends State<RoomInfoSheet> with SingleTickerProvider
                 },
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(url, fit: BoxFit.cover),
+                  child: url.startsWith('assets')
+                      ? Image.asset(url, fit: BoxFit.cover)
+                      : Image.network(url, fit: BoxFit.cover),
                 ),
               );
             },

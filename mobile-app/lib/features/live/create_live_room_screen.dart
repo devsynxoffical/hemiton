@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../core/animations/app_animations.dart';
 import '../../core/repositories/backend_repository.dart';
 import '../../core/repositories/room_repository.dart';
+import '../../core/services/media_upload_service.dart';
 import '../../core/services/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/live_room_model.dart';
@@ -751,9 +752,20 @@ class _CreateLiveRoomScreenState extends State<CreateLiveRoomScreen>
       final title = rawTitle.isNotEmpty
           ? rawTitle
           : (_isAudioMode ? "$hostDisplayName's Audio Live" : "$hostDisplayName's Live Stream");
-      final coverUrl = _coverImage != null
-          ? 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80'
-          : (currentUser.avatarUrl.isNotEmpty ? currentUser.avatarUrl : 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80');
+      String coverUrl = currentUser.avatarUrl;
+      if (_coverImage != null) {
+        try {
+          final res = await MediaUploadService.instance.uploadFile(
+            filePath: _coverImage!.path,
+            folder: 'rooms',
+          );
+          if (res.url.isNotEmpty) {
+            coverUrl = res.url;
+          }
+        } catch (_) {
+          coverUrl = _coverImage!.path;
+        }
+      }
 
       LiveRoomModel roomToJoin;
 

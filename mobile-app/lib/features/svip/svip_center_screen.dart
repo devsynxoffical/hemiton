@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/utils/formatters.dart';
-import '../../core/utils/noble_badge_helper.dart';
 import '../../models/svip_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/svip_provider.dart';
@@ -11,13 +10,13 @@ import '../wallet/wallet_screen.dart';
 import '../rewards/rewards_screen.dart';
 import 'vip_honor_screen.dart';
 
-// ─── Palette ───
+// ─── Palette (Hemiton Cyberpunk Neon / Midnight Theme) ───
 const _kGold = Color(0xFFF5C76B);
 const _kGoldDeep = Color(0xFFB8812E);
 const _kGoldLight = Color(0xFFFFE9B0);
-const _kBg = Color(0xFF100C09);
-const _kCard = Color(0xFF221811);
-const _kPurple = Color(0xFF7A34DC);
+const _kBg = Color(0xFF090616);
+const _kCard = Color(0xFF161028);
+const _kPurple = Color(0xFF8A2BE2);
 
 class SVIPCenterScreen extends StatefulWidget {
   const SVIPCenterScreen({super.key});
@@ -272,7 +271,7 @@ class _SVIPCenterScreenState extends State<SVIPCenterScreen> {
   void _showRecordSheet(SVIPProvider svip) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF17110C),
+      backgroundColor: const Color(0xFF130E26),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 28),
@@ -324,7 +323,7 @@ class _SVIPCenterScreenState extends State<SVIPCenterScreen> {
   void _showHelpSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF17110C),
+      backgroundColor: const Color(0xFF130E26),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
       builder: (ctx) => const Padding(
         padding: EdgeInsets.fromLTRB(22, 22, 22, 32),
@@ -375,7 +374,7 @@ class _SVIPCenterScreenState extends State<SVIPCenterScreen> {
                     padding: EdgeInsets.only(top: topPad),
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Color(0xFA0B0806), Color(0xD90B0806), Color(0x000B0806)],
+                        colors: [Color(0xFA090616), Color(0xD9090616), Color(0x00090616)],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         stops: [0.0, 0.7, 1.0],
@@ -492,7 +491,17 @@ class _SVIPCenterScreenState extends State<SVIPCenterScreen> {
                   AnimatedOpacity(
                     duration: const Duration(milliseconds: 200),
                     opacity: selected ? 1 : 0,
-                    child: Container(width: 4, height: 4, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+                    child: Container(
+                      width: 5,
+                      height: 5,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFF1493),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: Color(0xFFFF1493), blurRadius: 4, spreadRadius: 1),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -618,7 +627,9 @@ class _SVIPCenterScreenState extends State<SVIPCenterScreen> {
                           child: UserAvatar(imageUrl: user.avatarUrl, name: user.name, radius: 15),
                         ),
                         const SizedBox(width: 8),
-                        _GoldText('SVIP${lvl.level}', fontSize: 26),
+                        _GoldText('SVIP${lvl.level}', fontSize: 22),
+                        const SizedBox(width: 8),
+                        AnimatedVipTag(level: lvl.level, height: 26),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -889,7 +900,7 @@ class _SVIPCenterScreenState extends State<SVIPCenterScreen> {
               crossAxisSpacing: 8,
               childAspectRatio: 0.98,
             ),
-            itemBuilder: (_, i) => _privCard(visible[i]),
+            itemBuilder: (_, i) => _privCard(visible[i], l),
           ),
           GestureDetector(
             onTap: () => setState(() => expanded ? _expandedLevels.remove(l) : _expandedLevels.add(l)),
@@ -910,9 +921,11 @@ class _SVIPCenterScreenState extends State<SVIPCenterScreen> {
     );
   }
 
-  Widget _privCard(_PrivItem item) {
+  Widget _privCard(_PrivItem item, int level) {
     Widget img;
-    if (item.asset.isEmpty) {
+    if (item.title == 'VIP Tag') {
+      img = AnimatedVipTag(level: level, height: 44);
+    } else if (item.asset.isEmpty) {
       img = const SizedBox.shrink();
     } else {
       img = Image.asset(
@@ -937,9 +950,9 @@ class _SVIPCenterScreenState extends State<SVIPCenterScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF3A2B1C), _kCard],
+          colors: [Color(0xFF24173F), _kCard],
         ),
-        border: Border.all(color: _kGold.withValues(alpha: 0.28), width: 0.8),
+        border: Border.all(color: const Color(0xFF8A2BE2).withValues(alpha: 0.35), width: 0.8),
       ),
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
       child: Column(
@@ -1395,6 +1408,119 @@ class _AnimatedSVIPBadgeState extends State<AnimatedSVIPBadge> with SingleTicker
         fit: BoxFit.contain,
         errorBuilder: (_, _, _) => SizedBox(width: widget.width, height: widget.height),
       ),
+    );
+  }
+}
+
+/// ─── Animated VIP Tag (plays live animated WebP badge with golden-purple glow & pulsing scale) ───
+class AnimatedVipTag extends StatefulWidget {
+  final int level;
+  final double height;
+  final bool showGlow;
+
+  const AnimatedVipTag({
+    super.key,
+    required this.level,
+    this.height = 24,
+    this.showGlow = true,
+  });
+
+  @override
+  State<AnimatedVipTag> createState() => _AnimatedVipTagState();
+}
+
+class _AnimatedVipTagState extends State<AnimatedVipTag> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+
+    _scale = Tween<double>(begin: 0.96, end: 1.04).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String _getWebpAsset(int level) {
+    final clamped = level.clamp(1, 16);
+    final pad2 = clamped.toString().padLeft(2, '0');
+    return 'assets/svip/svip/SVIP${pad2}_badge_live.webp';
+  }
+
+  String _getPngFallback(int level) {
+    final clamped = level.clamp(1, 16);
+    return 'assets/svip/svip/svip${clamped}_tag.png';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final webp = _getWebpAsset(widget.level);
+    final png = _getPngFallback(widget.level);
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Transform.scale(
+          scale: _scale.value,
+          child: Container(
+            decoration: widget.showGlow
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(widget.height / 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFD700).withValues(alpha: 0.28 + 0.16 * _controller.value),
+                        blurRadius: 8 + 4 * _controller.value,
+                        spreadRadius: 1,
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF8A2BE2).withValues(alpha: 0.22 + 0.12 * _controller.value),
+                        blurRadius: 10,
+                        spreadRadius: 0.5,
+                      ),
+                    ],
+                  )
+                : null,
+            child: Image.asset(
+              webp,
+              height: widget.height,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Image.asset(
+                png,
+                height: widget.height,
+                fit: BoxFit.contain,
+                errorBuilder: (context, err, stack) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'SVIP ${widget.level}',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: widget.height * 0.45,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

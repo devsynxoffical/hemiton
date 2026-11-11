@@ -145,6 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showGiftDialog() {
+    FocusScope.of(context).unfocus();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

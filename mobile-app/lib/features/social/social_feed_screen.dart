@@ -996,7 +996,7 @@ class _FullStoryViewerDialogState extends State<_FullStoryViewerDialog>
 
             // Bottom Bar: Reaction / Reply for viewers or Add New for host
             Positioned(
-              bottom: 16,
+              bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
               left: 16,
               right: 16,
               child: isOwner

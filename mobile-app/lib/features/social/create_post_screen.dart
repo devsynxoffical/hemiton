@@ -7,6 +7,7 @@ import '../../models/user_model.dart';
 import '../../providers/social_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/services/local_media_service.dart';
+import '../../core/services/media_upload_service.dart';
 import '../../widgets/design/gold_button.dart';
 import '../../widgets/user_avatar.dart';
 
@@ -110,28 +111,46 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
 
     try {
-      final List<String> persistentMediaPaths = [];
+      final List<String> finalMediaUrls = [];
 
-      // 1. Save all selected images to persistent local storage
+      // 1. Save and upload selected images to real backend storage
       for (final image in _selectedImages) {
+        String finalUrl = '';
         try {
-          final savedPath = await LocalMediaService.instance.saveMediaFile(
-            image.path,
-            subFolder: widget.isStory ? 'stories' : 'posts',
+          // Attempt real upload to backend media storage
+          final uploadRes = await MediaUploadService.instance.uploadFile(
+            filePath: image.path,
+            folder: widget.isStory ? 'stories' : 'posts',
           );
-          persistentMediaPaths.add(savedPath);
-        } catch (saveErr) {
-          debugPrint('[CreatePost] Failed to copy image to persistent storage: $saveErr');
-          // Fall back to original file if readable
-          if (File(image.path).existsSync()) {
-            persistentMediaPaths.add(image.path);
+          if (uploadRes.url.isNotEmpty) {
+            finalUrl = uploadRes.url;
           }
+        } catch (uploadErr) {
+          debugPrint('[CreatePost] Cloud upload failed, saving to local device storage: $uploadErr');
+        }
+
+        // If backend upload didn't return URL, ensure persistent local copy
+        if (finalUrl.isEmpty) {
+          try {
+            finalUrl = await LocalMediaService.instance.saveMediaFile(
+              image.path,
+              subFolder: widget.isStory ? 'stories' : 'posts',
+            );
+          } catch (_) {
+            if (File(image.path).existsSync()) {
+              finalUrl = image.path;
+            }
+          }
+        }
+
+        if (finalUrl.isNotEmpty) {
+          finalMediaUrls.add(finalUrl);
         }
       }
 
-      // If user selected photos but none could be saved, halt and warn
-      if (_selectedImages.isNotEmpty && persistentMediaPaths.isEmpty) {
-        throw Exception('Unable to save selected photos to device storage. Please check permissions.');
+      // If user selected photos but none could be processed, warn
+      if (_selectedImages.isNotEmpty && finalMediaUrls.isEmpty) {
+        throw Exception('Unable to process selected media. Please verify storage permissions.');
       }
 
       if (!mounted) return;
@@ -142,11 +161,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       final auth = context.read<AuthProvider>();
       final currentUser = auth.currentUser.id.isNotEmpty
           ? auth.currentUser
-          : const UserModel(
-              id: 'me',
-              username: 'you',
-              name: 'You',
-              avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+          : UserModel(
+              id: 'local_user_${DateTime.now().millisecondsSinceEpoch}',
+              username: 'user_${DateTime.now().millisecondsSinceEpoch % 10000}',
+              name: 'Hemiton User',
+              avatarUrl: '',
               profileCompleted: true,
             );
 
@@ -155,7 +174,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       // 2. Persist post model to shared local storage & feed immediately
       await context.read<SocialProvider>().createPost(
             content: finalContent,
-            mediaUrls: persistentMediaPaths.isEmpty ? null : persistentMediaPaths,
+            mediaUrls: finalMediaUrls.isEmpty ? null : finalMediaUrls,
             visibility: visibility,
             author: currentUser,
           );

@@ -326,14 +326,45 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   bool _isLoading = false;
   bool _hasError = false;
 
-  StoryItem get _currentStory =>
-      widget.stories[_currentIndex.clamp(0, widget.stories.length - 1)];
+  static ImageProvider? _safeStoryImageProvider(String? url) {
+    if (url == null || url.trim().isEmpty) return null;
+    final clean = url.trim();
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      return NetworkImage(clean);
+    }
+    if (clean.startsWith('assets/')) {
+      return AssetImage(clean);
+    }
+    try {
+      final file = File(clean);
+      if (file.existsSync()) {
+        return FileImage(file);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  StoryItem get _currentStory {
+    if (widget.stories.isEmpty) {
+      return StoryItem(
+        id: 'fallback',
+        userId: 'fallback',
+        userName: 'HEMI TON',
+        userAvatar: '',
+        mediaUrl: '',
+        caption: 'Story unavailable',
+        createdAt: DateTime.now(),
+      );
+    }
+    return widget.stories[_currentIndex.clamp(0, widget.stories.length - 1)];
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _currentIndex = widget.initialIndex.clamp(0, widget.stories.length - 1);
+    final maxIdx = widget.stories.isEmpty ? 0 : widget.stories.length - 1;
+    _currentIndex = widget.initialIndex.clamp(0, maxIdx);
     _progressController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 5),
@@ -345,7 +376,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       }
     });
 
-    _loadCurrentStory();
+    if (widget.stories.isNotEmpty) {
+      _loadCurrentStory();
+    }
   }
 
   @override
@@ -466,9 +499,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     final story = _currentStory;
     final topPadding = MediaQuery.of(context).padding.top;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final viewInsetsBottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: false,
       body: GestureDetector(
         onVerticalDragEnd: (details) {
           if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
@@ -600,10 +635,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                         child: CircleAvatar(
                           radius: 17.r,
                           backgroundColor: Colors.grey.shade900,
-                          backgroundImage: story.userAvatar.isNotEmpty
-                              ? NetworkImage(story.userAvatar)
-                              : null,
-                          child: story.userAvatar.isEmpty
+                          backgroundImage: _safeStoryImageProvider(story.userAvatar),
+                          child: (story.userAvatar.isEmpty || _safeStoryImageProvider(story.userAvatar) == null)
                               ? Text(
                                   story.userName.isNotEmpty ? story.userName[0].toUpperCase() : '?',
                                   style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.bold),
@@ -679,7 +712,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             // ── Caption (if any) ─────────────────────────────────────────────
             if (story.caption != null && story.caption!.isNotEmpty)
               Positioned(
-                bottom: bottomPadding + 70.h,
+                bottom: bottomPadding + viewInsetsBottom + 70.h,
                 left: 16.w,
                 right: 16.w,
                 child: Container(
@@ -702,7 +735,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
             // ── Bottom Reply & Reaction Bar ──────────────────────────────────
             Positioned(
-              bottom: bottomPadding + 14.h,
+              bottom: bottomPadding + viewInsetsBottom + 14.h,
               left: 14.w,
               right: 14.w,
               child: Row(

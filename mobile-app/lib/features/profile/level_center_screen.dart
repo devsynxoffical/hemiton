@@ -62,14 +62,14 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
 
 
     return Scaffold(
-      backgroundColor: AppColors.getBackground(isDark),
+      backgroundColor: const Color(0xFF090616),
       appBar: AppBar(
-        title: const Text('Level Center & Tiers', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.getBackground(isDark),
+        title: const Text('Level Center & Tiers', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: const Color(0xFF090616),
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.workspace_premium_rounded, color: Colors.amberAccent),
+            icon: const Icon(Icons.workspace_premium_rounded, color: AppColors.pink),
             tooltip: 'SVIP Privilege Center',
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const SVIPCenterScreen()));
@@ -79,9 +79,9 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          indicatorColor: Colors.amberAccent,
-          labelColor: Colors.amberAccent,
-          unselectedLabelColor: Colors.grey,
+          indicatorColor: AppColors.pink,
+          labelColor: AppColors.pink,
+          unselectedLabelColor: Colors.white60,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
             Tab(text: 'Wealth'),
@@ -208,10 +208,12 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [color.withValues(alpha: 0.25), const Color(0xFF1E1938)],
+                colors: [color.withValues(alpha: 0.22), const Color(0xFF140D28)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withValues(alpha: 0.4)),
+              border: Border.all(color: color.withValues(alpha: 0.35)),
             ),
             child: Row(
               children: [
@@ -246,9 +248,9 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.getCard(isDark),
+              color: const Color(0xFF130E26),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.getBorder(isDark)),
+              border: Border.all(color: const Color(0xFF8A2BE2).withValues(alpha: 0.25)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,7 +258,7 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Server XP Progression', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const Text('Server XP Progression', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
                     Text('Lv. $level ➔ Lv. ${level + 1}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
                   ],
                 ),
@@ -276,11 +278,11 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
                   children: [
                     Text(
                       'Current XP: ${AppFormatters.formatNumber(currentXp)}',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      style: const TextStyle(fontSize: 11, color: Colors.white60),
                     ),
                     Text(
                       'Target XP: ${AppFormatters.formatNumber(requiredXp)}',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      style: const TextStyle(fontSize: 11, color: Colors.white60),
                     ),
                   ],
                 ),
@@ -291,17 +293,20 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
           const SizedBox(height: 20),
 
           // Unlocked Perks Section
-          Text('Unlocked Privileges & Perks', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.getTextPrimary(isDark))),
+          const Text('Unlocked Privileges & Perks', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 10),
 
           ...perks.map((p) => Card(
-                color: AppColors.getCard(isDark),
+                color: const Color(0xFF16102C),
                 margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
                 child: ListTile(
                   leading: Icon(Icons.check_circle_rounded, color: color),
-                  title: Text(p, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.getTextPrimary(isDark))),
-                  subtitle: const Text('Server Authoritative Privilege Unlocked', style: TextStyle(fontSize: 10, color: Colors.greenAccent)),
+                  title: Text(p, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
+                  subtitle: const Text('Server Authoritative Privilege Unlocked', style: TextStyle(fontSize: 10, color: Color(0xFF00E5FF))),
                 ),
               )),
         ],
@@ -323,9 +328,18 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF8A2387), Color(0xFFE94057), Color(0xFFF27121)],
+                colors: [Color(0xFF8A2BE2), Color(0xFFFF1493), Color(0xFF7A00E6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF1493).withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,7 +347,14 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('SVIP ${svip.currentLevel}', style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('SVIP ${svip.currentLevel}', style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
+                        const SizedBox(width: 10),
+                        AnimatedVipTag(level: svip.currentLevel > 0 ? svip.currentLevel : 1, height: 26),
+                      ],
+                    ),
                     const Text('👑', style: TextStyle(fontSize: 32)),
                   ],
                 ),
@@ -342,11 +363,15 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
                 Text('Renewal Countdown: Expires on $formattedExpiry', style: const TextStyle(color: Colors.white70, fontSize: 11)),
                 const SizedBox(height: 14),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF8A2BE2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const SVIPCenterScreen()));
                   },
-                  child: const Text('Open SVIP Privilege Center ➔', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  child: const Text('Open SVIP Privilege Center ➔', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -354,25 +379,30 @@ class _LevelCenterScreenState extends State<LevelCenterScreen> with SingleTicker
 
           const SizedBox(height: 20),
 
-          Text('SVIP Tier Roadmap & Privilege Summary', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.getTextPrimary(isDark))),
+          const Text('SVIP Tier Roadmap & Privilege Summary', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 10),
 
           ...svip.levels.take(6).map((lvl) {
             final isUnlocked = lvl.level <= svip.currentLevel;
             return Card(
-              color: AppColors.getCard(isDark),
+              color: const Color(0xFF16102C),
               margin: const EdgeInsets.only(bottom: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isUnlocked ? const Color(0xFF8A2BE2).withValues(alpha: 0.35) : Colors.white.withValues(alpha: 0.06),
+                ),
+              ),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: isUnlocked ? Colors.amberAccent : Colors.white12,
-                  child: Icon(Icons.workspace_premium_rounded, color: isUnlocked ? Colors.black : Colors.grey),
+                  backgroundColor: isUnlocked ? const Color(0xFF8A2BE2).withValues(alpha: 0.25) : Colors.white12,
+                  child: Icon(Icons.workspace_premium_rounded, color: isUnlocked ? const Color(0xFF00E5FF) : Colors.grey),
                 ),
-                title: Text(lvl.name, style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.getTextPrimary(isDark))),
-                subtitle: Text('Required: ${AppFormatters.formatNumber(lvl.requiredPoints)} Points', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                title: Text(lvl.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                subtitle: Text('Required: ${AppFormatters.formatNumber(lvl.requiredPoints)} Points', style: const TextStyle(fontSize: 11, color: Colors.white60)),
                 trailing: Text(
                   isUnlocked ? 'UNLOCKED' : 'LOCKED',
-                  style: TextStyle(color: isUnlocked ? Colors.greenAccent : Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: isUnlocked ? const Color(0xFF00E5FF) : Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
             );

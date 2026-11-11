@@ -1236,9 +1236,14 @@ class _LiveBroadcastScreenState extends State<LiveBroadcastScreen> {
     _isExitDialogShowing = true;
 
     final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
-    final isHostUser = widget.isHost ||
-        widget.room.host.id == currentUser.id ||
-        widget.room.creatorUserId == currentUser.id;
+    final currentId = currentUser.id.trim();
+    final hostId = widget.room.host.id.trim();
+    final creatorId = widget.room.creatorUserId?.trim() ?? '';
+    final currentUsername = currentUser.username.trim().toLowerCase();
+    final hostUsername = widget.room.host.username.trim().toLowerCase();
+
+    final isHostUser = (currentId.isNotEmpty && (hostId == currentId || creatorId == currentId)) ||
+        (currentUsername.isNotEmpty && hostUsername.isNotEmpty && currentUsername == hostUsername);
 
     final action = await showDialog<String>(
       context: context,

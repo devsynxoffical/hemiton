@@ -375,7 +375,7 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 4,
-                            childAspectRatio: 0.92,
+                            childAspectRatio: 0.82,
                             mainAxisSpacing: 10,
                             crossAxisSpacing: 10,
                           ),
@@ -397,28 +397,32 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet> with SingleTickerPr
                                   ),
                                 ),
                                 padding: const EdgeInsets.all(6),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Image.asset(
-                                      iconPath,
-                                      width: 36,
-                                      height: 36,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (context, error, stackTrace) => const Text('✨', style: TextStyle(fontSize: 26)),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 10.5,
-                                        color: Colors.white70,
-                                        fontWeight: FontWeight.w500,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Image.asset(
+                                        iconPath,
+                                        width: 36,
+                                        height: 36,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) => const Text('✨', style: TextStyle(fontSize: 26)),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textScaler: TextScaler.noScaling,
+                                        style: const TextStyle(
+                                          fontSize: 10.5,
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             );

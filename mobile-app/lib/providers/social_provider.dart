@@ -195,20 +195,38 @@ class SocialProvider extends ChangeNotifier {
         final exactIdx = _posts.indexWhere((p) => p.id == post.id);
         if (exactIdx != -1) return;
 
-        final localIdx = _posts.indexWhere((p) =>
-            (p.id.startsWith('post_') || p.id.startsWith('video_')) &&
-            p.content == post.content &&
-            p.imageUrls.join(',') == post.imageUrls.join(',') &&
-            DateTime.now().difference(p.createdAt).inSeconds.abs() < 30);
+        // Find existing local placeholder post (by id prefix, matching content & author or media)
+        final localIdx = _posts.indexWhere((p) {
+          final isLocal = p.id.startsWith('post_') || p.id.startsWith('video_');
+          if (!isLocal) return false;
+          final sameContent = p.content.trim() == post.content.trim();
+          final sameAuthor = (post.author.id.isNotEmpty && p.author.id == post.author.id) ||
+              p.author.id == 'me' ||
+              p.author.id.startsWith('local_');
+          final mediaMatches = p.imageUrls.isNotEmpty &&
+              post.imageUrls.isNotEmpty &&
+              p.imageUrls.first == post.imageUrls.first;
+          final timeClose = DateTime.now().difference(p.createdAt).inSeconds.abs() < 60;
+          return (sameContent && (sameAuthor || timeClose)) || (mediaMatches && sameAuthor);
+        });
 
         if (localIdx != -1) {
-          _posts[localIdx] = post;
+          // Merge media URLs: preserve local media files if incoming socket omitted them
+          final mergedMedia = post.imageUrls.isNotEmpty ? post.imageUrls : _posts[localIdx].imageUrls;
+          _posts[localIdx] = post.copyWith(imageUrls: mergedMedia);
           _savePostsToLocalStorage();
           notifyListeners();
         } else {
-          _posts.insert(0, post);
-          _savePostsToLocalStorage();
-          notifyListeners();
+          // Guard against inserting a duplicate post with identical content created recently
+          final isDuplicate = _posts.any((p) =>
+              p.content.trim().isNotEmpty &&
+              p.content.trim() == post.content.trim() &&
+              DateTime.now().difference(p.createdAt).inSeconds.abs() < 60);
+          if (!isDuplicate) {
+            _posts.insert(0, post);
+            _savePostsToLocalStorage();
+            notifyListeners();
+          }
         }
       } catch (_) {}
     }));

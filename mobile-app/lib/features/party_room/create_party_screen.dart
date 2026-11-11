@@ -39,13 +39,6 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
     super.initState();
     _roomType = widget.initialRoomType ?? 'AUDIO_PARTY';
   }
-  
-  final List<String> _dummyCovers = [
-    'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80',
-    'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80',
-    'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80',
-    'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
-  ];
 
   // CR 31 Upload Party DP Modal & Picker Logic
   Future<void> _showDPPickerOptions() async {
@@ -388,7 +381,7 @@ class _CreatePartyScreenState extends State<CreatePartyScreen> {
         ? currentUser.displayName
         : (currentUser.name.isNotEmpty ? currentUser.name : (currentUser.username.isNotEmpty ? currentUser.username : 'Host'));
     final title = rawTitle.isNotEmpty ? rawTitle : "$hostDisplayName's Party";
-    final coverUrl = _selectedCoverUrl ?? (currentUser.avatarUrl.isNotEmpty ? currentUser.avatarUrl : _dummyCovers[0]);
+    final coverUrl = _selectedCoverUrl ?? (currentUser.avatarUrl.isNotEmpty ? currentUser.avatarUrl : '');
     final isVideo = _roomType == 'LIVE_VIDEO' || _roomType == 'GROUP_VIDEO';
 
     LiveRoomModel roomToJoin;

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,13 +59,70 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
     });
   }
 
+  bool _isCurrentUserHost(LiveRoomModel room, String currentUserId) {
+    final cleanId = currentUserId.trim();
+    if (cleanId.isEmpty) return false;
+    final hostId = room.host.id.trim();
+    final creatorId = room.creatorUserId?.trim() ?? '';
+    return (hostId.isNotEmpty && hostId == cleanId) ||
+           (creatorId.isNotEmpty && creatorId == cleanId);
+  }
+
+  void _openRoomScreen(LiveRoomModel room, {required bool isHost}) {
+    if (room.roomType == 'AUDIO_PARTY' || room.roomType.toUpperCase().contains('PARTY')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LivePartyRoomScreen(room: room)),
+      );
+    } else if (room.roomType == 'GROUP_VIDEO') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => GroupVideoPartyRoomScreen(room: room, isHost: isHost)),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LiveRoomScreen(room: room, isHost: isHost)),
+      );
+    }
+  }
+
   Widget _buildSafeNetworkImage(String url, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+    if (url.trim().isEmpty) {
+      return Container(
+        width: width,
+        height: height,
+        color: const Color(0xFF140F26),
+        child: Center(
+          child: Icon(Icons.person_rounded, color: Colors.white24, size: 22.w),
+        ),
+      );
+    }
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      final f = File(url);
+      if (f.existsSync()) {
+        return Image.file(
+          f,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (_, __, ___) => Container(
+            width: width,
+            height: height,
+            color: const Color(0xFF140F26),
+            child: Center(
+              child: Icon(Icons.person_rounded, color: Colors.white24, size: 22.w),
+            ),
+          ),
+        );
+      }
+    }
     return Image.network(
       url,
       width: width,
       height: height,
       fit: fit,
-      errorBuilder: (_, __, ___) => Container(
+      errorBuilder: (context, error, stackTrace) => Container(
         width: width,
         height: height,
         color: const Color(0xFF140F26),
@@ -130,9 +188,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
   Widget _buildTopBar(bool isDark) {
     final authProv = Provider.of<AuthProvider>(context, listen: false);
     final currentUser = authProv.currentUser;
-    final avatarUrl = currentUser.avatarUrl.isNotEmpty
-        ? currentUser.avatarUrl
-        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80';
+    final avatarUrl = currentUser.avatarUrl;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -429,7 +485,10 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         .toList();
 
     final authProv = Provider.of<AuthProvider>(context, listen: false);
-    final myLiveRoom = backendRooms.where((r) => r.host.id == authProv.currentUser.id || r.creatorUserId == authProv.currentUser.id).firstOrNull;
+    final currentUserId = authProv.currentUser.id.trim();
+    final myLiveRoom = currentUserId.isEmpty
+        ? null
+        : backendRooms.where((r) => _isCurrentUserHost(r, currentUserId)).firstOrNull;
 
     return SingleChildScrollView(
       key: const ValueKey('daily_live_scroll'),
@@ -451,94 +510,77 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
 
           SizedBox(height: 12.h),
 
-          // If 'All' is selected, display Image 1 Featured Live Now Hero + Trending Section
+          // If 'All' is selected, display Live Now Hero + Trending Section when real streams exist
           if (showOverview) ...[
-            // Section Header: 🔥 Live Now
-            _buildSectionHeader(
-              title: 'Live Now',
-              iconEmoji: '🔥',
-              onSeeAll: () {
-                setState(() {
-                  _dailySubCategory = 1;
-                });
-              },
-            ),
-            SizedBox(height: 8.h),
-
-            // Hero Featured Card: My Room if live, otherwise Sana Malik (Image 1)
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14.w),
-              child: myLiveRoom != null
-                  ? _buildHeroLiveCardFromModel(myLiveRoom)
-                  : _buildHeroLiveCard(
-                      name: 'Sana Malik',
-                      category: 'Chill Vibes & Music',
-                      categoryIcon: Icons.music_note_rounded,
-                      viewers: '2.4K',
-                      coverUrl:
-                          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900&q=80',
-                      avatarUrl:
-                          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
-                      isVerified: true,
-                    ),
-            ),
-
-            SizedBox(height: 12.h),
-
-            // Two Sub-grid Medium Cards: Ali Raza & Maya Queen (Image 1)
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14.w),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildMediumLiveCard(
-                      name: 'Ali Raza',
-                      category: 'Let\'s Talk',
-                      categoryIcon: Icons.mic_rounded,
-                      viewers: '1.8K',
-                      coverUrl:
-                          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80',
-                      avatarUrl:
-                          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-                      isVerified: true,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Expanded(
-                    child: _buildMediumLiveCard(
-                      name: 'Maya Queen',
-                      category: 'Q&A Session',
-                      categoryIcon: Icons.chat_bubble_rounded,
-                      viewers: '956',
-                      coverUrl:
-                          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80',
-                      avatarUrl:
-                          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=80',
-                      isVerified: true,
-                    ),
-                  ),
-                ],
+            if (backendRooms.isNotEmpty) ...[
+              // Section Header: 🔥 Live Now
+              _buildSectionHeader(
+                title: 'Live Now',
+                iconEmoji: '🔥',
+                onSeeAll: () {
+                  setState(() {
+                    _dailySubCategory = 1;
+                  });
+                },
               ),
+              SizedBox(height: 8.h),
+
+              // Hero Featured Card: My Room if live, otherwise top active room
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14.w),
+                child: _buildHeroLiveCardFromModel(myLiveRoom ?? backendRooms.first),
+              ),
+
+              if (backendRooms.length > 1) ...[
+                SizedBox(height: 12.h),
+
+                // Sub-grid Medium Cards: Next active real broadcasts
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildMediumLiveCardFromModel(backendRooms[1]),
+                      ),
+                      if (backendRooms.length > 2) ...[
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: _buildMediumLiveCardFromModel(backendRooms[2]),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+
+              if (backendRooms.length > 3) ...[
+                SizedBox(height: 18.h),
+
+                // Section Header: 🔥 Trending Live
+                _buildSectionHeader(
+                  title: 'Trending Live',
+                  iconEmoji: '🔥',
+                  onSeeAll: () {
+                    setState(() {
+                      _dailySubCategory = 1;
+                    });
+                  },
+                ),
+                SizedBox(height: 8.h),
+
+                // Horizontal Carousel of real rooms
+                _buildTrendingLiveRow(backendRooms.sublist(3)),
+              ],
+
+              SizedBox(height: 20.h),
+            ],
+          ] else ...[
+            // Active category banner header for selected sub-tab (Music, Chat, Talent, PK)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14.w),
+              child: _buildCategoryHeaderBanner(_dailyCategories[_dailySubCategory]),
             ),
-
-            SizedBox(height: 18.h),
-
-            // Section Header: 🔥 Trending Live (Image 1)
-            _buildSectionHeader(
-              title: 'Trending Live',
-              iconEmoji: '🔥',
-              onSeeAll: () {
-                setState(() {
-                  _dailySubCategory = 1;
-                });
-              },
-            ),
-            SizedBox(height: 8.h),
-
-            // Horizontal Carousel of Compact Cards: Zain Khan, Hira Khan, Arjun
-            _buildTrendingLiveRow(),
-
-            SizedBox(height: 20.h),
+            SizedBox(height: 14.h),
           ],
 
           // 2-Column Grid of Daily Live Streamers (Image 2) - Merged with user's real created rooms!
@@ -579,6 +621,14 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
 
           SizedBox(height: 12.h),
 
+          if (_groupSubCategory != 0) ...[
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14.w),
+              child: _buildCategoryHeaderBanner(_groupCategories[_groupSubCategory]),
+            ),
+            SizedBox(height: 14.h),
+          ],
+
           // 2-Column Grid of Multi-Host & PK Rooms (Image 3)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 14.w),
@@ -617,10 +667,188 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
 
           SizedBox(height: 12.h),
 
+          if (_videoSubCategory != 0) ...[
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14.w),
+              child: _buildCategoryHeaderBanner(_videoCategories[_videoSubCategory]),
+            ),
+            SizedBox(height: 14.h),
+          ],
+
           // 2-Column Grid of Video Streamers (Image 4)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 14.w),
             child: _buildVideoStreamersGrid(backendRooms),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // Category Header Banner for Active Subcategory
+  // ===========================================================================
+  Widget _buildCategoryHeaderBanner(String category) {
+    IconData icon;
+    String description;
+    List<Color> gradientColors;
+
+    switch (category) {
+      case 'Music':
+        icon = Icons.music_note_rounded;
+        description = 'Singing, acoustic jams & live concerts';
+        gradientColors = const [Color(0xFF8A2BE2), Color(0xFFFF007F)];
+        break;
+      case 'Chat':
+        icon = Icons.chat_bubble_rounded;
+        description = 'Open talk, friendly chit-chat & chill Q&A';
+        gradientColors = const [Color(0xFF00C6FF), Color(0xFF0072FF)];
+        break;
+      case 'Talent':
+        icon = Icons.auto_awesome_rounded;
+        description = 'Dance, magic, comedy & creative performances';
+        gradientColors = const [Color(0xFFFF8C00), Color(0xFFFF007F)];
+        break;
+      case 'PK':
+        icon = Icons.flash_on_rounded;
+        description = '1v1 Live Battles, high stakes & team rivalry';
+        gradientColors = const [Color(0xFFFF1361), Color(0xFFFFF800)];
+        break;
+      case 'Talk Show':
+        icon = Icons.record_voice_over_rounded;
+        description = 'Multi-guest roundtables, life topics & open voice';
+        gradientColors = const [Color(0xFF00E5FF), Color(0xFF1200FF)];
+        break;
+      case 'Fun':
+        icon = Icons.celebration_rounded;
+        description = 'Party games, jokes, and interactive fun rooms';
+        gradientColors = const [Color(0xFFFF007F), Color(0xFFFFB800)];
+        break;
+      case 'Solo':
+        icon = Icons.person_rounded;
+        description = 'Solo creators streaming live portrait video';
+        gradientColors = const [Color(0xFF8A2BE2), Color(0xFF00E5FF)];
+        break;
+      case 'Couple':
+        icon = Icons.favorite_rounded;
+        description = 'Duo hosts, couple chats & shared moments';
+        gradientColors = const [Color(0xFFFF007F), Color(0xFFFF4081)];
+        break;
+      case 'Random':
+        icon = Icons.shuffle_rounded;
+        description = 'Connect with mystery creators & surprise stages';
+        gradientColors = const [Color(0xFF7928CA), Color(0xFFFF0080)];
+        break;
+      default:
+        icon = Icons.sensors_rounded;
+        description = 'Explore top live streams in real-time';
+        gradientColors = const [Color(0xFFFF007F), Color(0xFFB000FF)];
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16.r),
+        gradient: LinearGradient(
+          colors: [
+            gradientColors[0].withValues(alpha: 0.35),
+            gradientColors[1].withValues(alpha: 0.12),
+            const Color(0xFF131126),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: gradientColors[0].withValues(alpha: 0.45),
+          width: 1.1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors[0].withValues(alpha: 0.18),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(9.w),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(colors: gradientColors),
+              boxShadow: [
+                BoxShadow(
+                  color: gradientColors[0].withValues(alpha: 0.5),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 19.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '$category Live',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.5.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.5.h),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF0055).withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(6.r),
+                        border: Border.all(color: const Color(0xFFFF0055), width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 5.w,
+                            height: 5.w,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFF0055),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            'ONLINE',
+                            style: GoogleFonts.poppins(
+                              fontSize: 8.5.sp,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  description,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11.sp,
+                    color: Colors.white70,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -642,7 +870,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: 14.w),
         itemCount: categories.length,
-        separatorBuilder: (_, __) => SizedBox(width: 8.w),
+        separatorBuilder: (context, index) => SizedBox(width: 8.w),
         itemBuilder: (context, index) {
           final isSelected = selectedIndex == index;
           return GestureDetector(
@@ -757,21 +985,38 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
   // ===========================================================================
   Widget _buildHeroLiveCardFromModel(LiveRoomModel room) {
     final authProv = Provider.of<AuthProvider>(context, listen: false);
-    final isHost = room.host.id == authProv.currentUser.id || room.creatorUserId == authProv.currentUser.id;
+    final isHost = _isCurrentUserHost(room, authProv.currentUser.id);
+    final hostName = room.host.name.isNotEmpty ? room.host.name : (room.host.username.isNotEmpty ? room.host.username : 'Host');
 
     return _buildHeroLiveCard(
-      name: '${room.host.name.isNotEmpty ? room.host.name : room.host.username} (You)',
+      name: isHost ? '$hostName (You)' : hostName,
       category: room.category.isNotEmpty ? room.category : 'Live Stream',
-      categoryIcon: Icons.sensors_rounded,
+      categoryIcon: _getCategoryIcon(room.category),
       viewers: '${room.viewerCount}',
       coverUrl: room.coverUrl.isNotEmpty ? room.coverUrl : room.host.avatarUrl,
       avatarUrl: room.host.avatarUrl,
       isVerified: true,
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => LiveRoomScreen(room: room, isHost: isHost)),
-        );
+        _openRoomScreen(room, isHost: isHost);
+      },
+    );
+  }
+
+  Widget _buildMediumLiveCardFromModel(LiveRoomModel room) {
+    final authProv = Provider.of<AuthProvider>(context, listen: false);
+    final isHost = _isCurrentUserHost(room, authProv.currentUser.id);
+    final hostName = room.host.name.isNotEmpty ? room.host.name : (room.host.username.isNotEmpty ? room.host.username : 'Host');
+
+    return _buildMediumLiveCard(
+      name: isHost ? '$hostName (You)' : hostName,
+      category: room.category.isNotEmpty ? room.category : 'Live',
+      categoryIcon: _getCategoryIcon(room.category),
+      viewers: '${room.viewerCount}',
+      coverUrl: room.coverUrl.isNotEmpty ? room.coverUrl : room.host.avatarUrl,
+      avatarUrl: room.host.avatarUrl,
+      isVerified: true,
+      onTap: () {
+        _openRoomScreen(room, isHost: isHost);
       },
     );
   }
@@ -1155,32 +1400,103 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
   }
 
   // ===========================================================================
-  // TRENDING LIVE HORIZONTAL ROW (Image 1: Zain Khan, Hira Khan, Arjun)
+  // REUSABLE CLEAN EMPTY STATE (No Mock Data)
   // ===========================================================================
-  Widget _buildTrendingLiveRow() {
-    final trendingList = [
-      {
-        'name': 'Zain Khan',
-        'category': 'Gaming',
-        'icon': Icons.sports_esports_rounded,
-        'image':
-            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
-      },
-      {
-        'name': 'Hira Khan',
-        'category': 'Music',
-        'icon': Icons.music_note_rounded,
-        'image':
-            'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
-      },
-      {
-        'name': 'Arjun',
-        'category': 'Chatting',
-        'icon': Icons.chat_bubble_outline_rounded,
-        'image':
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-      },
-    ];
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String buttonText,
+    required VoidCallback onAction,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 32.h),
+      margin: EdgeInsets.symmetric(vertical: 8.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFF131126),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: const Color(0xFF8A2BE2).withValues(alpha: 0.25),
+          width: 1.1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF007F).withValues(alpha: 0.35),
+                  blurRadius: 16,
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 32.sp),
+          ),
+          SizedBox(height: 14.h),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              color: Colors.white60,
+              fontSize: 11.5.sp,
+            ),
+          ),
+          SizedBox(height: 18.h),
+          GestureDetector(
+            onTap: onAction,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF007F), Color(0xFF7928CA)],
+                ),
+                borderRadius: BorderRadius.circular(25.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF007F).withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Text(
+                buttonText,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12.5.sp,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // TRENDING LIVE HORIZONTAL ROW (Real Backend Rooms Only)
+  // ===========================================================================
+  Widget _buildTrendingLiveRow([List<LiveRoomModel> rooms = const []]) {
+    if (rooms.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
       height: 115.h,
@@ -1188,16 +1504,20 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: 14.w),
-        itemCount: trendingList.length,
-        separatorBuilder: (_, __) => SizedBox(width: 8.w),
+        itemCount: rooms.length,
+        separatorBuilder: (context, index) => SizedBox(width: 8.w),
         itemBuilder: (context, index) {
-          final item = trendingList[index];
+          final room = rooms[index];
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+          final isMyRoom = _isCurrentUserHost(room, auth.currentUser.id);
+          final cat = room.category.isNotEmpty ? room.category : 'Live';
+          final img = room.coverUrl.isNotEmpty ? room.coverUrl : room.host.avatarUrl;
+          final name = isMyRoom ? '${room.host.name} (You)' : (room.host.name.isNotEmpty ? room.host.name : room.host.username);
+
           return GestureDetector(
-            onTap: () => _openLiveStream(
-              name: item['name'] as String,
-              avatarUrl: item['image'] as String,
-              coverUrl: item['image'] as String,
-            ),
+            onTap: () {
+              _openRoomScreen(room, isHost: isMyRoom);
+            },
             child: Container(
               width: 88.w,
               decoration: BoxDecoration(
@@ -1209,7 +1529,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    _buildSafeNetworkImage(item['image'] as String),
+                    _buildSafeNetworkImage(img),
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -1237,13 +1557,13 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                                 height: 20.w,
                                 decoration: const BoxDecoration(shape: BoxShape.circle),
                                 child: ClipOval(
-                                  child: _buildSafeNetworkImage(item['image'] as String),
+                                  child: _buildSafeNetworkImage(room.host.avatarUrl),
                                 ),
                               ),
                               SizedBox(width: 4.w),
                               Expanded(
                                 child: Text(
-                                  item['name'] as String,
+                                  name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(
@@ -1259,14 +1579,14 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
                           Row(
                             children: [
                               Icon(
-                                item['icon'] as IconData,
+                                _getCategoryIcon(cat),
                                 color: const Color(0xFFE000FF),
                                 size: 9.sp,
                               ),
                               SizedBox(width: 2.w),
                               Expanded(
                                 child: Text(
-                                  item['category'] as String,
+                                  cat,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(
@@ -1291,73 +1611,65 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
   }
 
   // ===========================================================================
-  // 2-COLUMN GRID OF DAILY LIVE STREAMERS (Image 2) - Reactive to Real Rooms
+  // 2-COLUMN GRID OF DAILY LIVE STREAMERS - Filtered by Active Tab (Real Data)
   // ===========================================================================
   Widget _buildDailyStreamersGrid(List<LiveRoomModel> backendRooms) {
-    final defaultDailyList = [
-      {
-        'name': 'Sana Malik',
-        'category': 'Chill Vibes & Music',
-        'icon': Icons.music_note_rounded,
-        'viewers': '2.4K',
-        'image':
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&q=80',
-        'verified': true,
-      },
-      {
-        'name': 'Ayesha Khan',
-        'category': 'Daily Talk & Fun',
-        'icon': Icons.music_note_rounded,
-        'viewers': '1.9K',
-        'image':
-            'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&q=80',
-        'verified': true,
-      },
-      {
-        'name': 'Ali Raza',
-        'category': 'Let\'s Talk',
-        'icon': Icons.mic_rounded,
-        'viewers': '1.8K',
-        'image':
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80',
-        'verified': true,
-      },
-      {
-        'name': 'Maya Queen',
-        'category': 'Q&A Session',
-        'icon': Icons.chat_bubble_rounded,
-        'viewers': '1.4K',
-        'image':
-            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80',
-        'verified': true,
-      },
-      {
-        'name': 'Hira Khan',
-        'category': 'Singing Live',
-        'icon': Icons.mic_rounded,
-        'viewers': '1.2K',
-        'image':
-            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&q=80',
-        'verified': false,
-      },
-      {
-        'name': 'Zain Khan',
-        'category': 'Open Chat',
-        'icon': Icons.forum_rounded,
-        'viewers': '980',
-        'image':
-            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&q=80',
-        'verified': true,
-      },
-    ];
+    final selectedCategory = _dailyCategories[_dailySubCategory];
 
-    // Combine backend real rooms at top so user sees their own created stream!
-    final totalCount = backendRooms.length + defaultDailyList.length;
+    // Filter real backend rooms matching selected category
+    final filteredBackendRooms = backendRooms.where((r) {
+      if (_dailySubCategory == 0) return true; // 'All'
+      final cat = selectedCategory.toLowerCase();
+      final roomCat = r.category.toLowerCase();
+      final roomTitle = r.title.toLowerCase();
+      if (cat == 'music') {
+        return roomCat.contains('music') ||
+            roomCat.contains('song') ||
+            roomCat.contains('sing') ||
+            roomTitle.contains('music') ||
+            roomTitle.contains('song') ||
+            roomTitle.contains('sing') ||
+            r.roomType.toUpperCase().contains('AUDIO');
+      } else if (cat == 'chat') {
+        return roomCat.contains('chat') ||
+            roomCat.contains('talk') ||
+            roomCat.contains('chill') ||
+            roomCat.contains('q&a') ||
+            roomTitle.contains('chat') ||
+            roomTitle.contains('talk');
+      } else if (cat == 'talent') {
+        return roomCat.contains('talent') ||
+            roomCat.contains('dance') ||
+            roomCat.contains('art') ||
+            roomCat.contains('magic') ||
+            roomCat.contains('comedy') ||
+            roomTitle.contains('talent') ||
+            roomTitle.contains('dance');
+      } else if (cat == 'pk') {
+        return roomCat.contains('pk') ||
+            roomCat.contains('battle') ||
+            roomTitle.contains('pk') ||
+            roomTitle.contains('battle');
+      }
+      return roomCat.contains(cat) || roomTitle.contains(cat);
+    }).toList();
+
+    if (filteredBackendRooms.isEmpty) {
+      return _buildEmptyState(
+        icon: _getCategoryIcon(selectedCategory),
+        title: _dailySubCategory == 0
+            ? 'No Live Streams Active'
+            : 'No $selectedCategory Streams Active',
+        subtitle: 'Be the first to start a live stream and connect with your audience!',
+        buttonText: 'Go Live Now',
+        onAction: () => _openCreateLiveRoom(),
+      );
+    }
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: totalCount,
+      itemCount: filteredBackendRooms.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.90,
@@ -1365,40 +1677,33 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         mainAxisSpacing: 12.h,
       ),
       itemBuilder: (context, index) {
-        if (index < backendRooms.length) {
-          final r = backendRooms[index];
-          final auth = Provider.of<AuthProvider>(context, listen: false);
-          final isMyRoom = r.host.id == auth.currentUser.id || r.creatorUserId == auth.currentUser.id;
-          return _buildDailyStreamerCard(
-            name: isMyRoom ? '${r.host.name} (You)' : (r.host.name.isNotEmpty ? r.host.name : r.host.username),
-            category: r.category.isNotEmpty ? r.category : 'Live',
-            categoryIcon: Icons.sensors_rounded,
-            viewers: '${r.viewerCount}',
-            coverUrl: r.coverUrl.isNotEmpty ? r.coverUrl : r.host.avatarUrl,
-            avatarUrl: r.host.avatarUrl,
-            isVerified: true,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => LiveRoomScreen(room: r, isHost: isMyRoom)),
-              );
-            },
-          );
-        }
-
-        final demoIndex = index - backendRooms.length;
-        final item = defaultDailyList[demoIndex];
+        final r = filteredBackendRooms[index];
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+        final isMyRoom = _isCurrentUserHost(r, auth.currentUser.id);
+        final cat = r.category.isNotEmpty ? r.category : selectedCategory;
         return _buildDailyStreamerCard(
-          name: item['name'] as String,
-          category: item['category'] as String,
-          categoryIcon: item['icon'] as IconData,
-          viewers: item['viewers'] as String,
-          coverUrl: item['image'] as String,
-          avatarUrl: item['image'] as String,
-          isVerified: item['verified'] as bool,
+          name: isMyRoom ? '${r.host.name} (You)' : (r.host.name.isNotEmpty ? r.host.name : r.host.username),
+          category: cat,
+          categoryIcon: _getCategoryIcon(cat),
+          viewers: '${r.viewerCount}',
+          coverUrl: r.coverUrl.isNotEmpty ? r.coverUrl : r.host.avatarUrl,
+          avatarUrl: r.host.avatarUrl,
+          isVerified: true,
+          onTap: () {
+            _openRoomScreen(r, isHost: isMyRoom);
+          },
         );
       },
     );
+  }
+
+  IconData _getCategoryIcon(String cat) {
+    final lower = cat.toLowerCase();
+    if (lower.contains('music') || lower.contains('song')) return Icons.music_note_rounded;
+    if (lower.contains('chat') || lower.contains('talk')) return Icons.chat_bubble_rounded;
+    if (lower.contains('talent') || lower.contains('dance')) return Icons.auto_awesome_rounded;
+    if (lower.contains('pk') || lower.contains('battle')) return Icons.flash_on_rounded;
+    return Icons.sensors_rounded;
   }
 
   Widget _buildDailyStreamerCard({
@@ -1412,7 +1717,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
     VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: onTap ?? () => _openLiveStream(name: name, avatarUrl: avatarUrl, coverUrl: coverUrl),
+      onTap: onTap ?? () => _openLiveStream(name: name, avatarUrl: avatarUrl, coverUrl: coverUrl, category: category),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18.r),
@@ -1568,12 +1873,12 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
   }
 
   // ===========================================================================
-  // 2-COLUMN GRID OF GROUP LIVE CARDS (Image 3: Multi-seat & PK Battle)
+  // 2-COLUMN GRID OF GROUP LIVE CARDS (Multi-seat & Real Party Rooms)
   // ===========================================================================
   Widget _buildGroupStreamersGrid(List<LiveRoomModel> backendRooms) {
     final groupList = <Map<String, dynamic>>[];
 
-    // 1. Add active backend group rooms at the very top
+    // Add active backend group rooms
     for (final room in backendRooms) {
       if (room.roomType == 'AUDIO_PARTY' || room.roomType == 'GROUP_VIDEO' || room.roomType == 'Open Group Live') {
         final isVideo = room.roomType == 'GROUP_VIDEO';
@@ -1587,97 +1892,66 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
           'isPrivate': room.isPrivate,
           'roomModel': room,
           'images': [
-            room.coverUrl.isNotEmpty ? room.coverUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
-            room.host.avatarUrl.isNotEmpty ? room.host.avatarUrl : 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&q=80',
+            room.coverUrl.isNotEmpty ? room.coverUrl : room.host.avatarUrl,
+            room.host.avatarUrl.isNotEmpty ? room.host.avatarUrl : room.coverUrl,
           ],
         });
       }
     }
 
-    // 2. Demo group stream cards
-    groupList.addAll([
-      {
-        'title': 'Friends Forever',
-        'subtitle': 'Fun Chat & Games',
-        'viewers': '3.5K',
-        'isPK': false,
-        'verified': true,
-        'images': [
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&q=80',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80',
-          'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&q=80',
-        ],
-      },
-      {
-        'title': 'Chill Vibes',
-        'subtitle': 'Music & Talk',
-        'viewers': '2.8K',
-        'isPK': false,
-        'verified': false,
-        'images': [
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80',
-          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300&q=80',
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&q=80',
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
-        ],
-      },
-      {
-        'title': 'Talent Show',
-        'subtitle': 'Private VIP Video Stage',
-        'viewers': '1.9K',
-        'isPK': false,
-        'verified': true,
-        'isVideo': true,
-        'isPrivate': true,
-        'images': [
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&q=80',
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
-          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300&q=80',
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&q=80',
-        ],
-      },
-      {
-        'title': 'Open Talk',
-        'subtitle': 'Life & Opinions',
-        'viewers': '1.6K',
-        'isPK': false,
-        'verified': false,
-        'images': [
-          'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&q=80',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80',
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&q=80',
-          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300&q=80',
-        ],
-      },
-      {
-        'title': 'Game Room',
-        'subtitle': 'Play & Win',
-        'viewers': '1.2K',
-        'isPK': false,
-        'verified': false,
-        'images': [
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80',
-          'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&q=80',
-        ],
-      },
-      {
-        'title': 'PK Battle',
-        'subtitle': 'Team Challenge',
-        'viewers': '980',
-        'isPK': true,
-        'verified': false,
-        'images': [
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&q=80',
-        ],
-      },
-    ]);
+    final selectedGroupCategory = _groupCategories[_groupSubCategory];
+
+    final filteredList = groupList.where((item) {
+      if (_groupSubCategory == 0) return true; // 'All'
+      final title = (item['title'] as String? ?? '').toLowerCase();
+      final subtitle = (item['subtitle'] as String? ?? '').toLowerCase();
+      final isPK = item['isPK'] == true;
+
+      switch (selectedGroupCategory) {
+        case 'Talk Show':
+          return !isPK &&
+              (subtitle.contains('talk') ||
+                  subtitle.contains('chat') ||
+                  subtitle.contains('opinions') ||
+                  subtitle.contains('podcast') ||
+                  title.contains('talk') ||
+                  title.contains('podcast'));
+        case 'Talent':
+          return !isPK &&
+              (subtitle.contains('talent') ||
+                  subtitle.contains('stage') ||
+                  subtitle.contains('singers') ||
+                  title.contains('talent') ||
+                  subtitle.contains('music'));
+        case 'PK':
+          return isPK || title.contains('pk') || subtitle.contains('challenge') || subtitle.contains('war');
+        case 'Fun':
+          return !isPK &&
+              (subtitle.contains('fun') ||
+                  subtitle.contains('game') ||
+                  title.contains('game') ||
+                  title.contains('friends'));
+        default:
+          return true;
+      }
+    }).toList();
+
+    if (filteredList.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.groups_rounded,
+        title: _groupSubCategory == 0
+            ? 'No Party Rooms Active'
+            : 'No $selectedGroupCategory Party Rooms',
+        subtitle: 'Start an audio party or group video room with friends!',
+        buttonText: 'Create Party Room',
+        onAction: () => _openCreateLiveRoom(),
+      );
+    }
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: groupList.length,
+      itemCount: filteredList.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.88,
@@ -1685,7 +1959,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         mainAxisSpacing: 12.h,
       ),
       itemBuilder: (context, index) {
-        final item = groupList[index];
+        final item = filteredList[index];
         final isPK = item['isPK'] as bool;
         final isPrivate = item['isPrivate'] == true;
         final images = item['images'] as List<String>;
@@ -2060,67 +2334,36 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
   }
 
   // ===========================================================================
-  // 2-COLUMN GRID OF VIDEO LIVE STREAMERS (Image 4) - Merged with Real Video Rooms
+  // 2-COLUMN GRID OF VIDEO LIVE STREAMERS - Real Video Rooms Only
   // ===========================================================================
   Widget _buildVideoStreamersGrid(List<LiveRoomModel> backendRooms) {
-    final videoList = [
-      {
-        'name': 'Nida Sheikh',
-        'category': 'Dance & Fun',
-        'viewers': '1.9K',
-        'hasHeart': false,
-        'image':
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&q=80',
-      },
-      {
-        'name': 'Rohan',
-        'category': 'Travel Vlog',
-        'viewers': '1.3K',
-        'hasHeart': true,
-        'image':
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80',
-      },
-      {
-        'name': 'Hira Khan',
-        'category': 'Fitness & Lifestyle',
-        'viewers': '1.1K',
-        'hasHeart': true,
-        'image':
-            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80',
-      },
-      {
-        'name': 'Zain Khan',
-        'category': 'Daily Vlog',
-        'viewers': '980',
-        'hasHeart': true,
-        'image':
-            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&q=80',
-      },
-      {
-        'name': 'Alisha',
-        'category': 'Beauty Tips',
-        'viewers': '860',
-        'hasHeart': true,
-        'image':
-            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&q=80',
-      },
-      {
-        'name': 'Kabir',
-        'category': 'Tech Talk',
-        'viewers': '720',
-        'hasHeart': true,
-        'image':
-            'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&q=80',
-      },
-    ];
+    final selectedVideoCategory = _videoCategories[_videoSubCategory];
 
-    final videoRooms = backendRooms.where((r) => !r.roomType.toUpperCase().contains('AUDIO')).toList();
-    final totalCount = videoRooms.length + videoList.length;
+    final videoRooms = backendRooms.where((r) {
+      if (r.roomType.toUpperCase().contains('AUDIO')) return false;
+      if (_videoSubCategory == 0) return true; // 'All'
+      final cat = selectedVideoCategory.toLowerCase();
+      final roomCat = r.category.toLowerCase();
+      final roomTitle = r.title.toLowerCase();
+      return roomCat.contains(cat) || roomTitle.contains(cat);
+    }).toList();
+
+    if (videoRooms.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.videocam_rounded,
+        title: _videoSubCategory == 0
+            ? 'No Video Streams Active'
+            : 'No $selectedVideoCategory Video Streams',
+        subtitle: 'Go live on video to interact with viewers in real-time!',
+        buttonText: 'Start Video Live',
+        onAction: () => _openCreateLiveRoom(),
+      );
+    }
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: totalCount,
+      itemCount: videoRooms.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.88,
@@ -2128,38 +2371,18 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
         mainAxisSpacing: 12.h,
       ),
       itemBuilder: (context, index) {
-        if (index < videoRooms.length) {
-          final r = videoRooms[index];
-          final auth = Provider.of<AuthProvider>(context, listen: false);
-          final isMyRoom = r.host.id == auth.currentUser.id || r.creatorUserId == auth.currentUser.id;
-          return _buildVideoStreamerCard(
-            name: isMyRoom ? '${r.host.name} (You)' : (r.host.name.isNotEmpty ? r.host.name : r.host.username),
-            category: r.category.isNotEmpty ? r.category : 'Video Live',
-            viewers: '${r.viewerCount}',
-            hasHeart: true,
-            imageUrl: r.coverUrl.isNotEmpty ? r.coverUrl : r.host.avatarUrl,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => LiveRoomScreen(room: r, isHost: isMyRoom)),
-              );
-            },
-          );
-        }
-
-        final demoIndex = index - videoRooms.length;
-        final item = videoList[demoIndex];
+        final r = videoRooms[index];
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+        final isMyRoom = _isCurrentUserHost(r, auth.currentUser.id);
         return _buildVideoStreamerCard(
-          name: item['name'] as String,
-          category: item['category'] as String,
-          viewers: item['viewers'] as String,
-          hasHeart: item['hasHeart'] as bool,
-          imageUrl: item['image'] as String,
-          onTap: () => _openLiveStream(
-            name: item['name'] as String,
-            avatarUrl: item['image'] as String,
-            coverUrl: item['image'] as String,
-          ),
+          name: isMyRoom ? '${r.host.name} (You)' : (r.host.name.isNotEmpty ? r.host.name : r.host.username),
+          category: r.category.isNotEmpty ? r.category : selectedVideoCategory,
+          viewers: '${r.viewerCount}',
+          hasHeart: true,
+          imageUrl: r.coverUrl.isNotEmpty ? r.coverUrl : r.host.avatarUrl,
+          onTap: () {
+            _openRoomScreen(r, isHost: isMyRoom);
+          },
         );
       },
     );
@@ -2806,10 +3029,16 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
   // ===========================================================================
   // NAVIGATION HELPERS
   // ===========================================================================
+  void _openCreateLiveRoom() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    _handleCreateAction(auth.currentUser);
+  }
+
   void _openLiveStream({
     required String name,
     required String avatarUrl,
     required String coverUrl,
+    String category = 'Live',
   }) {
     final room = LiveRoomModel(
       id: 'room_${name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}',
@@ -2823,7 +3052,7 @@ class _LiveHomeScreenState extends State<LiveHomeScreen> {
       ),
       coverUrl: coverUrl,
       viewerCount: 1420,
-      category: 'Live',
+      category: category,
       startTime: DateTime.now(),
       roomType: 'LIVE_VIDEO',
       status: 'LIVE',

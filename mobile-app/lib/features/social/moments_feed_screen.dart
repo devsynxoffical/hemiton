@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/social_provider.dart';
 import '../../widgets/comments_sheet.dart';
 import '../profile/user_profile_details_screen.dart';
+import 'create_post_screen.dart';
 
 /// Redesigned Full-Screen Vertical Moments / Reels UI
 /// Matching reference screenshot and requirements:
@@ -52,102 +53,6 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
   final Set<String> _blockedUserIds = {};
   final List<Offset> _doubleTapHearts = [];
 
-  // Demonstration and default reels
-  final List<_MomentPostData> _demoPosts = [
-    _MomentPostData(
-      id: 'm1',
-      userId: '22773864',
-      userName: 'Anam',
-      userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
-      title: "Friend's Home 🔥",
-      gender: 'female',
-      age: 21,
-      caption: "Friend's Home 🔥 Hanging out with the squad in our party room tonight!",
-      musicTitle: 'Chill Vibes — The Night',
-      mediaUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=85',
-      isVideo: true,
-      videoUrl: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-      dateText: '10/03',
-      likes: 12400,
-      comments: 245,
-      shares: 1200,
-      category: 'Following',
-    ),
-    _MomentPostData(
-      id: 'm2',
-      userId: '22219520',
-      userName: 'Mr.Shehryar',
-      userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-      title: 'Squad Vibes 🚀',
-      gender: 'male',
-      age: 24,
-      caption: 'Happy birthday leader bhaiya 🎂 Wishing you endless success & happiness in our community!',
-      musicTitle: 'Celebration Beats • Shehryar',
-      mediaUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=85',
-      isVideo: true,
-      videoUrl: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-      dateText: '10/03',
-      likes: 8500,
-      comments: 130,
-      shares: 410,
-      category: 'Community',
-    ),
-    _MomentPostData(
-      id: 'm3',
-      userId: '22889911',
-      userName: 'Sonia Malik',
-      userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-      title: 'City Lights 🌸',
-      gender: 'female',
-      age: 22,
-      caption: "Cruising through the city lights ✨ Ready for tonight's special live stream! Who is joining? 🚀",
-      musicTitle: 'Midnight Drive • Sonia',
-      mediaUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=85',
-      isVideo: false,
-      dateText: 'Today 12:45',
-      likes: 19800,
-      comments: 520,
-      shares: 2300,
-      category: 'For You',
-    ),
-    _MomentPostData(
-      id: 'm4',
-      userId: 'streamer_2',
-      userName: 'Sakshi',
-      userAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=80',
-      title: 'Just Chilling 💙',
-      gender: 'female',
-      age: 23,
-      caption: 'Casual moments with good music and good energy. Enjoying the weekend vibe!',
-      musicTitle: 'Lo-Fi Chill Hop — Sakshi Mix',
-      mediaUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80',
-      isVideo: false,
-      dateText: 'Yesterday',
-      likes: 15200,
-      comments: 310,
-      shares: 890,
-      category: 'For You',
-    ),
-    _MomentPostData(
-      id: 'm5',
-      userId: '22219521',
-      userName: 'Community Squad',
-      userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80',
-      title: 'Community Meetup 🎉',
-      gender: 'other',
-      age: 25,
-      caption: 'Huge shoutout to all community members who joined our group celebration today! 🚀 #community #party',
-      musicTitle: 'Anthem of Friends • Beats',
-      mediaUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&q=85',
-      isVideo: false,
-      dateText: 'Today',
-      likes: 24100,
-      comments: 670,
-      shares: 3100,
-      category: 'Community',
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -178,7 +83,7 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
       id: v.id,
       userId: v.creator.id,
       userName: v.creator.displayName.isNotEmpty ? v.creator.displayName : (v.creator.name.isNotEmpty ? v.creator.name : 'Creator'),
-      userAvatar: v.creator.avatarUrl.isNotEmpty ? v.creator.avatarUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
+      userAvatar: v.creator.avatarUrl,
       title: v.caption,
       gender: v.creator.gender.isNotEmpty ? v.creator.gender : 'female',
       age: v.creator.age > 0 ? v.creator.age : 22,
@@ -229,25 +134,19 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
         combined.add(p);
       }
     }
-    for (final d in _demoPosts) {
-      if (d.isVideo && (d.videoUrl?.isNotEmpty ?? false) && !combined.any((e) => e.id == d.id)) {
-        combined.add(d);
-      }
-    }
 
     // Filter out user dismissed "Not Interested" or blocked creators
     combined.removeWhere((p) => _hiddenPostIds.contains(p.id) || _blockedUserIds.contains(p.userId));
 
     if (_selectedCategoryIndex == 1) {
       // "Following": Reels from accounts followed by user
-      final followingPosts = combined.where((p) {
+      return combined.where((p) {
         final isAuthFollow = auth != null && auth.isFollowing(p.userId);
         return isAuthFollow || _followedUserIds.contains(p.userId) || p.category == 'Following';
       }).toList();
-      return followingPosts.isNotEmpty ? followingPosts : combined.take(2).toList();
     } else if (_selectedCategoryIndex == 2) {
       // "Community": Reels tagged/categorized as Community or party rooms
-      final communityPosts = combined.where((p) {
+      return combined.where((p) {
         final text = (p.caption + p.title + p.category).toLowerCase();
         return p.category == 'Community' ||
             text.contains('community') ||
@@ -256,7 +155,6 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
             text.contains('home') ||
             text.contains('friend');
       }).toList();
-      return communityPosts.isNotEmpty ? communityPosts : combined.where((p) => p.category == 'Community').toList();
     } else {
       // "For You": Recommended public reels (all posts)
       return combined;
@@ -1191,41 +1089,79 @@ class _MomentsFeedScreenState extends State<MomentsFeedScreen> with SingleTicker
     );
   }
 
-  // ── Empty State for Filtered Categories ──────────────────────────────────────
+  // ── Empty State for Reels (No Mock Data) ──────────────────────────────────
   Widget _buildEmptyState() {
+    final isForYou = _selectedCategoryIndex == 0;
+    final isFollowing = _selectedCategoryIndex == 1;
+
     return Center(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 32.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.video_collection_outlined, size: 64.w, color: Colors.white24),
-            SizedBox(height: 16.h),
+            Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF007F).withValues(alpha: 0.4),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              child: Icon(
+                isForYou ? Icons.video_camera_back_rounded : (isFollowing ? Icons.person_add_rounded : Icons.groups_rounded),
+                size: 38.sp,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 18.h),
             Text(
-              _selectedCategoryIndex == 1
-                  ? 'No Reels From Followed Accounts'
-                  : 'No Community Reels Available',
+              isForYou
+                  ? 'No Videos or Moments Yet'
+                  : (isFollowing
+                      ? 'No Reels From Followed Accounts'
+                      : 'No Community Reels Available'),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8.h),
             Text(
-              _selectedCategoryIndex == 1
-                  ? 'Follow creators from the "For You" tab to see their latest reels here.'
-                  : 'Check out recommended reels on For You to join the latest community events.',
+              isForYou
+                  ? 'Be the first to share your talent, moments, and videos with the Hemiton community!'
+                  : (isFollowing
+                      ? 'Follow creators from the "For You" tab to see their latest reels here.'
+                      : 'Check out recommended reels on For You to join the latest community events.'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+              style: TextStyle(color: Colors.white70, fontSize: 12.sp),
             ),
-            SizedBox(height: 20.h),
-            ElevatedButton(
+            SizedBox(height: 22.h),
+            ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF1493),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
               ),
               onPressed: () {
-                setState(() => _selectedCategoryIndex = 0);
+                if (isForYou) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+                  );
+                } else {
+                  setState(() => _selectedCategoryIndex = 0);
+                }
               },
-              child: const Text('Explore For You', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              icon: Icon(isForYou ? Icons.add_photo_alternate_rounded : Icons.explore_rounded, color: Colors.white, size: 18.sp),
+              label: Text(
+                isForYou ? 'Create Moment / Video' : 'Explore For You',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),

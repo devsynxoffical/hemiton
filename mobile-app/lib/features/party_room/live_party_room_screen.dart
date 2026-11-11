@@ -487,13 +487,14 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
     final provider = Provider.of<LivePartyProvider>(context, listen: false);
     final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
     final activeRoom = provider.activeRoom ?? widget.room;
-    final isHostUser = (currentUser.id.isNotEmpty &&
-            (activeRoom.host.id == currentUser.id || activeRoom.creatorUserId == currentUser.id)) ||
-        (currentUser.username.trim().isNotEmpty &&
-            activeRoom.host.username.trim().isNotEmpty &&
-            activeRoom.host.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase()) ||
-        (provider.isHost &&
-            (currentUser.id.isNotEmpty && activeRoom.host.id == currentUser.id));
+    final currentId = currentUser.id.trim();
+    final hostId = activeRoom.host.id.trim();
+    final creatorId = activeRoom.creatorUserId?.trim() ?? '';
+    final currentUsername = currentUser.username.trim().toLowerCase();
+    final hostUsername = activeRoom.host.username.trim().toLowerCase();
+
+    final isHostUser = (currentId.isNotEmpty && (hostId == currentId || creatorId == currentId)) ||
+        (currentUsername.isNotEmpty && hostUsername.isNotEmpty && currentUsername == hostUsername);
 
     showDialog(
       context: context,
@@ -605,14 +606,14 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 19),
-                      SizedBox(width: 8),
+                      const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 19),
+                      const SizedBox(width: 8),
                       Text(
-                        'Continue Live',
-                        style: TextStyle(
+                        isHostUser ? 'Continue Live' : 'Stay in Room',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                           fontSize: 14.5,
@@ -624,7 +625,7 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
               ),
               const SizedBox(height: 10),
 
-              // 2. Leave Live (Sleek Glass Outlined Pill)
+              // 2. Leave Live / Leave Room (Sleek Glass Outlined Pill)
               GestureDetector(
                 onTap: () async {
                   Navigator.pop(d);
@@ -644,14 +645,14 @@ class _LivePartyRoomScreenState extends State<LivePartyRoomScreen> {
                       width: 1.1,
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
+                      const Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
                       Text(
-                        'Leave Live',
-                        style: TextStyle(
+                        isHostUser ? 'Leave Live' : 'Leave Room',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                           fontSize: 14.5,

@@ -1186,20 +1186,29 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }).toList();
 
     // Combine: user's newly uploaded videos & posts appear FIRST at top of Recommend feed
-    // Deduplicate by ID and non-empty media URL so duplicate upload registers never render twice
+    // Deduplicate by ID, media URL, and matching caption to guarantee 1 single post with description
     final combinedPosts = <_FeedPostItem>[];
     for (final item in backendVideoItems) {
-      if (!combinedPosts.any((e) => e.id == item.id || (e.mediaUrl.isNotEmpty && e.mediaUrl == item.mediaUrl))) {
+      if (!combinedPosts.any((e) =>
+          e.id == item.id ||
+          (e.mediaUrl.isNotEmpty && e.mediaUrl == item.mediaUrl) ||
+          (e.caption.trim().isNotEmpty && e.caption.trim() == item.caption.trim() && e.authorName == item.authorName))) {
         combinedPosts.add(item);
       }
     }
     for (final item in realFeedItems) {
-      if (!combinedPosts.any((e) => e.id == item.id || (e.mediaUrl.isNotEmpty && e.mediaUrl == item.mediaUrl))) {
+      if (!combinedPosts.any((e) =>
+          e.id == item.id ||
+          (e.mediaUrl.isNotEmpty && e.mediaUrl == item.mediaUrl) ||
+          (e.caption.trim().isNotEmpty && e.caption.trim() == item.caption.trim() && e.authorName == item.authorName))) {
         combinedPosts.add(item);
       }
     }
     for (final item in demoFeedPosts) {
-      if (!combinedPosts.any((e) => e.id == item.id || (e.mediaUrl.isNotEmpty && e.mediaUrl == item.mediaUrl))) {
+      if (!combinedPosts.any((e) =>
+          e.id == item.id ||
+          (e.mediaUrl.isNotEmpty && e.mediaUrl == item.mediaUrl) ||
+          (e.caption.trim().isNotEmpty && e.caption.trim() == item.caption.trim() && e.authorName == item.authorName))) {
         combinedPosts.add(item);
       }
     }

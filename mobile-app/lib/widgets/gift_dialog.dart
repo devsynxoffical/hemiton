@@ -211,22 +211,31 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
         ? (selectedGift!.priceCoins > 0 ? selectedGift!.priceCoins : selectedGift!.diamondPrice)
         : 0;
 
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.56,
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-        decoration: const BoxDecoration(
-          color: Color(0xFF15161E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-          boxShadow: [
-            BoxShadow(color: Colors.black87, blurRadius: 24, spreadRadius: 4),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.viewInsets.bottom;
+    final screenH = mediaQuery.size.height;
+    final dialogHeight = (screenH * 0.62).clamp(510.0, 700.0);
+
+    return AnimatedPadding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      duration: const Duration(milliseconds: 150),
+      child: Material(
+        color: Colors.transparent,
+        child: SizedBox(
+          height: dialogHeight,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            decoration: const BoxDecoration(
+              color: Color(0xFF15161E),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+              boxShadow: [
+                BoxShadow(color: Colors.black87, blurRadius: 24, spreadRadius: 4),
+              ],
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                children: [
               // ── 1. TOP EXP LEVEL BAR & "90% OFF >" PROMO CAPSULE ────────────
               Row(
                 children: [
@@ -982,6 +991,8 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
     ),
   ),
 ),
+),
+),
 );
   }
 
@@ -1039,7 +1050,7 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
       itemCount: displayGifts.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        childAspectRatio: 0.76,
+        childAspectRatio: 0.70,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
@@ -1098,15 +1109,19 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      gift.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        height: 1.15,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color: isSelected ? Colors.white : const Color(0xFFC5C8D4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        gift.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textScaler: TextScaler.noScaling,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          height: 1.15,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected ? Colors.white : const Color(0xFFC5C8D4),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1129,15 +1144,19 @@ class _GiftDialogState extends State<GiftDialog> with SingleTickerProviderStateM
                         ),
                         const SizedBox(width: 3),
                         Flexible(
-                          child: Text(
-                            _formatNumber(coinPrice),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              height: 1.1,
-                              color: Color(0xFF9EA2B2),
-                              fontWeight: FontWeight.w500,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _formatNumber(coinPrice),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textScaler: TextScaler.noScaling,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                height: 1.1,
+                                color: Color(0xFF9EA2B2),
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ),

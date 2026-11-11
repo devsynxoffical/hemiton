@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/repositories/backend_repository.dart';
+import '../../core/repositories/room_repository.dart';
 import '../../models/live_room_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
@@ -602,12 +603,14 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
 
   void _leaveRoom() {
     final currentUser = context.read<AuthProvider>().currentUser;
-    final isHostUser = widget.isHost ||
-        (currentUser.id.isNotEmpty &&
-            (widget.room.host.id == currentUser.id || widget.room.creatorUserId == currentUser.id)) ||
-        (currentUser.username.trim().isNotEmpty &&
-            widget.room.host.username.trim().isNotEmpty &&
-            widget.room.host.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase());
+    final currentId = currentUser.id.trim();
+    final hostId = widget.room.host.id.trim();
+    final creatorId = widget.room.creatorUserId?.trim() ?? '';
+    final currentUsername = currentUser.username.trim().toLowerCase();
+    final hostUsername = widget.room.host.username.trim().toLowerCase();
+
+    final isHostUser = (currentId.isNotEmpty && (hostId == currentId || creatorId == currentId)) ||
+        (currentUsername.isNotEmpty && hostUsername.isNotEmpty && currentUsername == hostUsername);
 
     showDialog(
       context: context,
@@ -746,17 +749,20 @@ class _GroupVideoPartyRoomScreenState extends State<GroupVideoPartyRoomScreen>
               if (isHostUser) ...[
                 SizedBox(height: 9.h),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(ctx);
                     BackendRepository.instance.removeLiveRoom(widget.room.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Group video live has ended.'),
-                        backgroundColor: Color(0xFFFF007F),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                    Navigator.pop(context);
+                    await RoomRepository.instance.closeRoom(widget.room.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Group video live has ended.'),
+                          backgroundColor: Color(0xFFFF007F),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      Navigator.pop(context);
+                    }
                   },
                   child: Container(
                     width: double.infinity,

@@ -1258,76 +1258,170 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildVideosGrid(bool isDark, String displayName, String avatarUrl) {
-    final List<Map<String, dynamic>> videos = [
-      {
-        'thumb': 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&q=80',
-        'views': '124.5K',
-        'isPinned': true,
-        'likes': '8.4K',
-        'duration': '00:15',
-        'title': 'Saturday Night Vibe in HemiTon 🔥',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
-        'views': '45.2K',
-        'isPinned': true,
-        'likes': '3.1K',
-        'duration': '00:28',
-        'title': 'Sunset at the beach with friends 🌅',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=500&q=80',
-        'views': '89.1K',
-        'isPinned': false,
-        'likes': '6.9K',
-        'duration': '01:02',
-        'title': 'Motorcycle ride across the city 🏍️',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
-        'views': '12.8K',
-        'isPinned': false,
-        'likes': '1.2K',
-        'duration': '00:45',
-        'title': 'Late night neon room chill 🎧',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&q=80',
-        'views': '210.4K',
-        'isPinned': false,
-        'likes': '19.8K',
-        'duration': '00:22',
-        'title': 'Concert stage light show 💥',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
-        'views': '34.6K',
-        'isPinned': false,
-        'likes': '2.9K',
-        'duration': '00:30',
-        'title': 'Acoustic guitar live acoustic jam 🎸',
-      },
-    ];
+  // ===========================================================================
+  // REUSABLE CLEAN EMPTY STATE FOR PROFILE MEDIA TABS
+  // ===========================================================================
+  Widget _buildProfileEmptyTab({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    String? buttonText,
+    VoidCallback? onAction,
+  }) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 24.h),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF1F1B38),
+                border: Border.all(
+                  color: const Color(0xFF8A2BE2).withValues(alpha: 0.3),
+                  width: 1.2,
+                ),
+              ),
+              child: Icon(icon, color: Colors.white54, size: 36.sp),
+            ),
+            SizedBox(height: 14.h),
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14.5.sp,
+              ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 11.5.sp,
+              ),
+            ),
+            if (buttonText != null && onAction != null) ...[
+              SizedBox(height: 16.h),
+              GestureDetector(
+                onTap: onAction,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 9.h),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF007F), Color(0xFF8A2BE2)],
+                    ),
+                    borderRadius: BorderRadius.circular(20.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF007F).withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    buttonText,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12.sp,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
-    final playlist = videos.asMap().entries.map((entry) {
-      final idx = entry.key;
-      final item = entry.value;
-      return TikTokMediaItem(
-        id: 'video_$idx',
-        mediaUrl: item['thumb'] as String,
-        title: item['title'] as String,
+  Widget _buildSafeMediaImage(String url) {
+    if (url.isEmpty) return Container(color: Colors.grey.shade900);
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900, child: const Icon(Icons.broken_image_rounded, color: Colors.white24)),
+      );
+    }
+    final f = File(url);
+    if (f.existsSync()) {
+      return Image.file(
+        f,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900, child: const Icon(Icons.broken_image_rounded, color: Colors.white24)),
+      );
+    }
+    return Container(color: Colors.grey.shade900, child: const Icon(Icons.broken_image_rounded, color: Colors.white24));
+  }
+
+  Widget _buildVideosGrid(bool isDark, String displayName, String avatarUrl) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final social = Provider.of<SocialProvider>(context);
+    final currentUserId = auth.currentUser.id;
+
+    final userPosts = social.posts.where((p) => p.author.id == currentUserId || p.author.username == auth.currentUser.username).toList();
+    final userVideos = BackendRepository.instance.shortVideos.where((v) => v.creator.id == currentUserId).toList();
+
+    final List<TikTokMediaItem> videoItems = [];
+
+    // 1. From shortVideos
+    for (final v in userVideos) {
+      videoItems.add(TikTokMediaItem(
+        id: v.id,
+        mediaUrl: v.videoUrl,
+        title: v.caption.isNotEmpty ? v.caption : 'Short Video',
         creatorName: displayName,
         creatorAvatar: avatarUrl,
-        views: item['views'] as String,
-        initialLikes: item['likes'] as String,
+        views: '${v.likes * 3 + 12}',
+        initialLikes: '${v.likes}',
         isVideo: true,
+      ));
+    }
+
+    // 2. From user's video posts
+    for (final p in userPosts) {
+      final isVid = (p.imageUrls.any((u) {
+            final l = u.toLowerCase();
+            return l.endsWith('.mp4') || l.endsWith('.mov') || l.endsWith('.webm');
+          })) || p.content.contains('#video');
+      if (isVid && p.imageUrls.isNotEmpty) {
+        videoItems.add(TikTokMediaItem(
+          id: p.id,
+          mediaUrl: p.imageUrls.first,
+          title: p.content,
+          creatorName: displayName,
+          creatorAvatar: avatarUrl,
+          views: '${p.likes * 5 + 45}',
+          initialLikes: '${p.likes}',
+          isVideo: true,
+        ));
+      }
+    }
+
+    if (videoItems.isEmpty) {
+      return _buildProfileEmptyTab(
+        icon: Icons.videocam_outlined,
+        title: 'No Videos Yet',
+        subtitle: 'Upload your short videos and creative clips to share with the community!',
+        buttonText: 'Upload Video',
+        onAction: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+          );
+        },
       );
-    }).toList();
+    }
 
     return GridView.builder(
       physics: const BouncingScrollPhysics(),
-      itemCount: videos.length,
+      itemCount: videoItems.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 3.w,
@@ -1335,21 +1429,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         childAspectRatio: 0.72,
       ),
       itemBuilder: (context, index) {
-        final v = videos[index];
+        final item = videoItems[index];
         return GestureDetector(
           onTap: () => _openFullScreenMedia(
             context: context,
-            playlist: playlist,
+            playlist: videoItems,
             initialIndex: index,
           ),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(
-                v['thumb'] as String,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900),
-              ),
+              _buildSafeMediaImage(item.mediaUrl),
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -1366,46 +1456,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ),
                 ),
               ),
-              if (v['isPinned'] == true)
-                Positioned(
-                  top: 5.h,
-                  left: 5.w,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF007F),
-                      borderRadius: BorderRadius.circular(3.r),
-                    ),
-                    child: Text(
-                      'Pinned',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8.5.sp,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                ),
-              Positioned(
-                top: 5.h,
-                right: 5.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(3.r),
-                  ),
-                  child: Text(
-                    v['duration'] as String,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8.5.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
               Positioned(
                 bottom: 5.h,
                 left: 6.w,
@@ -1415,7 +1465,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     Icon(Icons.play_arrow_outlined, color: Colors.white, size: 14.sp),
                     SizedBox(width: 2.w),
                     Text(
-                      v['views'] as String,
+                      item.views,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 10.5.sp,
@@ -1434,65 +1484,54 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildPhotosGrid(bool isDark, String displayName, String avatarUrl) {
-    final List<Map<String, dynamic>> photos = [
-      {
-        'thumb': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
-        'likes': '4.2K',
-        'multi': 3,
-        'title': 'New studio photoshoot session ✨',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500&q=80',
-        'likes': '1.8K',
-        'multi': 1,
-        'title': 'Weekend coffee & coding ☕',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&q=80',
-        'likes': '950',
-        'multi': 4,
-        'title': 'Mountains trip memories 🏔️',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&q=80',
-        'likes': '7.1K',
-        'multi': 2,
-        'title': 'Concert night vibes 🎶',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&q=80',
-        'likes': '3.3K',
-        'multi': 1,
-        'title': 'Street fashion in neon lights 🌆',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
-        'likes': '12.4K',
-        'multi': 5,
-        'title': 'Summer memories album 🌴',
-      },
-    ];
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final social = Provider.of<SocialProvider>(context);
+    final currentUserId = auth.currentUser.id;
 
-    final playlist = photos.asMap().entries.map((entry) {
-      final idx = entry.key;
-      final item = entry.value;
-      final multi = item['multi'] as int? ?? 1;
-      return TikTokMediaItem(
-        id: 'photo_$idx',
-        mediaUrl: item['thumb'] as String,
-        photoUrls: List.generate(multi, (_) => item['thumb'] as String),
-        title: item['title'] as String,
-        creatorName: displayName,
-        creatorAvatar: avatarUrl,
-        views: '35.4K',
-        initialLikes: item['likes'] as String,
-        isVideo: false,
+    final userPosts = social.posts.where((p) => p.author.id == currentUserId || p.author.username == auth.currentUser.username).toList();
+
+    final List<TikTokMediaItem> photoItems = [];
+    for (final p in userPosts) {
+      if (p.imageUrls.isNotEmpty) {
+        for (int i = 0; i < p.imageUrls.length; i++) {
+          final url = p.imageUrls[i];
+          final l = url.toLowerCase();
+          final isVid = l.endsWith('.mp4') || l.endsWith('.mov') || l.endsWith('.webm');
+          if (!isVid) {
+            photoItems.add(TikTokMediaItem(
+              id: '${p.id}_$i',
+              mediaUrl: url,
+              photoUrls: p.imageUrls,
+              title: p.content,
+              creatorName: displayName,
+              creatorAvatar: avatarUrl,
+              views: '${p.likes * 2 + 10}',
+              initialLikes: '${p.likes}',
+              isVideo: false,
+            ));
+          }
+        }
+      }
+    }
+
+    if (photoItems.isEmpty) {
+      return _buildProfileEmptyTab(
+        icon: Icons.photo_library_outlined,
+        title: 'No Photos Yet',
+        subtitle: 'Capture moments and post your favorite photos on your profile!',
+        buttonText: 'Share Photo',
+        onAction: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+          );
+        },
       );
-    }).toList();
+    }
 
     return GridView.builder(
       physics: const BouncingScrollPhysics(),
-      itemCount: photos.length,
+      itemCount: photoItems.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 3.w,
@@ -1500,22 +1539,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         childAspectRatio: 0.72,
       ),
       itemBuilder: (context, index) {
-        final p = photos[index];
-        final multi = p['multi'] as int? ?? 1;
+        final p = photoItems[index];
+        final multi = p.photoUrls.length;
         return GestureDetector(
           onTap: () => _openFullScreenMedia(
             context: context,
-            playlist: playlist,
+            playlist: photoItems,
             initialIndex: index,
           ),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(
-                p['thumb'] as String,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900),
-              ),
+              _buildSafeMediaImage(p.mediaUrl),
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -1568,7 +1603,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     Icon(Icons.favorite_rounded, color: const Color(0xFFFF007F), size: 12.sp),
                     SizedBox(width: 3.w),
                     Text(
-                      p['likes'] as String,
+                      p.initialLikes,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 10.5.sp,
@@ -1587,171 +1622,42 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildFavoritesGrid(bool isDark, String displayName, String avatarUrl) {
-    final List<Map<String, dynamic>> favorites = [
-      {
-        'thumb': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80',
-        'views': '58.2K',
-        'likes': '7.4K',
-        'title': 'Night Vibes & Chill Beats ✨',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&q=80',
-        'views': '19.4K',
-        'likes': '2.1K',
-        'title': 'Gaming Room Setup Tour 🎮',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80',
-        'views': '73.1K',
-        'likes': '9.8K',
-        'title': 'Tropical Sunset Live Mix 🌅',
-      },
-    ];
-
-    final playlist = favorites.asMap().entries.map((entry) {
-      final idx = entry.key;
-      final item = entry.value;
-      return TikTokMediaItem(
-        id: 'fav_$idx',
-        mediaUrl: item['thumb'] as String,
-        title: item['title'] as String,
-        creatorName: displayName,
-        creatorAvatar: avatarUrl,
-        views: item['views'] as String,
-        initialLikes: item['likes'] as String,
-        isVideo: true,
-      );
-    }).toList();
-
-    return GridView.builder(
-      physics: const BouncingScrollPhysics(),
-      itemCount: favorites.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 3.w,
-        mainAxisSpacing: 3.h,
-        childAspectRatio: 0.72,
-      ),
-      itemBuilder: (context, index) {
-        final fav = favorites[index];
-        return GestureDetector(
-          onTap: () => _openFullScreenMedia(
-            context: context,
-            playlist: playlist,
-            initialIndex: index,
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.network(
-                fav['thumb'] as String,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900),
-              ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.05),
-                        Colors.black.withValues(alpha: 0.8),
-                      ],
-                      stops: const [0.45, 0.7, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 5.h,
-                right: 5.w,
-                child: Container(
-                  padding: const EdgeInsets.all(3.5),
-                  decoration: const BoxDecoration(
-                    color: Colors.black54,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.bookmark_rounded,
-                    color: const Color(0xFFFFD700),
-                    size: 13.sp,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 5.h,
-                left: 6.w,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.play_arrow_outlined, color: Colors.white, size: 14.sp),
-                    SizedBox(width: 2.w),
-                    Text(
-                      fav['views'] as String,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10.5.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    return _buildProfileEmptyTab(
+      icon: Icons.bookmark_outline_rounded,
+      title: 'No Favorites Yet',
+      subtitle: 'Posts and moments you bookmark will appear here.',
     );
   }
 
   Widget _buildLikedGrid(bool isDark, String displayName, String avatarUrl) {
-    final List<Map<String, dynamic>> liked = [
-      {
-        'thumb': 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&q=80',
-        'views': '88.3K',
-        'likes': '14.2K',
-        'title': 'Best live festival crowd ever! 🎉',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500&q=80',
-        'views': '41.6K',
-        'likes': '5.8K',
-        'title': 'Cozy coffee shop acoustics ☕',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=500&q=80',
-        'views': '104.9K',
-        'likes': '22.1K',
-        'title': 'Golden hour motorcycle run 🚀',
-      },
-      {
-        'thumb': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
-        'views': '31.0K',
-        'likes': '3.9K',
-        'title': 'Studio portrait series 📸',
-      },
-    ];
+    final social = Provider.of<SocialProvider>(context);
+    final likedPosts = social.posts.where((p) => p.isLiked).toList();
 
-    final playlist = liked.asMap().entries.map((entry) {
-      final idx = entry.key;
-      final item = entry.value;
+    if (likedPosts.isEmpty) {
+      return _buildProfileEmptyTab(
+        icon: Icons.favorite_outline_rounded,
+        title: 'No Liked Posts Yet',
+        subtitle: 'Posts and moments you like will be saved here.',
+      );
+    }
+
+    final playlist = likedPosts.map((p) {
       return TikTokMediaItem(
-        id: 'liked_$idx',
-        mediaUrl: item['thumb'] as String,
-        title: item['title'] as String,
-        creatorName: displayName,
-        creatorAvatar: avatarUrl,
-        views: item['views'] as String,
-        initialLikes: item['likes'] as String,
-        isVideo: true,
+        id: p.id,
+        mediaUrl: p.imageUrls.isNotEmpty ? p.imageUrls.first : '',
+        photoUrls: p.imageUrls,
+        title: p.content,
+        creatorName: p.author.name.isNotEmpty ? p.author.name : p.author.username,
+        creatorAvatar: p.author.avatarUrl,
+        views: '${p.likes * 2 + 20}',
+        initialLikes: '${p.likes}',
+        isVideo: p.imageUrls.any((u) => u.toLowerCase().endsWith('.mp4') || u.toLowerCase().endsWith('.mov')),
       );
     }).toList();
 
     return GridView.builder(
       physics: const BouncingScrollPhysics(),
-      itemCount: liked.length,
+      itemCount: playlist.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 3.w,
@@ -1759,7 +1665,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         childAspectRatio: 0.72,
       ),
       itemBuilder: (context, index) {
-        final item = liked[index];
+        final item = playlist[index];
         return GestureDetector(
           onTap: () => _openFullScreenMedia(
             context: context,
@@ -1769,11 +1675,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(
-                item['thumb'] as String,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900),
-              ),
+              _buildSafeMediaImage(item.mediaUrl),
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -1799,7 +1701,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     Icon(Icons.favorite_rounded, color: const Color(0xFFFF1744), size: 12.sp),
                     SizedBox(width: 3.w),
                     Text(
-                      item['likes'] as String,
+                      item.initialLikes,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 10.5.sp,

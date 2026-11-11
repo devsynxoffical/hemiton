@@ -38,17 +38,7 @@ class _ProfileRoomsScreenState extends State<ProfileRoomsScreen> with SingleTick
         r.host.id == widget.user.id || r.host.name.toLowerCase() == widget.user.name.toLowerCase()
     ).toList();
 
-    final sampleOwnedRoom = LiveRoomModel(
-      id: 'room_owned_1',
-      title: '${widget.user.name}\'s Official Audio Lounge 🎵',
-      host: widget.user,
-      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80',
-      viewerCount: 42,
-      category: 'Chat',
-      startTime: DateTime.now(),
-    );
-
-    final displayOwnedRooms = ownedRooms.isNotEmpty ? ownedRooms : [sampleOwnedRoom];
+    final displayOwnedRooms = ownedRooms;
 
     final joinedRooms = allRooms.take(3).toList();
     final followedRooms = allRooms.skip(3).take(3).toList();
@@ -76,16 +66,45 @@ class _ProfileRoomsScreenState extends State<ProfileRoomsScreen> with SingleTick
                 ),
               ),
             ),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: displayOwnedRooms.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, idx) {
-                return _buildRoomCard(context, displayOwnedRooms[idx], isDark, primary);
-              },
-            ),
+            if (displayOwnedRooms.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF131126) : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.meeting_room_outlined, size: 36, color: primary),
+                      const SizedBox(height: 10),
+                      Text(
+                        'No Active Rooms',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.getTextPrimary(isDark)),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Start your live room or audio party now!',
+                        style: TextStyle(fontSize: 12, color: AppColors.getTextSecondary(isDark)),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: displayOwnedRooms.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, idx) {
+                  return _buildRoomCard(context, displayOwnedRooms[idx], isDark, primary);
+                },
+              ),
             const SizedBox(height: 20),
 
             // Tab Bar for Joined & Followed Rooms

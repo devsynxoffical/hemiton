@@ -160,14 +160,14 @@ class _FloatingRoomOverlayState extends State<FloatingRoomOverlay> with SingleTi
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 19),
-                      SizedBox(width: 8),
+                      const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 19),
+                      const SizedBox(width: 8),
                       Text(
-                        'Continue Live',
-                        style: TextStyle(
+                        isHostUser ? 'Continue Live' : 'Stay in Room',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                           fontSize: 14.5,
@@ -179,7 +179,7 @@ class _FloatingRoomOverlayState extends State<FloatingRoomOverlay> with SingleTi
               ),
               const SizedBox(height: 10),
 
-              // 2. Leave Live
+              // 2. Leave Live / Leave Room
               GestureDetector(
                 onTap: () => Navigator.pop(ctx, 'leave'),
                 child: Container(
@@ -193,14 +193,14 @@ class _FloatingRoomOverlayState extends State<FloatingRoomOverlay> with SingleTi
                       width: 1.1,
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
+                      const Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
                       Text(
-                        'Leave Live',
-                        style: TextStyle(
+                        isHostUser ? 'Leave Live' : 'Leave Room',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                           fontSize: 14.5,

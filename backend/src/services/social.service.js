@@ -69,16 +69,25 @@ export async function createPost(
   if (visibility === 'PUBLIC') {
     socketEmitter.broadcastGlobal(SOCKET_EVENTS.POST_CREATED, {
       postId: post.id,
+      id: post.id,
       authorId: userId,
       authorUsername: post.user?.username,
       content: post.content,
+      mediaUrls: post.mediaUrls || [],
+      imageUrls: post.mediaUrls || [],
+      visibility: post.visibility,
       createdAt: post.createdAt,
     });
   } else {
     // For followers/private, notify specific user/author
     socketEmitter.emitToUser(userId, SOCKET_EVENTS.POST_CREATED, {
       postId: post.id,
+      id: post.id,
       authorId: userId,
+      authorUsername: post.user?.username,
+      content: post.content,
+      mediaUrls: post.mediaUrls || [],
+      imageUrls: post.mediaUrls || [],
       visibility,
       createdAt: post.createdAt,
     });

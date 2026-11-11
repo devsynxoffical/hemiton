@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -373,6 +374,24 @@ class _InboxScreenState extends State<InboxScreen> {
   // ===========================================================================
   // 2. Status / Live Profile Cards Section (Matching Client Reference Design)
   // ===========================================================================
+  static ImageProvider? _safeImageProvider(String? url) {
+    if (url == null || url.trim().isEmpty) return null;
+    final clean = url.trim();
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      return NetworkImage(clean);
+    }
+    if (clean.startsWith('assets/')) {
+      return AssetImage(clean);
+    }
+    try {
+      final file = File(clean);
+      if (file.existsSync()) {
+        return FileImage(file);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Widget _buildStatusSection(bool isDark) {
     final auth = Provider.of<AuthProvider>(context);
     final social = Provider.of<SocialProvider>(context);
@@ -402,75 +421,8 @@ class _InboxScreenState extends State<InboxScreen> {
       );
     }).toList();
 
-    // Reference demonstration story + live users matching client screenshot
-    final demoStatusCards = [
-      _StatusCardData(
-        userId: 'u_suman',
-        name: 'suman',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80',
-        isOnline: true,
-        ringColors: const [Color(0xFFFF1493), Color(0xFF00E676)],
-        isLive: true,
-        location: 'Kolkata',
-        hasStatus: true,
-      ),
-      _StatusCardData(
-        userId: 'u_riya',
-        name: '🌸🌸riya🌸🌸',
-        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
-        isOnline: true,
-        ringColors: const [Color(0xFFFF2A9D), Color(0xFF9D00FF)],
-        isLive: true,
-        location: 'Kolkata',
-        hasStatus: true,
-      ),
-      _StatusCardData(
-        userId: 'u_mkkhan',
-        name: 'MK KHAN',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80',
-        isOnline: true,
-        ringColors: const [Color(0xFF00E676), Color(0xFF00B0FF)],
-        isLive: true,
-        location: 'Shimla',
-        hasStatus: false,
-      ),
-      _StatusCardData(
-        userId: 'u_hussnain',
-        name: 'Hussnain',
-        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80',
-        isOnline: true,
-        ringColors: const [Color(0xFF00E676), Color(0xFF00B0FF)],
-        isLive: false,
-        location: 'Lahore',
-        hasStatus: true,
-      ),
-      _StatusCardData(
-        userId: 'u_abid',
-        name: 'Abid Net',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
-        isOnline: false,
-        ringColors: const [Color(0xFFFF1493), Color(0xFF9D00FF)],
-        isLive: false,
-        location: 'Karachi',
-        hasStatus: true,
-      ),
-    ];
-
-    // Combine real live rooms and demo cards (avoid duplicate userIds)
-    final combinedCards = <_StatusCardData>[];
-    for (final item in realLiveCards) {
-      combinedCards.add(item);
-    }
-    for (final item in demoStatusCards) {
-      if (!combinedCards.any((e) => e.userId == item.userId)) {
-        combinedCards.add(item);
-      }
-    }
+    // Real status cards from active live streamers and story creators
+    final combinedCards = <_StatusCardData>[...realLiveCards];
 
     return Container(
       padding: EdgeInsets.only(top: 6.h, bottom: 8.h),
@@ -483,7 +435,7 @@ class _InboxScreenState extends State<InboxScreen> {
         ),
       ),
       child: SizedBox(
-        height: 98.h,
+        height: 106.h,
         child: ListView(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
@@ -575,8 +527,8 @@ class _InboxScreenState extends State<InboxScreen> {
                       backgroundImage: (hasActiveStatus &&
                               myStories.first.mediaUrl.isNotEmpty &&
                               !myStories.first.isVideo)
-                          ? NetworkImage(myStories.first.mediaUrl)
-                          : (avatar.isNotEmpty ? NetworkImage(avatar) : null),
+                          ? _safeImageProvider(myStories.first.mediaUrl)
+                          : _safeImageProvider(avatar),
                       child: avatar.isEmpty && !hasActiveStatus
                           ? Icon(Icons.person, color: Colors.white60, size: 26.sp)
                           : null,
@@ -705,7 +657,10 @@ class _InboxScreenState extends State<InboxScreen> {
                     child: CircleAvatar(
                       radius: 28.r,
                       backgroundColor: Colors.black26,
-                      backgroundImage: NetworkImage(card.avatarUrl),
+                      backgroundImage: _safeImageProvider(card.avatarUrl),
+                      child: card.avatarUrl.isEmpty
+                          ? Icon(Icons.person, color: Colors.white60, size: 26.sp)
+                          : null,
                     ),
                   ),
                 ),
@@ -803,120 +758,6 @@ class _InboxScreenState extends State<InboxScreen> {
   // 3. Chats Section (Channels completely removed)
   // ===========================================================================
   Widget _buildChatsSection(bool isDark, MessagingProvider messaging) {
-    // Demonstration conversations matching the exact reference screenshot
-    final demoConversations = [
-      _ChatRowData(
-        userId: 'u_shehryar',
-        name: 'Mr.Shehryar',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-        lastMessage: "You've become friends now, aud...",
-        time: 'just now',
-        unreadCount: 2,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_shanzay',
-        name: 'Shanzay',
-        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
-        lastMessage: 'hi! Are you joining the live room t...',
-        time: '2h ago',
-        unreadCount: 1,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_sonia',
-        name: 'Sonia Malik',
-        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-        lastMessage: 'hi, loved your new moment post! ...',
-        time: '2h ago',
-        unreadCount: 0,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_neha',
-        name: 'Neha Fatima',
-        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=80',
-        lastMessage: 'hy, see you in PK battle at 9 PM!',
-        time: '2h ago',
-        unreadCount: 0,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_queengirl',
-        name: 'Queen girl',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
-        lastMessage: 'Dear mujhe ek loyal aur supportiv...',
-        time: '2h ago',
-        unreadCount: 0,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_ayeshahz',
-        name: 'AYESHA SHAHZ...',
-        avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=80',
-        lastMessage: 'hi kesy ho aap? subah live strea...',
-        time: '2h ago',
-        unreadCount: 0,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_alishbha',
-        name: 'Alishbha',
-        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
-        lastMessage: 'how are you? can you share roo...',
-        time: '3h ago',
-        unreadCount: 0,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_ayesha',
-        name: 'Ayesha Khan',
-        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80',
-        lastMessage: 'Hey! How are you?',
-        time: '11:32 AM',
-        unreadCount: 3,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_usman',
-        name: 'Usman Ali',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-        lastMessage: 'Okay, sure!',
-        time: '10:45 AM',
-        unreadCount: 1,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_sara',
-        name: 'Sara Malik',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80',
-        lastMessage: 'See you soon! 😋',
-        time: 'Yesterday',
-        unreadCount: 0,
-        isOnline: true,
-        isVoiceMessage: false,
-      ),
-      _ChatRowData(
-        userId: 'u_zain',
-        name: 'Zain Ahmad',
-        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
-        lastMessage: 'Voice message (0:12)',
-        time: 'Yesterday',
-        unreadCount: 0,
-        isOnline: true,
-        isVoiceMessage: true,
-      ),
-    ];
-
     // Real conversations from MessagingProvider
     final realChatUsers = messaging.chatUsers;
     final realRows = realChatUsers.map((u) {
@@ -941,16 +782,7 @@ class _InboxScreenState extends State<InboxScreen> {
       );
     }).toList();
 
-    // Merge and filter
-    final combined = <_ChatRowData>[];
-    for (final item in demoConversations) {
-      combined.add(item);
-    }
-    for (final item in realRows) {
-      if (!combined.any((e) => e.userId == item.userId)) {
-        combined.add(item);
-      }
-    }
+    final combined = <_ChatRowData>[...realRows];
 
     // Filter by search query if user is searching
     final filteredChats = _searchQuery.isEmpty
@@ -1051,17 +883,49 @@ class _InboxScreenState extends State<InboxScreen> {
           ),
         ),
 
-        // List of Chat Cards
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          itemCount: filteredChats.length,
-          itemBuilder: (context, index) {
-            final chat = filteredChats[index];
-            return _buildChatCard(chat, isDark);
-          },
-        ),
+        // List of Chat Cards or Empty State
+        if (filteredChats.isEmpty)
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 36.h, horizontal: 24.w),
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.mark_chat_unread_outlined, size: 48.sp, color: isDark ? Colors.white24 : Colors.black26),
+                SizedBox(height: 12.h),
+                Text(
+                  _searchQuery.isNotEmpty ? 'No conversations found' : 'No Messages Yet',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white70 : Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  _searchQuery.isNotEmpty
+                      ? 'Try searching with another keyword'
+                      : 'Connect with friends and streamers to start chatting.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: isDark ? Colors.white38 : Colors.black45,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            itemCount: filteredChats.length,
+            itemBuilder: (context, index) {
+              final chat = filteredChats[index];
+              return _buildChatCard(chat, isDark);
+            },
+          ),
       ],
     );
   }

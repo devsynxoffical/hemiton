@@ -72,12 +72,14 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
     _isExitDialogShowing = true;
 
     final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
-    final isHostUser = widget.isHost ||
-        (currentUser.id.isNotEmpty &&
-            (widget.room.host.id == currentUser.id || widget.room.creatorUserId == currentUser.id)) ||
-        (currentUser.username.trim().isNotEmpty &&
-            widget.room.host.username.trim().isNotEmpty &&
-            widget.room.host.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase());
+    final currentId = currentUser.id.trim();
+    final hostId = widget.room.host.id.trim();
+    final creatorId = widget.room.creatorUserId?.trim() ?? '';
+    final currentUsername = currentUser.username.trim().toLowerCase();
+    final hostUsername = widget.room.host.username.trim().toLowerCase();
+
+    final isHostUser = (currentId.isNotEmpty && (hostId == currentId || creatorId == currentId)) ||
+        (currentUsername.isNotEmpty && hostUsername.isNotEmpty && currentUsername == hostUsername);
 
     final action = await showDialog<String>(
       context: context,
@@ -155,12 +157,15 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
                     gradient: const LinearGradient(colors: [Color(0xFF8A2BE2), Color(0xFF00E5FF)]),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
-                      Text('Continue Live', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        isHostUser ? 'Continue Live' : 'Stay in Stream',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
                     ],
                   ),
                 ),
@@ -176,12 +181,15 @@ class _LiveRoomScreenState extends State<LiveRoomScreen>
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white24),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
-                      Text('Leave Live', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      const Icon(Icons.exit_to_app_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        isHostUser ? 'Leave Live' : 'Leave Stream',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
                     ],
                   ),
                 ),

@@ -116,6 +116,27 @@ class GiftAnimationOverlayState extends State<GiftAnimationOverlay>
     super.dispose();
   }
 
+  Widget _buildIconWidget(String icon) {
+    if (icon.startsWith('assets/')) {
+      return Image.asset(
+        icon,
+        width: 48,
+        height: 48,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const Text('🎁', style: TextStyle(fontSize: 36)),
+      );
+    } else if (icon.startsWith('http://') || icon.startsWith('https://')) {
+      return Image.network(
+        icon,
+        width: 48,
+        height: 48,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const Text('🎁', style: TextStyle(fontSize: 36)),
+      );
+    }
+    return Text(icon.length < 5 ? icon : '🎁', style: const TextStyle(fontSize: 40));
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_currentGift == null) return const SizedBox.shrink();
@@ -141,42 +162,51 @@ class GiftAnimationOverlayState extends State<GiftAnimationOverlay>
                       boxShadow: AppColors.primaryGlow(isDark, alpha: 0.5, blur: 24, spread: 4),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(_currentGift!.icon, style: const TextStyle(fontSize: 48)),
+                        _buildIconWidget(_currentGift!.icon),
                         const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _giftSenderName.isNotEmpty
-                                  ? '$_giftSenderName sent $_giftQuantity ×'
-                                  : 'SPECIAL GIFT SENT!',
-                              style: const TextStyle(
-                                color: AppColors.darkBackground,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 12,
-                                letterSpacing: 1.2,
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _giftSenderName.isNotEmpty
+                                    ? '$_giftSenderName sent $_giftQuantity ×'
+                                    : 'SPECIAL GIFT SENT!',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.darkBackground,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 12,
+                                  letterSpacing: 1.2,
+                                ),
                               ),
-                            ),
-                            Text(
-                              _currentGift!.name,
-                              style: const TextStyle(
-                                color: AppColors.darkBackground,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
+                              Text(
+                                _currentGift!.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.darkBackground,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
                               ),
-                            ),
-                            Text(
-                              '${(_currentGift!.priceCoins > 0 ? _currentGift!.priceCoins : _currentGift!.diamondPrice) * _giftQuantity} Coins 🪙',
-                              style: const TextStyle(
-                                color: AppColors.darkBackground,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                              Text(
+                                '${(_currentGift!.priceCoins > 0 ? _currentGift!.priceCoins : _currentGift!.diamondPrice) * _giftQuantity} Coins 🪙',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.darkBackground,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
